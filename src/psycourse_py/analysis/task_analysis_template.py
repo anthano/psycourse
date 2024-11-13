@@ -3,9 +3,9 @@
 import pandas as pd
 import pytask
 
-from psycourse.analysis.model_template import fit_logit_model
-from psycourse.analysis.predict_template import predict_prob_by_age
-from psycourse.config import BLD, SRC, TEMPLATE_GROUPS
+from psycourse_py.analysis.model_template import fit_logit_model
+from psycourse_py.analysis.predict_template import predict_prob_by_age
+from psycourse_py.config import BLD, SRC, TEMPLATE_GROUPS
 
 # In practical scenarios, fitting multiple models for different formulas is common. With
 # pytask, we can iterate over these formulas to fit each model using the same code block

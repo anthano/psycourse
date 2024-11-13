@@ -1,5 +1,5 @@
 ---
-name: psycourse
+name: psycourse_py
 channels: [conda-forge, r, nodefaults]
 dependencies:
   - python ==3.12

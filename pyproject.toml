@@ -3,7 +3,7 @@
 # ======================================================================================
 
 [project]
-name = "psycourse"
+name = "psycourse_py"
 description = "Template for reproducible research projects in economics"
 requires-python = ">=3.11"
 dynamic = ["version"]
@@ -49,7 +49,7 @@ requires = ["hatchling", "hatch_vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/psycourse/_version.py"
+version-file = "src/psycourse_py/_version.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = ["tests"]
@@ -70,7 +70,7 @@ allow-direct-references = true
 # ======================================================================================
 
 [tool.pytask.ini_options]
-paths = ["./src/psycourse"]
+paths = ["./src/psycourse_py"]
 pdbcls = "pdbp:Pdb"
 
 # ======================================================================================
@@ -82,10 +82,55 @@ target-version = "py312"
 fix = true
 
 [tool.ruff.lint]
-select = ["ALL"]
+select = [
+  # isort
+  "I",
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E",
+  "W",
+  # flake8-2020
+  "YTT",
+  # flake8-bugbear
+  "B",
+  # flake8-quotes
+  "Q",
+  # pylint
+  "PLE", "PLR", "PLW",
+  # misc lints
+  "PIE",
+  # tidy imports
+  "TID",
+  # implicit string concatenation
+  "ISC",
+]
+
 extend-ignore = [
-    "ANN",  # Missing type annotations
-    "COM812", # Conflict with ruff-format
+  # allow module import not at top of file, important for notebooks
+  "E402",
+  # do not assign a lambda expression, use a def
+  "E731",
+  # Too many arguments to function call
+  "PLR0913",
+  # Too many returns
+  "PLR0911",
+  # Too many branches
+  "PLR0912",
+  # Too many statements
+  "PLR0915",
+  # Magic number
+  "PLR2004",
+  # Consider `elif` instead of `else` then `if` to remove indentation level
+  "PLR5501",
+  # For calls to warnings.warn(): No explicit `stacklevel` keyword argument found
+  "B028",
+  # Incompatible with formatting
+  "ISC001",
+  # Missing type annotations
+  "ANN",
+  # Conflict with ruff-format
+    "COM812",
     "D10",  # Missing docstrings
     "ISC001", # Conflict with ruff-format
     "PD901", # df is a great name with functional data management
@@ -116,13 +161,8 @@ markers = [
     "integration: Flag for integration tests which may comprise of multiple unit tests.",
     "end_to_end: Flag for tests that cover the whole program.",
 ]
-norecursedirs = ["docs"]
 
 
 [tool.yamlfix]
 line_length = 88
 none_representation = "null"
-
-
-[tool.codespell]
-skip = "*.ipynb,inst/WORDLIST"

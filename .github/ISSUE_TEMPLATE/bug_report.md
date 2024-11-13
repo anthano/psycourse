@@ -1,7 +1,7 @@
 ---
 
 name: Bug Report
-about: Create a bug report to help us improve psycourse
+about: Create a bug report to help us improve psycourse_py
 title: "BUG:"
 labels: "bug"
 
@@ -9,9 +9,9 @@ labels: "bug"
 
 - [ ] I have checked that this issue has not already been reported.
 
-- [ ] I have confirmed this bug exists on the latest version of psycourse.
+- [ ] I have confirmed this bug exists on the latest version of psycourse_py.
 
-- [ ] (optional) I have confirmed this bug exists on the `main` branch of psycourse.
+- [ ] (optional) I have confirmed this bug exists on the `main` branch of psycourse_py.
 
 ---
 

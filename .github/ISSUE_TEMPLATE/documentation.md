@@ -1,7 +1,7 @@
 ---
 
 name: Documentation Improvement
-about: Report wrong or missing documentation in psycourse
+about: Report wrong or missing documentation in psycourse_py
 title: "DOC:"
 labels: "documentation"
 
