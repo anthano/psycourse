@@ -17,6 +17,10 @@
 # bld
 bld/
 
+#data
+/src/psycourse_py/data
+
+
 # latex
 *.aux
 *.bbl
