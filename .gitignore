@@ -42,3 +42,5 @@ docs_template/scripts/latex/*.png
 # pixi environments
 .pixi
 *.egg-info
+
+*.DS_Store
