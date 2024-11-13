@@ -6,6 +6,10 @@ SRC = Path(__file__).parent.resolve()
 ROOT = SRC.joinpath("..", "..").resolve()
 
 BLD = ROOT.joinpath("bld").resolve()
+BLD_R = BLD.joinpath("bld_r").resolve()
 
 
 TEMPLATE_GROUPS = ["marital_status", "highest_qualification"]
+
+# need to discuss path to data (or cleaned data) once you have R scripts etc.
+# DATA_PATH_SERVER = ROOT.parent.parent.parent / "data" / "psycourse"
