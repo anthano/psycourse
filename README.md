@@ -1,4 +1,4 @@
-# Templates for Reproducible Research Projects in Economics
+# Templates for Reproducible Research Projects in Economics (blabla)
 
 ![MIT license](https://img.shields.io/github/license/OpenSourceEconomics/econ-project-templates)
 [![image](https://zenodo.org/badge/14557543.svg)](https://zenodo.org/badge/latestdoi/14557543)
