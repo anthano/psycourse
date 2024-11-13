@@ -1,7 +1,7 @@
 ---
 
 name: Enhancement
-about: Suggest an idea for psycourse
+about: Suggest an idea for psycourse_py
 title: "ENH:"
 labels: "enhancement"
 
@@ -10,7 +10,7 @@ labels: "enhancement"
 #### Is your feature request related to a problem?
 
 Provide a description of what the problem is, e.g. "I wish I could use
-psycourse to do [...]".
+psycourse_py to do [...]".
 
 #### Describe the solution you'd like
 

@@ -4,8 +4,8 @@ import pandas as pd
 import pyreadr
 import pytask
 
-from psycourse.config import BLD, SRC, TEMPLATE_GROUPS
-from psycourse.final.plot_template import plot_regression_by_age
+from psycourse_py.config import BLD, SRC, TEMPLATE_GROUPS
+from psycourse_py.final.plot_template import plot_regression_by_age
 
 for language in ["python", "r"]:
     extension = "pickle" if language == "python" else "rds"

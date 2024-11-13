@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-from psycourse.analysis.predict_template import predict_prob_by_age
+from psycourse_py.analysis.predict_template import predict_prob_by_age
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from psycourse.analysis.model_template import fit_logit_model
+from psycourse_py.analysis.model_template import fit_logit_model
 
 DESIRED_PRECISION = 10e-2
 
