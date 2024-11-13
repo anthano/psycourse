@@ -24,7 +24,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.1.0-py312h2ec8cdc_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bwidget-1.9.14-ha770c72_1.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-h4bc722e_7.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.3-heb4867d_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.32.3-h4bc722e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ca-certificates-2024.8.30-hbcca054_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cached-property-1.5.2-hd8ed1ab_1.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/cached_property-1.5.2-pyha770c72_1.tar.bz2
@@ -969,6 +969,22 @@ packages:
   timestamp: 1720974522888
 - kind: conda
   name: c-ares
+  version: 1.32.3
+  build: h4bc722e_0
+  subdir: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.32.3-h4bc722e_0.conda
+  sha256: 3c5a844bb60b0d52d89c3f1bd828c9856417fe33a6102fd8bbd5c13c3351704a
+  md5: 7624e34ee6baebfc80d67bac76cc9d9d
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc-ng >=12
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 179736
+  timestamp: 1721834714515
+- kind: conda
+  name: c-ares
   version: 1.34.3
   build: h5505292_0
   subdir: osx-arm64
@@ -982,22 +998,6 @@ packages:
   purls: []
   size: 178951
   timestamp: 1731182071026
-- kind: conda
-  name: c-ares
-  version: 1.34.3
-  build: heb4867d_0
-  subdir: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.3-heb4867d_0.conda
-  sha256: 1015d731c05ef7de298834833d680b08dea58980b907f644345bd457f9498c99
-  md5: 09a6c610d002e54e18353c06ef61a253
-  depends:
-  - __glibc >=2.28,<3.0.a0
-  - libgcc >=13
-  license: MIT
-  license_family: MIT
-  purls: []
-  size: 205575
-  timestamp: 1731181837907
 - kind: conda
   name: ca-certificates
   version: 2024.8.30
@@ -5358,9 +5358,9 @@ packages:
   timestamp: 1729847159916
 - kind: pypi
   name: psycourse-py
-  version: 0.1.dev10+g6cef920.d20241113
+  version: 0.1.dev11+g86dd30a.d20241113
   path: .
-  sha256: d60d936f27d3f8ecf4af63e8807fe906f585d7fc3225d443baa49dbc0bc51473
+  sha256: e2fcb6672b213f584f75de61a292b6c65acc29a0558e90583bcc99ce53a36b28
   requires_python: '>=3.11'
   editable: true
 - kind: conda
