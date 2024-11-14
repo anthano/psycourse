@@ -17,6 +17,10 @@
 # bld
 bld/
 
+#data
+/src/psycourse_py/data
+
+
 # latex
 *.aux
 *.bbl
@@ -42,3 +46,5 @@ docs_template/scripts/latex/*.png
 # pixi environments
 .pixi
 *.egg-info
+
+*.DS_Store
