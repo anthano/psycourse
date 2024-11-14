@@ -1,0 +1,1068 @@
+
+---
+title: "Lipidomics"
+output:
+  rmdformats::readthedown:
+    toc_depth: 3
+    self_contained: no
+    thumbnails: no
+    lightbox: yes
+    gallery: no
+    fig_width: 18
+    fig_height: 18
+    fig_caption: yes
+    code_folding: hide
+    highlight: kate
+  keep_md: DEFAULT
+  '': default
+date: "2023-06-21"
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Preparation**
+
+## Install and load
+
+### Install Packages
+```{r eval=FALSE, include=FALSE}
+install.packages("janitor")
+install.packages("rmdformats")
+install.packages("fastDummies")
+install.packages("openxlsx")
+install.packages("R.matlab")
+install.packages("extrafont")
+install.packages("writexl")
+install.packages("psych") 
+install.packages("MatchIt")
+```
+
+### Load libraries
+```{r echo=TRUE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(data.table)
+library(janitor)
+library(fastDummies)
+library(openxlsx)
+library(R.matlab)
+library(extrafont)
+library(scales)
+library(writexl)
+library(psych)
+library(MatchIt)
+```
+
+## Preparation of data
+
+### Read relevant data 
+
+### Cluster labels Dwyer
+```{r}
+Dwyer_PsyCourse_ClusterLabels <- read_delim("/dss/dssfs03/pr92to/pr92to-dss-0002/ra35gin/Dwyer_PsyCourse_ClusterLabels.csv", delim = ",", escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
+
+Dwyer_PsyCourse_ClusterLabels$cluster_label<-ifelse(Dwyer_PsyCourse_ClusterLabels$cluster_label==1,"subtype_1",ifelse(Dwyer_PsyCourse_ClusterLabels$cluster_label==2,"subtype_2",ifelse(Dwyer_PsyCourse_ClusterLabels$cluster_label==3,"subtype_3",ifelse(Dwyer_PsyCourse_ClusterLabels$cluster_label==4,"subtype_4","subtype_5"))))
+
+sample_description <- read_csv("/dss/dssfs03/pr92to/pr92to-dss-0003/PsyCourse/lipidomics/aux_files/Sample_description_withvisit.csv", show_col_types = FALSE)
+pheno <- read_delim("/dss/dssfs03/pr92to/pr92to-dss-0003/PsyCourse/Phenotypes/230614_v6.0/230614_v6.0_psycourse_wd.csv",  delim = "\t",escape_double = FALSE, trim_ws = TRUE, show_col_types = FALSE)
+
+lipidomics <- read_csv("/dss/dssfs03/pr92to/pr92to-dss-0003/PsyCourse/lipidomics/lipid_intensities.csv", show_col_types = FALSE)
+
+annotation <- read_csv("/dss/dssfs03/pr92to/pr92to-dss-0003/PsyCourse/lipidomics/aux_files/annotation.csv", show_col_types = FALSE)
+```
+#### Delete Lipids due to fasting status from annotation data 
+```{r}
+values_to_delete <- c("gpeakpos3079","gpeakneg349","gpeakneg384","gpeakneg596","gpeakneg588","gpeakneg574","gpeakneg852","gpeakneg838","gpeakneg828","gpeakneg910","gpeakneg902","gpeakneg892","gpeakneg954","gpeakneg940","gpeakneg935","gpeakneg925","gpeakneg1109","gpeakneg1241","gpeakneg1228","gpeakneg1214","gpeakneg1180","gpeakneg1412","gpeakneg1403","gpeakneg1395","gpeakneg1382","gpeakneg1373","gpeakneg1506","gpeakpos4173","gpeakneg4796","gpeakneg5352")
+
+annotation <- subset(annotation, !GER %in% values_to_delete)
+```
+
+
+### Prepartion 
+
+```{r}
+#rename columns
+sample_description <- setnames(sample_description, old = c("ind", "Patient_ID"), new = c("originalMS#", "v1_id"), skip_absent = TRUE)
+
+#select ind of sample description 
+originalMS <- sample_description %>% select("originalMS#", "v1_id", "repeated visit (delete)")
+
+#merge lipidomics with originalMS
+lipidomics <- merge(originalMS, lipidomics, by="originalMS#")
+
+#merge lipidomics and pheno
+lipidomics <- lipidomics[,-4]
+lipidomics <- setnames(lipidomics, old="v1_id.x", new = "v1_id", skip_absent = TRUE)
+pheno_lipid <- merge(pheno, lipidomics, by="v1_id")
+```
+
+# Filter for subsample
+```{r}
+# delete dublicates
+pheno_lipid <- pheno_lipid %>% filter(`repeated visit (delete)`=="NO") 
+pheno_lipid <- pheno_lipid %>% filter(v1_scid_dsm_dx_cat=="Schizophrenia" |v1_scid_dsm_dx_cat=="Bipolar-I Disorder"|v1_scid_dsm_dx_cat=="Bipolar-II Disorder")
+# without NA BMI cases
+missing_rows <- which(is.na(pheno_lipid$v1_bmi))
+pheno_lipid  <- pheno_lipid[-c(27,84,270,344),]
+
+# get a frame with relevant v1_id
+v1_id <- pheno_lipid %>% select("v1_id")
+lipidomics <- merge(v1_id, lipidomics,by = "v1_id") 
+lipidomics <- lipidomics %>% filter(`repeated visit (delete)`=="NO") 
+```
+#### Select annotated lipids from lipidomic data frame
+```{r}
+#columns_mentioned <- annotation$GER
+#columns_to_select <- intersect(columns_mentioned, colnames(lipidomics))
+#lip <- lipidomics[, c("v1_id", columns_to_select)]
+```
+#### Dwyer data frame
+```{r}
+ClusterLabels <- Dwyer_PsyCourse_ClusterLabels[,-3, drop=FALSE]
+ClusterLabels <- setnames(ClusterLabels, old="cases", new="v1_id")
+
+df_lipidomics_NM <- merge(ClusterLabels, lipidomics, by = "v1_id")
+```
+
+##Annotation data frame with lipid class
+```{r}
+#lipidomics from wide to long
+lipidomics_long <- gather(lipidomics, Lipid, Value, gpeakpos366:gpeakneg6243, factor_key=TRUE)
+lipidomics_long <- lipidomics_long[,-(2:3)]
+#merge lipidomics with annotation
+annotation <- setnames(annotation, old="GER", new = "Lipid")
+class <- merge(annotation, lipidomics_long, by="Lipid")
+### Annotated to wide data frame
+annotated_wide <- spread(annotation, Lipid, `Lipid class`)
+annotated_wide <- annotated_wide[,-1]
+
+# Select column headers from df1
+selected_headers <- names(annotated_wide)
+# Keep only selected columns in df2
+lipidomics <- lipidomics[selected_headers]
+# add v1_id column to the data frame
+id <- pheno_lipid %>% select("v1_id")
+# Adding a new column with a constant value
+lipidomics <- cbind(v1_id, lipidomics)
+# merge cluster labels 
+lipidomics <- merge(ClusterLabels,lipidomics,by="v1_id")
+
+```
+### NeuroMiner --> Data preparation
+
+### CSV: ID, group, lipidomics - PATIENT GROUP
+```{r}
+df_lipidomics_NM <- setnames(lipidomics, old="v1_id", new="ID", skip_absent = TRUE)
+#df_lipidomics_NM <- setnames(df_lipidomics_NM, old="cluster_label", new="group", skip_absent = TRUE)
+
+
+#write_csv(df_lipidomics_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_lipidomic_matched.csv")
+
+```
+
+#### Transform df_lipidomics_NM to long data frame
+```{r}
+long_df_lipidomics_NM <- gather(df_lipidomics_NM, key = "Lipid", value = "Value", -c(ID,group))
+```
+#### Get the column names from df_lipidomics_NM
+```{r}
+Cl_names_Lipidomics_NM <- colnames(lipid_NM)
+Cl_names_Lipidomics_NM <- as.data.frame(Cl_names_Lipidomics_NM)
+Cl_names_Lipidomics_NM <- Cl_names_Lipidomics_NM[-(1:2),]
+Cl_names_Lipidomics_NM <- as.data.frame(Cl_names_Lipidomics_NM)
+
+
+#write_xlsx(Cl_names_Lipidomics_NM, path = "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/table_lipids.xlsx")
+```
+
+
+## Preparation of data
+
+### Read SumStats
+```{r}
+file_path <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_scz3_phi_auto_score.profile"
+PRS_scz3 <-  "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_scz3_phi_auto_score.profile"
+PRS_bip3 <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_bip3_phi_auto_score.profile"
+PRS_Education <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Education_phi_auto_score.profile"
+PRS_HeartRate <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_HeartRate_phi_auto_score.profile"
+PRS_HRV <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_HRV_phi_auto_score.profile"
+PRS_Insomnia <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Insomnia_phi_auto_score.profile"
+PRS_Intelligence <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Intelligence_phi_auto_score.profile"
+PRS_mdd <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_mdd_phi_auto_score.profile"
+PRS_MP <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_MP_phi_auto_score.profile"
+PRS_Neuroticism <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Neuroticism_phi_auto_score.profile"
+PRS_Openness <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Openness_phi_auto_score.profile"
+PRS_Reasoning <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Reasoning_phi_auto_score.profile"
+PRS_RT <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_RT_phi_auto_score.profile"
+PRS_SleepDur <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_SleepDur_phi_auto_score.profile"
+PRS_Tiredness <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Tiredness_phi_auto_score.profile"
+PRS_Wellbeing <- "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/PRScs/PRScs_out/PsyCourse_MimicSS_Wellbeing_phi_auto_score.profile"
+
+PRS <- read.table(file_path, sep = "")
+
+PRS_scz3 <-  read.table(PRS_scz3, sep = "")
+PRS_bip3 <- read.table(PRS_bip3, sep = "")
+PRS_Education <- read.table(PRS_Education, sep = "")
+PRS_HeartRate <- read.table(PRS_HeartRate, sep = "")
+PRS_HRV <- read.table(PRS_HRV , sep = "")
+PRS_Insomnia <- read.table(PRS_Insomnia, sep = "")
+PRS_Intelligence <- read.table(PRS_Intelligence , sep = "")
+PRS_mdd <- read.table(PRS_mdd , sep = "")
+PRS_MP <- read.table(PRS_MP, sep = "")
+PRS_Neuroticism <-read.table(PRS_Neuroticism, sep = "")
+PRS_Openness <- read.table(PRS_Openness, sep = "")
+PRS_Reasoning <- read.table(PRS_Reasoning, sep = "")
+PRS_RT <- read.table(PRS_RT , sep = "")
+PRS_SleepDur <- read.table(PRS_SleepDur, sep = "")
+PRS_Tiredness <- read.table(PRS_Tiredness , sep = "")
+PRS_Wellbeing <- read.table(PRS_Wellbeing , sep = "")
+```
+### First column as header
+```{r}
+colnames(PRS_scz3) <- PRS_scz3[1, ]
+PRS_scz3  <- PRS_scz3 [-(1), ]
+
+colnames(PRS_bip3) <- PRS_bip3[1, ]
+PRS_bip3  <- PRS_bip3 [-(1), ]
+
+colnames(PRS_Education ) <- PRS_Education[1, ]
+PRS_Education <- PRS_Education[-(1), ]
+
+colnames(PRS_HeartRate) <- PRS_HeartRate[1, ]
+PRS_HeartRate   <- PRS_HeartRate[-(1), ]
+
+colnames(PRS_HRV) <- PRS_HRV[1, ]
+PRS_HRV   <- PRS_HRV[-(1), ]
+
+colnames(PRS_Insomnia) <- PRS_Insomnia[1, ]
+PRS_Insomnia<- PRS_Insomnia[-(1), ]
+
+colnames(PRS_Intelligence ) <- PRS_Intelligence [1, ]
+PRS_Intelligence <- PRS_Intelligence [-(1), ]
+
+colnames(PRS_mdd) <- PRS_mdd[1, ]
+PRS_mdd <- PRS_mdd[-(1), ]
+
+colnames(PRS_MP) <- PRS_MP[1, ]
+PRS_MP <-PRS_MP[-(1), ]
+
+
+colnames(PRS_Neuroticism) <- PRS_Neuroticism[1, ]
+PRS_Neuroticism<- PRS_Neuroticism[-(1), ]
+
+colnames(PRS_Openness) <- PRS_Openness[1, ]
+PRS_Openness<- PRS_Openness[-(1), ]
+
+colnames(PRS_Reasoning) <- PRS_Reasoning[1, ]
+PRS_Reasoning <- PRS_Reasoning[-(1), ]
+
+colnames(PRS_RT) <- PRS_RT[1, ]
+PRS_RT <- PRS_RT[-(1), ]
+
+colnames(PRS_SleepDur ) <- PRS_SleepDur [1, ]
+PRS_SleepDur  <- PRS_SleepDur [-(1), ]
+
+colnames(PRS_Tiredness ) <- PRS_Tiredness [1, ]
+PRS_Tiredness <- PRS_Tiredness [-(1), ]
+
+colnames(PRS_Wellbeing) <- PRS_Wellbeing[1, ]
+PRS_Wellbeing <- PRS_Wellbeing[-(1), ]
+```
+
+
+### First column as header
+```{r}
+PRS_all <- c("PRS_scz3", "PRS_bip3","PRS_Education", "PRS_HeartRate","PRS_HRV", "PRS_Insomnia","PRS_Intelligence", 
+"PRS_mdd","PRS_MP","PRS_Neuroticism","PRS_Openness" ,"PRS_Reasoning" ,"PRS_RT","PRS_SleepDur","PRS_Tiredness","PRS_Wellbeing")
+
+
+colnames(PRS) <- PRS[1, ]
+PRS <- PRS[-(1), ]
+```
+
+### Formate table --> Removal of unnecessary columns
+```{r}
+PRS_scz3 <-  PRS_scz3[,-(2:3), drop=FALSE]
+PRS_bip3 <- PRS_bip3[,-(2:3), drop=FALSE]
+PRS_Education <- PRS_Education[,-(2:3), drop=FALSE]
+PRS_HeartRate <- PRS_HeartRate[,-(2:3), drop=FALSE]
+PRS_HRV <- PRS_HRV [,-(2:3), drop=FALSE]
+PRS_Insomnia <- PRS_Insomnia[,-(2:3), drop=FALSE]
+PRS_Intelligence <- PRS_Intelligence[,-(2:3), drop=FALSE]
+PRS_mdd <- PRS_mdd[,-(2:3), drop=FALSE]
+PRS_MP <- PRS_MP[,-(2:3), drop=FALSE]
+PRS_Neuroticism <-PRS_Neuroticism[,-(2:3), drop=FALSE]
+PRS_Openness <- PRS_Openness[,-(2:3), drop=FALSE]
+PRS_Reasoning <- PRS_Reasoning[,-(2:3), drop=FALSE]
+PRS_RT <- PRS_RT[,-(2:3), drop=FALSE]
+PRS_SleepDur <- PRS_SleepDur[,-(2:3), drop=FALSE]
+PRS_Tiredness <- PRS_Tiredness[,-(2:3), drop=FALSE]
+PRS_Wellbeing <- PRS_Wellbeing[,-(2:3), drop=FALSE]
+```
+
+### Rename Columns
+```{r}
+PRS_scz3 <-  setnames(PRS_scz3, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_scz3"))
+PRS_bip3 <- setnames(PRS_bip3, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_bip3"))
+PRS_Education <- setnames(PRS_Education, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Education"))
+PRS_HeartRate <- setnames(PRS_HeartRate, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_HeartRate"))
+PRS_HRV <- setnames(PRS_HRV, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_HRV"))
+PRS_Insomnia <- setnames(PRS_Insomnia, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Insomnia"))
+PRS_Intelligence <- setnames(PRS_Intelligence, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Intelligence"))
+PRS_mdd <- setnames(PRS_mdd, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_mdd"))
+PRS_MP <- setnames(PRS_MP, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_MP"))
+PRS_Neuroticism <-setnames(PRS_Neuroticism, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Neuroticism"))
+PRS_Openness <- setnames(PRS_Openness , old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Openness"))
+PRS_Reasoning <- setnames(PRS_Reasoning, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Reasoning"))
+PRS_RT <-setnames(PRS_RT, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_RT"))
+PRS_SleepDur <- setnames(PRS_SleepDur, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_SleepDur"))
+PRS_Tiredness <- setnames(PRS_Tiredness, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Tiredness"))
+PRS_Wellbeing <- setnames(PRS_Wellbeing, old=c("FID", "SCORESUM"), new=c("gsa_id", "PRS_Wellbeing"))
+```
+
+#### Merge DataFrames with gsa_id
+```{r}
+merged_df <- gsa %>%
+  left_join(PRS_scz3, by = "gsa_id") %>%
+  left_join(PRS_bip3 , by = "gsa_id") %>%
+  left_join(PRS_Education, by = "gsa_id") %>%
+  left_join(PRS_HeartRate, by = "gsa_id") %>%
+  left_join(PRS_HRV, by = "gsa_id") %>%
+  left_join(PRS_Insomnia, by = "gsa_id") %>%
+  left_join(PRS_Intelligence , by = "gsa_id") %>%
+  left_join(PRS_mdd, by = "gsa_id") %>%
+  left_join(PRS_MP, by = "gsa_id") %>%
+  left_join(PRS_Neuroticism, by = "gsa_id") %>%
+  left_join(PRS_Openness, by = "gsa_id") %>%
+  left_join(PRS_Reasoning , by = "gsa_id") %>%
+  left_join(PRS_RT, by = "gsa_id") %>%
+  left_join(PRS_SleepDur, by = "gsa_id") %>%
+  left_join(PRS_Tiredness, by = "gsa_id") %>%
+  left_join(PRS_Wellbeing, by = "gsa_id")
+```
+
+#### Data frame with gsa_id
+
+```{r}
+gsa <- pheno_lipid %>% select("v1_id", "gsa_id")
+
+gsa <- setnames(gsa, old="v1_id", new = "ID")
+
+df_lipidomcis_NM <- setnames(df_lipidomics_NM, old="cluster_label", new="group")
+id_subgroup <- df_lipidomics_NM %>% select("cluster_label", "v1_id")
+id_subgroup <- setnames(id_subgroup, old=c("cluster_label", "v1_id)", new=c("group", "ID"))
+
+id_sub <- df_lipidomics_NM %>% select("ID", "group")                   
+                        
+df_PRS_NM <- merge(id_sub, gsa, by="ID")
+```
+#### Merge data frame 
+```{r}
+df_PRS_NM <- merge(df_PRS_NM, merged_df, by="ID")
+df_PRS_NM <- df_PRS_NM[,-(3:4), drop=FALSE]
+
+gsa_lip <- merge(gsa, df_lipidomics_NM, by="ID")
+```
+
+#### Interim PRS data frame
+```{r}
+#df_PRS_NM <- df_PRS_NM %>% select("ID", "group", "PRS_scz3", "PRS_bip3")
+```
+#### Check missing values
+```{r}
+missing_percentages_PRS <- rowMeans(is.na(df_PRS_NM)) * 100
+rows_to_delete_PRS <- which(missing_percentages_PRS > 25)
+df_PRS_NM <- df_PRS_NM[-rows_to_delete_PRS, ]
+df_lipidomcis_NM_M <- df_lipidomcis_NM[-rows_to_delete_PRS, ]
+```
+
+#### Write CSV
+```{r}
+write_csv(df_PRS_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_PRS_224.csv")
+```
+#### Delete rows of IDs without PRS data in other data frames --> not necessary
+```{r}
+#pheno_lipid <- pheno_lipid[-rows_to_delete_PRS, ]
+#lipidomics <- lipidomics[-rows_to_delete_PRS, ]
+#df_lipidomics_NM <- df_lipidomics_NM[-rows_to_delete_PRS, ]
+```
+
+
+#### Get the column names from df_PRS_NM
+```{r}
+Cl_names_PRS_NM <- colnames(df_PRS_NM)
+Cl_names_PRS_NM <- as.data.frame(Cl_names_PRS_NM)
+Cl_names_PRS_NM <- Cl_names_PRS_NM[-(1:2),]
+Cl_names_PRS_NM <- as.data.frame(Cl_names_PRS_NM)
+
+#rename values in row
+
+lookup_table <- data.frame(original = c("PRS_scz3", "PRS_bip3", "PRS_Education", "PRS_HeartRate", "PRS_HRV", "PRS_Insomnia", "PRS_Intelligence", "PRS_mdd", "PRS_MP", "PRS_Neuroticism", "PRS_Openness", "PRS_Reasoning", "PRS_RT", "PRS_SleepDur", "PRS_Tiredness", "PRS_Wellbeing"), replacement = c("PRS_Schizophrenia", "PRS_Bipolar", "PRS_Education", "PRS_HeartRate", "PRS_HeartRateVariability", "PRS_Insomnia", "PRS_Intelligence", "PRS_MajorDepressiveDisorder", "PRS_MemoryPerformacnce", "PRS_Neuroticism", "PRS_Openness", "PRS_Reasoning", "PRS_ReactionTime", "PRS_SleepDuration", "PRS_Tiredness", "PRS_Wellbeing"))
+
+# Recode values using the lookup table
+Cl_names_PRS_NM$Cl_names_PRS_NM <- lookup_table$replacement[match(Cl_names_PRS_NM$Cl_names_PRS_NM, lookup_table$original)]
+
+#write_xlsx(Cl_names_PRS_NM, path = "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/table_PRS.xlsx")
+```
+
+#### Merge pheno_lipid with PRS
+```{r}
+phenlip <-setnames(lipid_id_group_pheno, old="v1_id", new="ID", skip_absent=TRUE)
+
+# Merge df1 and df2 using a left join
+merged_PRS <- merge(phenlip, df_PRS_NM, by = "ID", all.x = TRUE)
+
+# Replace missing values with NA
+merged_PRS[is.na(merged_PRS)] <- NA
+df_PRS_408_NM <- merged_PRS[, c(1, 3683:3699)]
+df_PRS_408_NM <- df_PRS_408_NM[,-2]
+lipid_id_group<- setnames(lipid_id_group, old="v1_id", new="ID")
+df_PRS_408_NM <- merge(lipid_id_group, df_PRS_408_NM, by="ID")
+
+write_csv(df_PRS_408_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_PRS_matched.csv")
+
+```
+
+### Covariates
+```{r}
+
+# Apply the encoding to the column
+
+
+Covars_lipidomics <- filtered_df %>% select("v1_sex", "v1_age", "v1_bmi", "v1_center")
+
+Covars_lipidomics <- Covars_lipidomics %>% dummy_cols()
+Covars_lipidomics <- Covars_lipidomics[, -1, drop=FALSE]
+Covars_lipidomics <- Covars_lipidomics[,-5]
+
+sites_dummy_coded <- dummy_cols(Covars_lipidomics$v1_center)
+sites_dummy_coded <- setnames(sites_dummy_coded, old =c(".data_3", ".data_4" ,".data_10" ,".data_14" ,".data_16", ".data_18" ,".data_20", ".data_21" ,".data_22", ".data_23"), new = c("v1_center_AskG", "v1_center_Tie", "v1_center_KrE", "v1_center_UMG", "v1_center_LMU", "v1_center_BKH", "v1_center_MUG", "v1_center_LWL", "v1_center_UKM", "v1_center_UKT"))
+sites_dummy_coded <- sites_dummy_coded[,-1]
+Covars_lipidomics <- Covars_lipidomics[, -3]
+#bind data frames Covars_lipidomics with sites_dummy_coded
+Covars_lipidomics <- cbind(Covars_lipidomics, sites_dummy_coded)
+
+
+
+
+dummy_vector <- as.vector(sites_dummy_coded)
+writeMat("/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/DummyVector.mat", dummy_vector=as.vector(dummy_vector))
+
+
+Cl_names_Lip <- colnames(Covars_lipidomics)
+
+writeMat(con="/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/Covariates_lipidomics_224.mat",covnames=t(Cl_names_Lip), covars=as.matrix(Covars_lipidomics))
+
+writeMat(con="/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/Colnames_lipidomics_matched",x=as.matrix(Cl_names_Lip))
+```
+
+# Phenotypic data modality
+
+## Medical history
+```{r}
+df_medical_history_NM <- pheno %>% select("v1_id","v1_seas_birth", "v1_age_m_birth","v1_age_f_birth", "v1_marital_stat","v1_partner", "v1_no_bio_chld", "v1_brothers", "v1_sisters", "v1_cur_psy_trm", "v1_outpat_psy_trm", "v1_age_1st_out_trm", "v1_age_1st_inpat_trm", "v1_dur_illness", "v1_1st_ep", "v1_tms_daypat_outpat_trm", "v1_cat_daypat_outpat_trm","v1_adv", "v1_medchange", "v1_lith", "v1_lith_prd", "v1_fam_hist", "v1_height", "v1_weight", "v1_allerg","v1_cancer", "v1_eyear", "v1_inf", "v1_ever_smkd", "v1_alc_pst12_mths", "v1_lftm_alc_dep", "v1_evr_ill_drg", "v1_scid_ever_halls", "v1_scid_ever_delus", "v1_scid_evr_suic_ide", "v1_scid_suic_ide", "v1_scid_suic_thght_mth", "v1_scid_suic_note_thgts", "v1_suic_attmpt", "v1_scid_no_suic_attmpt","v1_prep_suic_attp_ord","v1_scid_no_suic_attmpt", "v1_suic_note_attmpt", "v1_med_pst_wk","v1_med_pst_sx_mths")
+
+
+#change v1_seas to dichotomous variable
+df_medical_history_NM <- merge(id, df_medical_history_NM, by="v1_id")
+v1_seas <- df_medical_history_NM$v1_seas_birth %>% dummy_cols() 
+v1_seas <-  v1_seas[,-1]
+
+df_medical_history_NM <- mutate(df_medical_history_NM, v1_seas)
+df_medical_history_NM <- df_medical_history_NM[,-2]
+df_medical_history_NM <- df_medical_history_NM %>% setnames(old=c(".data_Fall", ".data_Spring", ".data_Summer", ".data_Winter"), new=c("v1_seas_birth_Fall","v1_seas_birth_Spring","v1_seas_birth_Summer","v1_seas_birth_Winter"))
+
+#change v1_marital_stat to dichotomous variable
+
+v1_marital <- df_medical_history_NM$v1_marital_stat %>% dummy_cols() 
+df_medical_history_NM <- df_medical_history_NM[,-4]
+v1_marital <-v1_marital[,-1]
+v1_marital <- v1_marital %>% setnames(old=c(".data_Divorced", ".data_Married", ".data_Married_living_sep", ".data_Single", ".data_Widowed", ".data_NA"), new=c("v1_marital_stat_Divorced", "v1_marital_stat_Married", "v1_marital_stat_Married_living_sep", "v1_marital_stat_Single", "v1_marital_stat_Widowed", "v1_marital_stat_NA"), skip_absent = TRUE)
+df_medical_history_NM <- mutate(df_medical_history_NM, v1_marital)
+df_medical_history_NM <- apply(df_medical_history_NM,2, function(x) ifelse(x=="N", 0, ifelse(x=="Y",1,x)))
+df_medical_history_NM[df_medical_history_NM == -999] <- NA
+df_medical_history_NM <- as.data.frame(df_medical_history_NM)
+#merge data frame
+df_medical_history_NM <- merge(ClusterLabels, df_medical_history_NM, by="v1_id")
+#change name of data frame
+df_medical_history_NM <- setnames(df_medical_history_NM, old=c("v1_id", "cluster_label"), new = c("ID", "group"))
+#check for missing values and delete variables which ave more than 25% missing values
+missing_percentages_MH <- colMeans(is.na(df_medical_history_NM)) * 100
+columns_to_delete_MH <- names(df_medical_history_NM)[missing_percentages_MH > 25]
+df_medical_history_NM <- df_medical_history_NM[, !names(df_medical_history_NM) %in% columns_to_delete_MH]
+#df_medical_history_NM <- df_medical_history_NM[-rows_to_delete_PRS, ]
+
+#### Check missing values for individuals
+#missing_percentages_MH <- rowMeans(is.na(df_medical_history_NM)) * 100
+#rows_to_delete_MH <- which(missing_percentages_MH > 25)
+#df_medical_history_NM <- df_medical_history_NM[-rows_to_delete_MH, ]
+
+Cl_names_medical_history_NM <- colnames(df_medical_history_NM)
+Cl_names_medical_history_NM <- as.data.frame(Cl_names_medical_history_NM)
+Cl_names_medical_history_NM <- Cl_names_medical_history_NM[-(1:2),]
+Cl_names_medical_history_NM <- as.data.frame(Cl_names_medical_history_NM)
+
+```
+
+#write csv
+```{r}
+write_csv(df_medical_history_NM,"/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_MedicalHis.csv")
+```
+
+## Sypmptoms
+```{r}
+df_symptoms_NM <- pheno %>% select("v1_id","v1_panss_p1", "v1_panss_p2", "v1_panss_p3", "v1_panss_p4", "v1_panss_p5", "v1_panss_p6", "v1_panss_p7", "v1_panss_n1", "v1_panss_n2","v1_panss_n3","v1_panss_n4","v1_panss_n5","v1_panss_n6","v1_panss_n7","v1_panss_g1","v1_panss_g2","v1_panss_g3", "v1_panss_g4", "v1_panss_g5","v1_panss_g6","v1_panss_g7","v1_panss_g8","v1_panss_g9","v1_panss_g10","v1_panss_g11","v1_panss_g12","v1_panss_g5","v1_panss_g13","v1_panss_g14","v1_panss_g15","v1_panss_g16","v1_panss_sum_tot","v1_idsc_itm1", "v1_idsc_itm2","v1_idsc_itm3", "v1_idsc_itm4","v1_idsc_itm5","v1_idsc_itm6","v1_idsc_itm7","v1_idsc_itm8","v1_idsc_itm9","v1_idsc_itm9a", "v1_idsc_itm9b","v1_idsc_itm10","v1_idsc_itm11","v1_idsc_itm12","v1_idsc_itm13","v1_idsc_itm14","v1_idsc_itm15","v1_idsc_itm16","v1_idsc_itm17","v1_idsc_itm18","v1_idsc_itm19","v1_idsc_itm20","v1_idsc_itm21", "v1_idsc_itm22","v1_idsc_itm23","v1_idsc_itm24","v1_idsc_itm25","v1_idsc_itm26","v1_idsc_itm27", "v1_idsc_itm28", "v1_idsc_itm29","v1_idsc_itm30", "v1_idsc_sum", "v1_ymrs_itm1","v1_ymrs_itm2","v1_ymrs_itm3","v1_ymrs_itm4","v1_ymrs_itm5","v1_ymrs_itm6","v1_ymrs_itm7","v1_ymrs_itm8","v1_ymrs_itm9","v1_ymrs_itm10","v1_ymrs_itm11","v1_ymrs_sum")
+
+df_symptoms_NM[df_symptoms_NM == -999] <- NA
+
+df_symptoms_NM <-  merge(id, df_symptoms_NM, by="v1_id")
+
+#merge data frame
+df_symptoms_NM <- merge(ClusterLabels, df_symptoms_NM, by="v1_id")
+#change column name
+df_symptoms_NM <- setnames(df_symptoms_NM, old=c("v1_id", "cluster_label"), new = c("ID", "group"))
+
+#check for missing values and delete variables which have more than 25% missing values
+missing_percentages_symptoms <- colMeans(is.na(df_symptoms_NM)) * 100
+columns_to_delete_symptoms <- names(df_symptoms_NM)[missing_percentages_symptoms > 25]
+df_symptoms_NM <- df_symptoms_NM[, !names(df_symptoms_NM) %in% columns_to_delete_symptoms]
+#df_symptoms_NM <- df_symptoms_NM[-rows_to_delete_PRS, ]
+#### Check missing values for individuals
+#missing_percentages_Symptoms<- rowMeans(is.na(df_symptoms_NM)) * 100
+#rows_to_delete_Symptoms<- which(missing_percentages_Symptoms > 25)
+#df_symptoms_NM <- df_symptoms_NM[-rows_to_delete_Symptoms, ]
+#write csv
+#write_csv(df_symptoms_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_Symptoms.csv")
+
+Cl_names_symptoms_NM <- colnames(df_symptoms_NM)
+Cl_names_symptoms_NM <- as.data.frame(Cl_names_symptoms_NM)
+Cl_names_symptoms_NM <- Cl_names_symptoms_NM[-(1:2),]
+Cl_names_symptoms_NM<- as.data.frame(Cl_names_symptoms_NM)
+
+```
+
+## Cognition
+```{r}
+df_cognition_NM <- pheno %>% select( "v1_id","v1_nrpsy_lng", "v1_nrpsy_tmt_A_rt", "v1_nrpsy_tmt_A_err","v1_nrpsy_tmt_B_rt", "v1_nrpsy_tmt_B_err", "v1_nrpsy_lng", "v1_nrpsy_dgt_sp_frw", "v1_nrpsy_dgt_sp_bck", "v1_nrpsy_dg_sym")
+
+v1_lng <- df_cognition_NM$v1_nrpsy_lng %>% dummy_cols() 
+df_cognition_NM <- df_cognition_NM[,-2]
+v1_lng <-v1_lng[,-(1:2)]
+v1_lng <- v1_lng[,-(2:4)]
+v1_lng <- as.data.frame(v1_lng)
+
+df_cognition_NM <- mutate(df_cognition_NM, v1_lng)
+
+df_cognition_NM <-  merge(id, df_cognition_NM, by="v1_id")
+#merge data frame
+df_cognition_NM <- merge(ClusterLabels, df_cognition_NM, by="v1_id")
+#rename columns
+df_cognition_NM <- setnames(df_cognition_NM, old=c("v1_id", "cluster_label"), new = c("ID", "group"))
+
+#check for missing values and delete variables which have more than 25% missing values
+missing_percentages_cognition <- colMeans(is.na(df_cognition_NM)) * 100
+columns_to_delete_cognition <- names(df_cognition_NM)[missing_percentages_cognition > 25]
+df_cognition_NM <- df_cognition_NM[, !names(df_cognition_NM) %in% columns_to_delete_cognition]
+#df_cognition_NM <- df_cognition_NM[-rows_to_delete_PRS, ]
+
+#### Check missing values for individuals
+#missing_percentages_Cognition <- rowMeans(is.na(df_cognition_NM)) * 100
+#rows_to_delete_Cognition <- which(missing_percentages_Cognition > 25)
+#df_cognition_NM <- df_cognition_NM[-rows_to_delete_Cognition, ]
+
+#write csv
+#write_csv(df_cognition_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_Cognition.csv")
+
+Cl_names_cogniton_NM<- colnames(df_cognition_NM)
+Cl_names_cogniton_NM <- as.data.frame(Cl_names_cogniton_NM)
+Cl_names_cogniton_NM <- Cl_names_cogniton_NM[-(1:2),]
+Cl_names_cogniton_NM <- as.data.frame(Cl_names_cogniton_NM)
+
+
+```
+## Functioning
+```{r}
+df_functioning_NM <- pheno %>% select("v1_id","v1_liv_aln", "v1_school", "v1_ed_status", "v1_curr_paid_empl", "v1_cur_work_restr", "v1_gaf","v1_whoqol_itm1","v1_whoqol_itm2","v1_whoqol_itm3","v1_whoqol_itm4","v1_whoqol_itm5","v1_whoqol_itm6","v1_whoqol_itm7","v1_whoqol_itm8","v1_whoqol_itm9","v1_whoqol_itm10","v1_whoqol_itm11","v1_whoqol_itm12","v1_whoqol_itm13","v1_whoqol_itm14","v1_whoqol_itm15","v1_whoqol_itm16","v1_whoqol_itm17","v1_whoqol_itm18","v1_whoqol_itm19","v1_whoqol_itm20","v1_whoqol_itm21","v1_whoqol_itm22","v1_whoqol_itm23","v1_whoqol_itm24","v1_whoqol_itm25","v1_whoqol_itm26","v1_whoqol_dom_glob","v1_whoqol_dom_phys","v1_whoqol_dom_psy","v1_whoqol_dom_soc","v1_whoqol_dom_env", "v1_cgi_s", "v1_nrpsy_mwtb")
+
+df_functioning_NM <- apply(df_functioning_NM ,2, function(x) ifelse(x=="N", 0, ifelse(x=="Y",1,x)))
+df_functioning_NM [df_functioning_NM  == -999] <- NA
+df_functioning_NM  <- as.data.frame(df_functioning_NM )
+
+df_functioning_NM <-  merge(id, df_functioning_NM, by="v1_id")
+#merge data frame
+df_functioning_NM <- merge(ClusterLabels, df_functioning_NM , by="v1_id")
+#rename columns
+df_functioning_NM  <- setnames(df_functioning_NM, old=c("v1_id", "cluster_label"), new = c("ID", "group"))
+#check for missing values and delete variables which have more than 25% missing values
+missing_percentages_functioning <- colMeans(is.na(df_functioning_NM)) * 100
+columns_to_delete_functioning <- names(df_functioning_NM)[missing_percentages_functioning > 25]
+df_functioning_NM <- df_functioning_NM[, !names(df_functioning_NM) %in% columns_to_delete_functioning]
+#df_functioning_NM <- df_functioning_NM[-rows_to_delete_PRS, ]
+#### Check missing values for individuals
+missing_percentages_Functioning <- rowMeans(is.na(df_functioning_NM)) * 100
+rows_to_delete_Functioning <- which(missing_percentages_Functioning > 25)
+#df_functioning_NM <- df_functioning_NM[-rows_to_delete_Functioning, ]
+#write csv
+#write_csv(df_functioning_NM, "/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/NeuroMiner_Functioning.csv")
+
+Cl_names_functioning_NM <- colnames(df_functioning_NM)
+Cl_names_functioning_NM  <- as.data.frame(Cl_names_functioning_NM )
+Cl_names_functioning_NM  <- Cl_names_functioning_NM [-(1:2),]
+Cl_names_functioning_NM  <- as.data.frame(Cl_names_functioning_NM )
+
+```
+
+### Match it analysis
+
+
+
+###MatchIt
+```{r}
+###MatchIt
+```{r}
+# Combine data frame of subtype 2 and 5 --> 
+ref_sub2_5 <- Covars_group[Covars_group$group == "subtype_2" | Covars_group$group == "subtype_5", ]
+ref_sub2_5$group <- ifelse(ref_sub2_5$group  == "subtype_2", 1, 1)
+
+# create 4 different data frames to compare reference group with remaining groups
+
+subR_sub1 <- Covars_group[Covars_group$group == "subtype_1", ]
+subR_sub3 <- Covars_group[Covars_group$group == "subtype_3", ]
+subR_sub4 <- Covars_group[Covars_group$group == "subtype_4", ]
+
+# rbind function
+subR_sub1 <- rbind(subR_sub1, ref_sub2_5)
+subR_sub3 <- rbind(subR_sub3, ref_sub2_5)
+subR_sub4 <- rbind(subR_sub4, ref_sub2_5)
+
+# Assuming your outcome variable is stored in a data frame called 'data' and column name is 'outcome'
+subR_sub1$group <- ifelse(subR_sub1$group  == "1", 1, 0)
+subR_sub3$group <- ifelse(subR_sub3$group  == "1", 1, 0)
+subR_sub4$group <- ifelse(subR_sub4$group  == "1", 1, 0)
+
+#suR3_sub1
+match_model_subR_sub1 <- matchit(group ~ v1_age + v1_sex, data = subR_sub1,
+                                 method = "nearest", distance = "glm")
+
+summary(match_model_subR_sub1, un = FALSE)
+
+matched_data_subR_sub1 <- match.data(match_model_subR_sub1)
+
+# get unmachted data with same number of observations 
+
+unmatched_data_subR_sub1 <- anti_join(subR_sub1, matched_data_subR_sub1, by = c("v1_id"))
+
+
+#subR_sub3
+match_model_subR_sub3 <- matchit(group ~ v1_age + v1_sex, data = subR_sub3,
+                                 method = "nearest", distance = "glm")
+
+summary(match_model_subR_sub3, un = FALSE)
+
+matched_data_subR_sub3 <- match.data(match_model_subR_sub3)
+unmatched_data_subR_sub3 <- anti_join(subR_sub3, matched_data_subR_sub3, by = c("v1_id"))
+
+#plot(match_model_sub3_2, type = "jitter", interactive = FALSE)
+
+#subR_sub4
+match_model_subR_sub4 <- matchit(group ~ v1_age + v1_sex, data = subR_sub4,
+                                 method = "nearest", distance = "glm")
+
+summary(match_model_subR_sub4, un = FALSE)
+matched_data_subR_sub4 <- match.data(match_model_subR_sub4)
+unmatched_data_subR_sub4 <- anti_join(subR_sub4, matched_data_subR_sub4, by = c("v1_id"))
+#plot(match_model_sub3_4, type = "jitter", interactive = FALSE)
+
+#unmatched_subR_sub1 
+
+##rbind with ref_sub2_5
+subR_subunmatch_subR_sub1 <- rbind(unmatched_data_subR_sub1, ref_sub2_5)
+subR_subunmatch_subR_sub3 <- rbind(unmatched_data_subR_sub3, ref_sub2_5)
+subR_subunmatch_subR_sub4 <- rbind(unmatched_data_subR_sub4, ref_sub2_5)
+
+#Unmatched sub1
+match_model_subunmatch_subR_sub1 <- matchit(group ~ v1_age + v1_sex, data = subR_subunmatch_subR_sub1,
+                                            method = "nearest", distance = "glm")
+
+summary(match_model_subunmatch_subR_sub1 , un = FALSE)
+
+#unmatched sub3
+match_model_subunmatch_subR_sub3 <- matchit(group ~ v1_age + v1_sex, data = subR_subunmatch_subR_sub3,
+                                            method = "nearest", distance = "glm")
+
+summary(match_model_subunmatch_subR_sub3 , un = FALSE)
+
+
+#unmatched sub4
+match_model_subunmatch_subR_sub4 <- matchit(group ~ v1_age + v1_sex, data = subR_subunmatch_subR_sub4,
+                                            method = "nearest", distance = "glm")
+
+summary(match_model_subunmatch_subR_sub4, un = FALSE)
+
+#rbind unmachted_subR_sub1 with 
+
+# recode binary coding in each dataframe by deleting group row and merge with id_subgroup
+#subR_sub1
+matched_data_subR_sub1 <- select(matched_data_subR_sub1, -c(group)) 
+id_subgroup <- setnames(id_subgroup, old="ID", new="v1_id", skip_absent = TRUE)
+matched_data_subR_sub1 <- merge(id_subgroup, matched_data_subR_sub1, by="v1_id")
+
+#subR_sub3
+matched_data_subR_sub3 <- select(matched_data_subR_sub3, -c(group)) 
+matched_data_subR_sub3 <- merge(id_subgroup, matched_data_subR_sub3, by="v1_id")
+#subR_sub4
+matched_data_subR_sub4 <- select(matched_data_subR_sub4, -c(group)) 
+matched_data_subR_sub4 <- merge(id_subgroup, matched_data_subR_sub4, by="v1_id")
+
+#unmatched subR_sub1
+unmatched_data_subR_sub1 <- select(unmatched_data_subR_sub1, -c(group)) 
+unmatched_data_subR_sub1 <- merge(id_subgroup,unmatched_data_subR_sub1, by="v1_id")
+
+#unmatched subR_sub3
+unmatched_data_subR_sub3 <- select(unmatched_data_subR_sub3, -c(group)) 
+unmatched_data_subR_sub3 <- merge(id_subgroup,unmatched_data_subR_sub3, by="v1_id")
+
+#unmatched subR_sub4
+unmatched_data_subR_sub4 <- select(unmatched_data_subR_sub4, -c(group)) 
+unmatched_data_subR_sub4 <- merge(id_subgroup,unmatched_data_subR_sub4, by="v1_id")
+
+# Assuming you have two data frames: combine data frame
+
+
+# Identify non-common column names
+non_common_columns <- setdiff(colnames(matched_data_subR_sub1), colnames(unmatched_data_subR_sub1))
+
+# Remove non-common columns
+matched_data_subR_sub1 <- select(matched_data_subR_sub1, -c(distance, weights, subclass))
+matched_data_subR_sub3 <- select(matched_data_subR_sub3, -c(distance, weights, subclass))
+matched_data_subR_sub4 <- select(matched_data_subR_sub4, -c(distance, weights, subclass))
+
+
+
+combined_df <- rbind(matched_data_subR_sub1, matched_data_subR_sub3, matched_data_subR_sub4, unmatched_data_subR_sub1, unmatched_data_subR_sub3)
+
+# Assuming your data frame is called 'df' and the ID column is named 'ID'
+
+# Identify duplicated IDs
+duplicated_ids <- duplicated(combined_df$v1_id)
+
+# Subset the data frame to exclude rows with duplicated IDs
+filtered_df <- combined_df[!duplicated_ids, ]
+lipid_id_group <- filtered_df %>% select("v1_id", "group")
+lipid_id_group_pheno <- merge(lipid_id_group, pheno_lipid)
+lipidomic_matched <- filtered_df %>% select("v1_id") 
+lipidomics_matched <- merge(lipidomic_matched, df_lipidomics_NM_name)
+```
+
+
+
+
+
+
+
+####Get the percentage of country of birth
+```{r}
+pheno_lipid <- lipid_id_group_pheno
+# Create a frequency table
+freq_table <- table(pheno_lipid$v1_cntr_brth)
+
+# Calculate percentages
+percentages <- prop.table(freq_table) * 100
+
+# Print the percentages/dss/dssfs03/pr92to/pr92to-dss-0002/ra35gin/NeuroMiner_Current
+print(percentages)
+```
+#### Get mean and sd age 
+```{r}
+mean(pheno_lipid$v1_age)
+sd(pheno_lipid$v1_age)
+````
+
+#### Get gender ratio
+```{r}
+table(pheno_lipid$v1_sex)
+# Create a frequency table
+freq_table_gender <- table(pheno_lipid$v1_sex)
+
+# Calculate percentages
+percentages_gender <- prop.table(freq_table_gender) * 100
+
+# Print the percentages
+print(percentages_gender)
+````
+####Get distribution of diagnose
+```{r}
+table(pheno_lipid$v1_scid_dsm_dx_cat)
+```
+
+
+## Figures and Tables for thesis
+### General requirements
+```{r}
+theme_apa <- function(
+  legend.pos = "right",
+  legend.use.title = FALSE,
+  legend.font.size = 12,
+  x.font.size = 12,
+  y.font.size = 12,
+  facet.title.size = 12,
+  remove.y.gridlines = TRUE,
+  remove.x.gridlines = TRUE) {
+  theme_classic() +
+    theme(
+      legend.position = legend.pos,
+      legend.title = element_blank(),
+      legend.text = element_text(size = legend.font.size),
+      axis.title.x = element_text(size = x.font.size),
+      axis.title.y = element_text(size = y.font.size),
+      strip.text = element_text(size = facet.title.size),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank())
+}
+```
+
+
+### Participants per sites
+```{r}
+#rename site
+pheno_lipid <- pheno_lipid %>% setnames(old="ID", new="v1_id", skip_absent = TRUE)
+site <- pheno_lipid %>% select("v1_id", "v1_center")
+
+lookup_table_sites <- data.frame(original = c("3", "4" ,"10" ,"14" ,"16", "18" ,"20", "21" ,"22", "23"), replacement = c("AskG", "Tie", "KrE", "UMG", "LMU", "BKH", "MUG", "LWL", "UKM", "UKT"))
+
+# Recode values using the lookup table
+site$v1_center <- lookup_table_sites$replacement[match(site$v1_center , lookup_table_sites$original)]
+
+par(mar=c(5.1,4.1,2.1,0))
+ctr<-barplot(table(site$v1_center),las=2,ylim=c(0,100),lwd=2,horiz=F,axisnames=F, ylab="Number of baseline participants", xlab="Study Center")
+nmctr<-names(table(site$v1_center))
+text(ctr, par("usr")[3], labels=nmctr, srt = 45, adj = c(1.1,1.1), xpd = TRUE, cex=.8)
+
+# Save the plot as a figure
+savePlot("dss/plot.png", type = "png")
+```
+###Plot of lipids and lipid class
+```{r}
+
+par(mar=c(5.1,4.1,2.1,0))
+ctr1<-barplot(table(annotation$`Lipid class`),las=2,ylim=c(0,100),lwd=2,horiz=F,axisnames=F, ylab="Lipid Count", xlab="Lipid Class")
+nmctr1<-names(table(annotation$`Lipid class`))
+text(ctr1, par("usr")[3], labels=nmctr1, srt = 45, adj = c(1.1,1.1), xpd = TRUE, cex=.8)
+
+
+# Save the plot as a figure
+ggsave("/dss/dssfs03/pr92to/pr92to-dss-0002/ra39jif/Practice_SH_files/lipid_plot.png", plot = nmctr1, width = 6, height = 4, dpi = 300)
+```
+
+```{r}
+library(ggplot2)
+
+# Set the plot margins
+par(mar = c(5.1, 4.1, 2.1, 0))
+
+# Create a barplot with base R
+ctr1 <- barplot(table(annotation$`Lipid class`), las = 2, ylim = c(0, 100),
+                lwd = 2, horiz = FALSE, axisnames = FALSE,
+                ylab = "Lipid Count", xlab = "Lipid Class")
+
+# Get the names of the table categories
+nmctr1 <- names(table(annotation$`Lipid class`))
+
+# Create a ggplot object
+ggplot() +
+  # Create the barplot layer
+  geom_bar(stat = "identity", fill = "grey",
+           aes(x = nmctr1, y = table(annotation$`Lipid class`))) +
+  # Rotate x-axis labels
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  # Set y-axis limits
+  coord_cartesian(ylim = c(0, 100)) +
+  # Add y-axis label
+  ylab("Lipid Count") +
+  # Add x-axis label
+  xlab("Lipid Class") 
+
+```
+
+#### Plots with ggplot
+  
+```{r}
+
+# Create the ggplot function
+
+site_counts <- count(site, v1_center)
+
+ggplot(site_counts, aes(x = v1_center, y = n)) +
+  geom_bar(fill = "gray", width = 0.5, stat = "identity") +
+  labs(x = "Study Center", y = "Number of baseline participants") +
+  ylim(0, 100) +  theme_classic()
+  theme_bw() +base()
+  
+  #add or remove:   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_text(aes(label = n), vjust = -0.5, size = 3)
+```
+
+###ggplot for lipid class
+```{r}
+class_counts <- count(annotation, `Lipid class`)
+# Create the ggplot figure
+ggplot(class_counts, aes(x = `Lipid class`, y = n)) +
+  geom_bar(fill = "gray", width = 0.5, stat = "identity") +
+  labs(x = "Lipid Class", y = "Number of Lipids") +
+  ylim(0, 100) +  theme_classic()
+  theme_bw() + theme_apa()
+```
+#### Visualization of Gender distribution by Diagnose
+```{r}
+ggplot(pheno_lipid, aes(x=v1_sex, fill=v1_scid_dsm_dx_cat))+ geom_bar()+  scale_fill_grey(start = 0.2, end = 0.8)+ theme_bw() + labs(x="Gender", y="Number of participants", title ="Distribution by gender according to diagnosis") + theme_apa() 
+
+ table( pheno_lipid$v1_scid_dsm_ddx_cat,pheno_lipid$v1_sex)
+```
+
+### Boxplot for mean age and gender distribution for each group: discovery//replication//Overall
+```{r}
+theme_apa <- function(
+  legend.pos = "right",
+  legend.use.title = FALSE,
+  legend.font.size = 12,
+  x.font.size = 12,
+  y.font.size = 12,
+  facet.title.size = 12,
+  remove.y.gridlines = TRUE,
+  remove.x.gridlines = TRUE)
+#boxplot before matching
+ggplot(Covars_group, aes(x = group, y = v1_age)) +
+  geom_boxplot(aes(fill = v1_sex), color = "black") +
+  stat_summary(aes(group = v1_sex), fun = mean, geom = "point", shape = 18, size = 3, color = "black") +
+  labs(x = " ", y = "Age of participants") + 
+  theme_bw() + theme(panel.grid = element_blank(), legend.position = "") +
+  scale_fill_manual(values = c("gray", "white", "black")) 
+#boxplot discovery sample
+
+ggplot(filtered_df, aes(x = group, y = v1_age)) +
+  geom_boxplot(aes(fill = v1_sex), color = "black") +
+  stat_summary(aes(group = v1_sex), fun = mean, geom = "point", shape = 18, size = 3, color = "black") +
+  labs(x = " ", y = "Age of participants") + 
+  theme_bw() + theme(panel.grid = element_blank(), legend.position = "") +
+  scale_fill_manual(values = c("gray", "white", "black")) 
+
+#boxplot replication sample
+```
+
+
+### Statistical pre-testing
+#### Check for interaction
+```{r}
+#rename column ID to v1_id
+df_lipidomics_NM_name <- df_lipidomics_NM %>% setnames(old="ID", new = "v1_id", skip_absent = TRUE)
+#Create a dataframe with covariates and groups
+Covars_group <- merge(pheno_lipid, df_lipidomics_NM_name, by="v1_id")
+
+#Check significance of covariate age
+model_age <- aov(v1_age ~ group, data = Covars_group)
+sum_model_age <- summary(model_age)
+f_value <- model_age$F[1] 
+
+df <-  sum_model_age$Df[1]
+df_num <- sum_model_age$aov[1, "Df"] 
+#Check significance of covariate bmi
+model_bmi <- aov(v1_bmi ~ group, data = Covars_group)
+sum_model_bmi <- summary(model_bmi)
+#Check significane of gender
+contingency_table_gender <-table(Covars_group$v1_sex, Covars_group$group)
+chi_square <- chisq.test(contingency_table_gender)
+print(chi_square)
+#Check interaction between covariates age and sex
+
+# Create an interaction term between the covariate and the dependent variable
+interaction_term <- Covars_group$v1_age * Covars_group$group
+
+# Fit a linear regression model with the interaction term
+model <- lm(dependent_variable ~ covariate + interaction_term, data = your_data)
+
+# Check the summary of the model
+summary(model)
+
+# Interaction between cov v1_age and v1_sex
+model_cov <- aov(v1_age ~ v1_sex, data = Covars_group)
+summary(model_cov) 
+# Interaction between cov v1_bmi and v1_sex
+model_cov_bmi <- aov(v1_bmi ~ v1_sex, data = Covars_group)
+summary(model_cov_bmi) 
+# Interaction between cov v1_age and v1_bmi
+model_cov_a <- aov(v1_age ~ v1_bmi, data = Covars_group)
+summary(model_cov_a) 
+```
+
+### check if normal distributed
+
+```{r}
+normal <- lipidomics[,-c(1:2)]
+normality_results <- vector("logical", length = ncol(normal))
+
+for (i in 1:ncol(normal)) {
+  # Standardize the variable
+  standardized_var <- scale(normal[, i])
+  
+  # Perform normality test on the standardized variable
+  normality_results[i] <- shapiro.test(standardized_var)$p.value > 0.05
+}
+
+
+for (i in 1:ncol(normal)) {
+  cat("Variable", names(normal)[i], "is",
+      ifelse(normality_results[i], "normally distributed", "not normally distributed"), "\n")
+}
+table(normality_results)
+
+vec <- vector("numeric", length = ncol(normal))  # Create an empty vector to store p-values
+
+for (i in 1:ncol(normal)) {
+  # Standardize the variable
+  standardized_var <- scale(normal[, i])
+  
+  # Perform normality test on the standardized variable
+  vec[i] <- shapiro.test(standardized_var)$p.value
+}
+
+for (i in 1:ncol(normal)) {
+  cat("Variable", names(normal)[i], "p-value:", vec[i], "\n")
+}
+
+ggplot(data = data.frame(vec), aes(x = vec)) +
+  geom_histogram(bins = 20, fill = "gray", color = "black") +
+  labs(x = "P-value", y = "Frequency", title = "Distribution of P-values")+ theme_apa()
+
+# Display histogram
+```
+
+
+
+
+#### check if matched data frame is balanced 
+
+```{r}
+#Check significane of gender
+contingency_table_gender_matched <-table(filtered_df$v1_sex, filtered_df$group)
+chi_square_matched <- chisq.test(contingency_table_gender_matched)
+print(chi_square_matched)
+
+#Check significance of covariate age
+model_age_matched <- aov(v1_age ~ group, data = filtered_df)
+sum_model_age_matched <- summary(model_age_matched)
+
+
+# Assuming you have a data frame named 'data' with a column 'age' and a grouping variable 'group'
+result <- filtered_df %>% group_by(group) %>% summarize(mean_age = mean(v1_age))
+```
+
+
