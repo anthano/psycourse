@@ -20,6 +20,8 @@ bld/
 #data
 /src/psycourse_py/data
 
+#sophies files
+sophies_files
 
 # latex
 *.aux
