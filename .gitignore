@@ -18,7 +18,7 @@
 bld/
 
 #data
-/src/psycourse_py/data
+/src/data
 
 #sophies files
 sophies_files

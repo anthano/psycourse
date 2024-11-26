@@ -2,7 +2,6 @@
 
 import pandas as pd
 import pytask
-
 from psycourse_py.analysis.model_template import fit_logit_model
 from psycourse_py.analysis.predict_template import predict_prob_by_age
 from psycourse_py.config import BLD, SRC, TEMPLATE_GROUPS

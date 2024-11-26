@@ -3,7 +3,6 @@
 import pandas as pd
 import pyreadr
 import pytask
-
 from psycourse_py.config import BLD, SRC, TEMPLATE_GROUPS
 from psycourse_py.final.plot_template import plot_regression_by_age
 
