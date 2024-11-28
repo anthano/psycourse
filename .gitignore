@@ -23,6 +23,9 @@ bld/
 #sophies files
 sophies_files
 
+#sandbox
+src/sandbox/
+
 # latex
 *.aux
 *.bbl
