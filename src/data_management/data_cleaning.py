@@ -102,4 +102,5 @@ if __name__ == "__main__":
     cleaned_df = clean_data(sample_description, prs, lipid_intensities, cluster_labels)
 
     for key, value in cleaned_df.items():
-        value.to_csv(BLD_DATA / f"{key}.csv", sep=";")
+        value.to_csv(BLD_DATA / f"{key}.csv", sep=";", index=True)
+        value.to_pickle(BLD_DATA / f"{key}.pkl")
