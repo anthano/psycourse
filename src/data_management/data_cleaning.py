@@ -28,8 +28,9 @@ def clean_data(sample_description, prs, lipid_intensities, cluster_labels):
     clean_sample_description = _clean_sample_description(sample_description)
     clean_lipid_intensities = _clean_lipid_intensities(lipid_intensities)
 
-    clean_dfs = [clean_prs, clean_lipid_intensities]
-    clean_data = pd.concat(clean_dfs, axis=1, join="outer")
+    clean_data = pd.merge(
+        clean_lipid_intensities, clean_prs, on=["Patient_ID", "cluster_label"]
+    )
 
     return {
         "clean_cluster_labels": clean_cluster_labels,
@@ -86,7 +87,12 @@ def _clean_lipid_intensities(lipid_intensities):
     clean_lipid_intensities = lipid_intensities.copy()
     clean_lipid_intensities = lipid_intensities.set_index("ID")
     clean_lipid_intensities.index.name = "Patient_ID"
-    clean_lipid_intensities = clean_lipid_intensities.drop(["group"], axis=1)
+    clean_lipid_intensities["group"] = (
+        clean_lipid_intensities["group"].str.strip("subtype_").astype("category")
+    )
+    clean_lipid_intensities = clean_lipid_intensities.rename(
+        columns={"group": "cluster_label"}
+    )
 
     return clean_lipid_intensities
 
