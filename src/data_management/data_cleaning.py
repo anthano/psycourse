@@ -193,6 +193,104 @@ def clean_phenotypic_data(df):
         df["v1_scid_no_hypomania"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
     )
 
+    clean_df["ever_delus"] = _map_yes_no(df["v1_scid_ever_delus"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no", "-999"])
+    )
+    clean_df["ever_halluc"] = _map_yes_no(df["v1_scid_ever_halls"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no", "-999"])
+    )
+    clean_df["ever_psyc"] = _map_yes_no(df["v1_scid_ever_psyc"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no", "-999"])
+    )
+    clean_df["ever_suic_ide"] = _map_yes_no(df["v1_scid_evr_suic_ide"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no", "-999"])
+    )
+    clean_df["severity_suic_ide"] = (
+        df["v1_scid_suic_ide"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
+    )
+    clean_df["suic_methods"] = (
+        df["v1_scid_suic_thght_mth"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "-999"]))
+    )
+    clean_df["suic_note"] = (
+        df["v1_scid_suic_note_thgts"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
+    )
+    clean_df["suic_attempt"] = (
+        df["v1_suic_attmpt"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "-999"]))
+    )
+    clean_df["no_suic_attempt"] = (
+        df["v1_scid_no_suic_attmpt"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
+    )
+    clean_df["prep_suic_attempt_ord"] = (
+        df["v1_prep_suic_attp_ord"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
+    )
+    clean_df["suic_attempt_note"] = (
+        df["v1_suic_note_attmpt"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
+    )
+    clean_df["panss_total_score"] = (
+        df["v1_panss_sum_tot"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+
+    idsc_dtype = pd.CategoricalDtype(categories=["0", "1", "2", "3"], ordered=True)
+
+    for i in range(1, 10):
+        clean_df[f"idsc_{i}"] = (
+            df[f"v1_idsc_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(idsc_dtype)
+        )
+
+    clean_df["idsc_9a"] = (
+        df["v1_idsc_itm9a"]
+        .replace(np.nan, pd.NA)
+        .astype(pd.CategoricalDtype(categories=["-999", "A", "M", "N"]))
+    )
+    clean_df["idsc_9b"] = _map_yes_no(df["v1_idsc_itm9b"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no", "-999"])
+    )
+
+    for i in range(10, 31):
+        clean_df[f"idsc_{i}"] = (
+            df[f"v1_idsc_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(idsc_dtype)
+        )
+
+    clean_df["idsc_total"] = (
+        df["v1_idsc_sum_tot"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+
     return clean_df
 
 
