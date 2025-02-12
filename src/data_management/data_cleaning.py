@@ -288,9 +288,157 @@ def clean_phenotypic_data(df):
         )
 
     clean_df["idsc_total"] = (
-        df["v1_idsc_sum_tot"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+        df["v1_idsc_sum"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
     )
 
+    ymrs_dtype_single = pd.CategoricalDtype(
+        categories=["0", "1", "2", "3", "4"], ordered=True
+    )
+    ymrs_dtype_double = pd.CategoricalDtype(
+        categories=["0", "2", "4", "6", "8"], ordered=True
+    )
+    ymrs_single_items = [1, 2, 3, 4, 7, 10, 11]
+    ymrs_double_items = [5, 6, 8, 9]
+    for i in ymrs_single_items:
+        clean_df[f"ymrs_{i}"] = (
+            df[f"v1_ymrs_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(ymrs_dtype_single)
+        )
+
+    for i in ymrs_double_items:
+        clean_df[f"ymrs_{i}"] = (
+            df[f"v1_ymrs_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(ymrs_dtype_double)
+        )
+
+    clean_df["ymrs_total"] = (
+        df["v1_ymrs_sum"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["cgi"] = (
+        df["v1_cgi_s"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(
+            pd.CategoricalDtype(
+                categories=["1", "2", "3", "4", "5", "6", "7", "-999"], ordered=True
+            )
+        )
+    )
+
+    clean_df["gaf"] = df["v1_gaf"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    clean_df["language_skill"] = df["v1_nrpsy_lng"].replace(np.nan, pd.NA)
+    clean_df["tmt_a_time"] = (
+        df["v1_nrpsy_tmt_A_rt"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["tmt_a_err"] = (
+        df["v1_nrpsy_tmt_A_err"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["tmt_b_time"] = (
+        df["v1_nrpsy_tmt_B_rt"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["tmt_b_err"] = (
+        df["v1_nrpsy_tmt_B_err"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["dgt_sp_fwd"] = (
+        df["v1_nrpsy_dgt_sp_frw"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["dgt_sp_bck"] = (
+        df["v1_nrpsy_dgt_sp_bck"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["dst"] = (
+        df["v1_nrpsy_dg_sym"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["mwtb"] = (
+        df["v1_nrpsy_mwtb"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["rel_act"] = (
+        df["v1_rel_act"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"]))
+    )
+    clean_df["med_compliance_week"] = (
+        df["v1_med_pst_wk"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
+    )
+    clean_df["med_compliance_6_months"] = (
+        df["v1_med_pst_sx_mths"]
+        .replace(np.nan, pd.NA)
+        .astype("Int64")
+        .astype("string")
+        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
+    )
+
+    whoqol_cat = pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"])
+    for i in range(1, 27):
+        clean_df[f"whoqol_{i}"] = (
+            df[f"v1_whoqol_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(whoqol_cat)
+        )
+
+    clean_df["whoqol_total"] = (
+        df["v1_whoqol_dom_glob"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["whoqol_phys_health"] = (
+        df["v1_whoqol_dom_phys"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["whoqol_psych_health"] = (
+        df["v1_whoqol_dom_psy"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["whoqol_soc"] = (
+        df["v1_whoqol_dom_soc"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["whoqol_env"] = (
+        df["v1_whoqol_dom_env"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+
+    big_five_cat = pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"])
+    for i in range(1, 11):
+        clean_df[f"big_five_{i}"] = (
+            df[f"v1_big_five_itm{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(big_five_cat)
+        )
+    clean_df["big_five_extraversion"] = (
+        df["v1_big_five_extra"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["big_five_neuroticism"] = (
+        df["v1_big_five_neuro"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["big_five_conscientiousness"] = (
+        df["v1_big_five_consc"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["big_five_openness"] = (
+        df["v1_big_five_openn"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+    clean_df["big_five_agreeableness"] = (
+        df["v1_big_five_agree"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
     return clean_df
 
 
