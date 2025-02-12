@@ -143,7 +143,88 @@ def clean_phenotypic_data(df):
     clean_df["height"] = df["v1_height"].astype(pd.Float32Dtype())
     clean_df["weight"] = df["v1_weight"].astype(pd.Float32Dtype())
     clean_df["bmi"] = df["v1_bmi"].astype(pd.Float32Dtype())
-    ### add a bunch of other illness columns here
+
+    clean_df["cholesterol"] = _map_yes_no(df["v1_chol_trig"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["hypertension"] = _map_yes_no(df["v1_hyperten"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["angina_pectoris"] = _map_yes_no(df["v1_ang_pec"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["heartattack"] = _map_yes_no(df["v1_heart_att"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["stroke"] = _map_yes_no(df["v1_stroke"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["diabetes"] = _map_yes_no(df["v1_diabetes"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["hyperthyroid"] = _map_yes_no(df["v1_hyperthy"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["hypothyroid"] = _map_yes_no(df["v1_hypothy"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["osteoporosis"] = _map_yes_no(df["v1_osteopor"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["asthma"] = _map_yes_no(df["v1_asthma"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["copd"] = _map_yes_no(df["v1_copd"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["allergies"] = _map_yes_no(df["v1_allerg"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["neuroderm"] = _map_yes_no(df["v1_neuroder"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["psoriasis"] = _map_yes_no(df["v1_psoriasis"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["autoimm"] = _map_yes_no(df["v1_autoimm"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["cancer"] = _map_yes_no(df["v1_cancer"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["stomach_ulc"] = _map_yes_no(df["v1_stom_ulc"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["kidney_fail"] = _map_yes_no(df["v1_kid_fail"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["stone"] = _map_yes_no(df["v1_stone"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["epilepsy"] = _map_yes_no(df["v1_epilepsy"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["migraine"] = _map_yes_no(df["v1_migraine"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["parkinson"] = _map_yes_no(df["v1_parkinson"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["liv_cir_inf"] = _map_yes_no(df["v1_liv_cir_inf"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["tbi"] = _map_yes_no(df["v1_tbi"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["beh"] = _map_yes_no(df["v1_beh"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["eyear"] = _map_yes_no(df["v1_eyear"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["inf"] = _map_yes_no(df["v1_inf"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
 
     clean_df["smoker"] = (
         df["v1_ever_smkd"]
@@ -253,6 +334,47 @@ def clean_phenotypic_data(df):
         .astype("Int64")
         .astype("string")
         .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
+    )
+
+    panss_dtype = pd.CategoricalDtype(
+        categories=["1", "2", "3", "4", "5", "6", "7"], ordered=True
+    )
+    for i in range(1, 8):
+        clean_df[f"panss_p{i}"] = (
+            df[f"v1_panss_p{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(panss_dtype)
+        )
+    clean_df["panss_sum_pos"] = (
+        df["v1_panss_sum_pos"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+
+    for i in range(1, 8):
+        clean_df[f"panss_n{i}"] = (
+            df[f"v1_panss_n{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(panss_dtype)
+        )
+
+    clean_df["panss_sum_neg"] = (
+        df["v1_panss_sum_neg"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    )
+
+    for i in range(1, 16):
+        clean_df[f"panss_g{i}"] = (
+            df[f"v1_panss_g{i}"]
+            .replace(np.nan, pd.NA)
+            .astype("Int64")
+            .astype("string")
+            .astype(panss_dtype)
+        )
+
+    clean_df["panss_sum_gen"] = (
+        df["v1_panss_sum_gen"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
     )
     clean_df["panss_total_score"] = (
         df["v1_panss_sum_tot"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
@@ -445,9 +567,9 @@ def clean_phenotypic_data(df):
 def _map_yes_no(sr):
     """Maps the 'currently has a partner' column to "yes", "no", "pd.NA" """
 
-    mapping_partner = {"-999": "-999", "N": "no", "Y": "yes", np.nan: pd.NA}
+    mapping = {"-999": "-999", "N": "no", "Y": "yes", np.nan: pd.NA}
 
-    return sr.map(mapping_partner)
+    return sr.map(mapping)
 
 
 def _map_pdNA(sr):
