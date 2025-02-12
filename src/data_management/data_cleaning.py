@@ -25,6 +25,9 @@ def clean_phenotypic_data(df):
     """
     clean_df = pd.DataFrame()
     clean_df["id"] = df["v1_id"].astype(str)
+    clean_df["stat"] = df["v1_stat"].astype(
+        pd.CategoricalDtype(categories=["CLINICAL", "CONTROL"])
+    )
     clean_df["sex"] = df["v1_sex"].astype(pd.CategoricalDtype(categories=["F", "M"]))
     clean_df["age"] = df["v1_age"].astype(pd.Int8Dtype())
     clean_df["seas_birth"] = df["v1_seas_birth"].astype(
@@ -561,7 +564,9 @@ def clean_phenotypic_data(df):
     clean_df["big_five_agreeableness"] = (
         df["v1_big_five_agree"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
     )
-    return clean_df
+
+    clean_df_clinical = clean_df[clean_df["stat"] == "CLINICAL"]
+    return clean_df_clinical
 
 
 def _map_yes_no(sr):
@@ -572,13 +577,10 @@ def _map_yes_no(sr):
     return sr.map(mapping)
 
 
-def _map_pdNA(sr):
-    """Maps the 'nan' values to pd.NA"""
-
-    mapping_pdna = {np.nan: pd.NA}
-
-    return sr.map(mapping_pdna)
-
-
 if __name__ == "__main__":
-    pass
+    df = pd.read_csv(
+        DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
+    )
+    clean_df = clean_phenotypic_data(df)
+    clean_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
+    clean_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
