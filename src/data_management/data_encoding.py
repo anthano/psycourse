@@ -23,13 +23,30 @@ def encode_data(df):
     encoded_df = df.copy()
     encoded_df["sex"] = encoded_df["sex"].map({"F": 0, "M": 1})
 
-    variables_to_encode = ["seas_birth", "marital_stat"]
+    variables_to_encode = ["seas_birth", "marital_stat", "smoker"]
     for variable in variables_to_encode:
         encoded_df = pd.get_dummies(
             encoded_df, columns=[variable], dtype=pd.Int8Dtype()
         )
 
-    # variables_to_boolean = ["partner"]
+    variables_to_int = [
+        "partner",
+        "living_alone",
+        "employment",
+        "disability_pension",
+        "supported_employment",
+        "work_impairment",
+        "inpat_treatment",
+        "adverse_events_curr_medication",
+        "med_change",
+        "lithium",
+        "fam_hist",
+        "alc_dependence",
+        "illicit_drugs",
+    ]
+
+    for variable in variables_to_int:
+        encoded_df[variable] = _map_yes_no(encoded_df[variable])
 
     return encoded_df
 

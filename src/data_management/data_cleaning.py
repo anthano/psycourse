@@ -76,7 +76,10 @@ def clean_phenotypic_data(df):
     clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"]).astype(
         pd.CategoricalDtype(categories=["yes", "no"])
     )
-    clean_df["disabilty_pension"] = _map_yes_no(df["v1_disabl_pens"]).astype(
+    clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"]).astype(
+        pd.CategoricalDtype(categories=["yes", "no"])
+    )
+    clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"]).astype(
         pd.CategoricalDtype(categories=["yes", "no"])
     )
     clean_df["work_absence"] = (
