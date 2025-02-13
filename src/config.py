@@ -6,7 +6,6 @@ SRC = Path(__file__).parent.resolve()
 ROOT = SRC.joinpath("..", "..").resolve()
 
 BLD = ROOT.joinpath("bld").resolve()
-BLD_R = BLD.joinpath("bld_r").resolve()
 
 
 TEMPLATE_GROUPS = ["marital_status", "highest_qualification"]
