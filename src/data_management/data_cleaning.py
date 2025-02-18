@@ -22,402 +22,174 @@ def clean_phenotypic_data(df):
 
     Returns:
         pd.DataFrame: The cleaned dataframe with selected and formatted columns.
+
     """
-    clean_df = pd.DataFrame()
-    clean_df["id"] = df["v1_id"].astype(str)
+    df = df.set_index("v1_id")
+    clean_df = pd.DataFrame(index=df.index).rename_axis("id", axis="index")
     clean_df["stat"] = df["v1_stat"].astype(
         pd.CategoricalDtype(categories=["CLINICAL", "CONTROL"])
     )
     clean_df["sex"] = df["v1_sex"].astype(pd.CategoricalDtype(categories=["F", "M"]))
     clean_df["age"] = df["v1_age"].astype(pd.Int8Dtype())
     clean_df["seas_birth"] = df["v1_seas_birth"].astype(
-        pd.CategoricalDtype(categories=["Fall", "Spring", "Summer", "Winter"])
+        pd.CategoricalDtype(
+            categories=["Spring", "Summer", "Fall", "Winter"], ordered=True
+        )
     )
     clean_df["age_m_birth"] = df["v1_age_m_birth"].astype(pd.Float32Dtype())
     clean_df["age_f_birth"] = df["v1_age_f_birth"].astype(pd.Float32Dtype())
-    clean_df["marital_stat"] = (
-        df["v1_marital_stat"]
-        .replace(np.nan, pd.NA)
-        .astype(
-            pd.CategoricalDtype(
-                categories=[
-                    "Married",
-                    "Single",
-                    "Married_living_sep",
-                    "Divorced",
-                    "Widowed",
-                ]
-            )
+    clean_df["marital_stat"] = df["v1_marital_stat"].astype(
+        pd.CategoricalDtype(
+            categories=[
+                "Married",
+                "Single",
+                "Married_living_sep",
+                "Divorced",
+                "Widowed",
+            ]
         )
     )
-    clean_df["partner"] = _map_yes_no(df["v1_partner"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["no_bio_children"] = (
-        df["v1_no_bio_chld"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_step_children"] = (
-        df["v1_stp_chld"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_adpt_children"] = (
-        df["v1_no_adpt_chld"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_brothers"] = (
-        df["v1_brothers"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_sisters"] = (
-        df["v1_sisters"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["school"] = df["v1_school"].replace(np.nan, pd.NA)  # dtype?
-    clean_df["ed_status"] = df["v1_ed_status"].replace(np.nan, pd.NA)  # dtype?
-    clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["work_absence"] = (
-        df["v1_wrk_abs_pst_5_yrs"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["work_impairment"] = _map_yes_no(df["v1_cur_work_restr"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["current_psych_treatment"] = (
-        df["v1_cur_psy_trm"]
-        .replace(np.nan, pd.NA)
+    clean_df["partner"] = _map_yes_no(df["v1_partner"])
+    clean_df["no_bio_children"] = df["v1_no_bio_chld"].astype(pd.Float32Dtype())
+    clean_df["no_step_children"] = df["v1_stp_chld"].astype(pd.Float32Dtype())
+    clean_df["no_adpt_children"] = df["v1_no_adpt_chld"].astype(pd.Float32Dtype())
+    clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Float32Dtype())
+    clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Float32Dtype())
+    clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"])
+    clean_df["school"] = _map_cat_school(df["v1_school"])
+    clean_df["ed_status"] = (
+        df["v1_ed_status"]
         .astype("Int64")
         .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4"]))
+        .astype(
+            pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6"], ordered=True)
+        )
     )
-    clean_df["outpat_treatment"] = (
-        df["v1_cur_psy_trm"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4"]))
-    )
+    clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"])
+    clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"])
+    clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"])
+    clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Float32Dtype())
+    clean_df["work_impairment"] = _map_yes_no(df["v1_cur_work_restr"])
+    clean_df["current_psych_treatment"] = _map_cat_psych_treatment(df["v1_cur_psy_trm"])
+    clean_df["outpat_treatment"] = _map_cat_outpat_treatment(df["v1_cur_psy_trm"])
     clean_df["outpat_treatment_age"] = df["v1_age_1st_out_trm"].astype(
         pd.Float32Dtype()
     )
-    clean_df["inpat_treatment"] = _map_yes_no(df["v1_daypat_inpat_trm"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
+    clean_df["inpat_treatment"] = _map_yes_no(df["v1_daypat_inpat_trm"])
     clean_df["inpat_treatment_age"] = df["v1_age_1st_inpat_trm"].astype(
         pd.Float32Dtype()
     )
-    clean_df["duration_illness"] = (
-        df["v1_dur_illness"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    clean_df["duration_illness"] = df["v1_dur_illness"].astype(pd.Float32Dtype())
+    clean_df["first_ep"] = _map_yes_no_control(df["v1_1st_ep"])
+    clean_df["times_treated_inpatient_cont"] = df["v1_tms_daypat_outpat_trm"].astype(
+        pd.Float32Dtype()
     )
-    clean_df["first_ep"] = _map_yes_no(df["v1_1st_ep"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["times_treated_inpatient_cont"] = (
-        df["v1_tms_daypat_outpat_trm"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["times_treated_inpatient_ord"] = (
+    clean_df["times_treated_inpatient_ord"] = _map_cat_times_treated_inpatient(
         df["v1_cat_daypat_outpat_trm"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4"]))
     )
-    clean_df["adverse_events_curr_medication"] = _map_yes_no(df["v1_adv"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["med_change"] = _map_yes_no(df["v1_medchange"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["lithium"] = _map_yes_no(df["v1_lith"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["lithium_dur"] = (
-        df["v1_lith_prd"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "-999"]))
-    )
-    clean_df["fam_hist"] = _map_yes_no(df["v1_fam_hist"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
+    clean_df["adverse_events_curr_medication"] = _map_yes_no_control(df["v1_adv"])
+    clean_df["med_change"] = _map_yes_no_control(df["v1_medchange"])
+    clean_df["lithium"] = _map_yes_no_control(df["v1_lith"])
+    clean_df["lithium_dur"] = _map_cat_lith_dur(df["v1_lith_prd"])
+    clean_df["fam_hist"] = _map_yes_no_control(df["v1_fam_hist"])
     clean_df["height"] = df["v1_height"].astype(pd.Float32Dtype())
     clean_df["weight"] = df["v1_weight"].astype(pd.Float32Dtype())
     clean_df["bmi"] = df["v1_bmi"].astype(pd.Float32Dtype())
-
-    clean_df["cholesterol"] = _map_yes_no(df["v1_chol_trig"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["hypertension"] = _map_yes_no(df["v1_hyperten"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["angina_pectoris"] = _map_yes_no(df["v1_ang_pec"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["heartattack"] = _map_yes_no(df["v1_heart_att"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["stroke"] = _map_yes_no(df["v1_stroke"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["diabetes"] = _map_yes_no(df["v1_diabetes"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["hyperthyroid"] = _map_yes_no(df["v1_hyperthy"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["hypothyroid"] = _map_yes_no(df["v1_hypothy"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["osteoporosis"] = _map_yes_no(df["v1_osteopor"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["asthma"] = _map_yes_no(df["v1_asthma"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["copd"] = _map_yes_no(df["v1_copd"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["allergies"] = _map_yes_no(df["v1_allerg"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["neuroderm"] = _map_yes_no(df["v1_neuroder"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["psoriasis"] = _map_yes_no(df["v1_psoriasis"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["autoimm"] = _map_yes_no(df["v1_autoimm"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["cancer"] = _map_yes_no(df["v1_cancer"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["stomach_ulc"] = _map_yes_no(df["v1_stom_ulc"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["kidney_fail"] = _map_yes_no(df["v1_kid_fail"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["stone"] = _map_yes_no(df["v1_stone"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["epilepsy"] = _map_yes_no(df["v1_epilepsy"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["migraine"] = _map_yes_no(df["v1_migraine"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["parkinson"] = _map_yes_no(df["v1_parkinson"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["liv_cir_inf"] = _map_yes_no(df["v1_liv_cir_inf"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["tbi"] = _map_yes_no(df["v1_tbi"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["beh"] = _map_yes_no(df["v1_beh"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["eyear"] = _map_yes_no(df["v1_eyear"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["inf"] = _map_yes_no(df["v1_inf"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
+    clean_df["cholesterol"] = _map_yes_no(df["v1_chol_trig"])
+    clean_df["hypertension"] = _map_yes_no(df["v1_hyperten"])
+    clean_df["angina_pectoris"] = _map_yes_no(df["v1_ang_pec"])
+    clean_df["heartattack"] = _map_yes_no(df["v1_heart_att"])
+    clean_df["stroke"] = _map_yes_no(df["v1_stroke"])
+    clean_df["diabetes"] = _map_yes_no(df["v1_diabetes"])
+    clean_df["hyperthyroid"] = _map_yes_no(df["v1_hyperthy"])
+    clean_df["hypothyroid"] = _map_yes_no(df["v1_hypothy"])
+    clean_df["osteoporosis"] = _map_yes_no(df["v1_osteopor"])
+    clean_df["asthma"] = _map_yes_no(df["v1_asthma"])
+    clean_df["copd"] = _map_yes_no(df["v1_copd"])
+    clean_df["allergies"] = _map_yes_no(df["v1_allerg"])
+    clean_df["neuroderm"] = _map_yes_no(df["v1_neuroder"])
+    clean_df["psoriasis"] = _map_yes_no(df["v1_psoriasis"])
+    clean_df["autoimm"] = _map_yes_no(df["v1_autoimm"])
+    clean_df["cancer"] = _map_yes_no(df["v1_cancer"])
+    clean_df["stomach_ulc"] = _map_yes_no(df["v1_stom_ulc"])
+    clean_df["kidney_fail"] = _map_yes_no(df["v1_kid_fail"])
+    clean_df["stone"] = _map_yes_no(df["v1_stone"])
+    clean_df["epilepsy"] = _map_yes_no(df["v1_epilepsy"])
+    clean_df["migraine"] = _map_yes_no(df["v1_migraine"])
+    clean_df["parkinson"] = _map_yes_no(df["v1_parkinson"])
+    clean_df["liv_cir_inf"] = _map_yes_no(df["v1_liv_cir_inf"])
+    clean_df["tbi"] = _map_yes_no(df["v1_tbi"])
+    clean_df["beh"] = _map_yes_no(df["v1_beh"])
+    clean_df["eyear"] = _map_yes_no(df["v1_eyear"])
+    clean_df["inf"] = _map_yes_no(df["v1_inf"])
 
     clean_df["smoker"] = (
         df["v1_ever_smkd"]
         .replace({np.nan: pd.NA, "N": "never", "Y": "yes", "F": "former"})
         .astype(pd.CategoricalDtype(categories=["never", "yes", "former"]))
     )
-    clean_df["no_cig"] = (
-        df["v1_no_cig"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["no_cig"] = df["v1_no_cig"].astype(pd.Float32Dtype())
     clean_df["alc_past_year"] = (
         df["v1_alc_pst12_mths"]
-        .replace(np.nan, pd.NA)
         .astype("Int64")
         .astype("string")
         .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "7"]))
     )
-    clean_df["alc_5_drinks"] = (
-        df["v1_alc_5orm"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(
-            pd.CategoricalDtype(
-                categories=["1", "2", "3", "4", "5", "6", "7", "8", "9", "-999"]
-            )
-        )
-    )
-    clean_df["alc_dependence"] = _map_yes_no(df["v1_lftm_alc_dep"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["age_at_mde"] = (
-        df["v1_scid_age_MDE"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["age_at_mania"] = (
-        df["v1_scid_age_mania"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_of_mania"] = (
-        df["v1_scid_no_mania"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["age_at_hypomania"] = (
-        df["v1_scid_age_hypomania"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["no_of_hypomania"] = (
-        df["v1_scid_no_hypomania"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["alc_5_drinks"] = _map_cat_alc_5_drinks(df["v1_alc_5orm"])
+    clean_df["alc_dependence"] = _map_yes_no(df["v1_lftm_alc_dep"])
+    clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"])
+    clean_df["age_at_mde"] = df["v1_scid_age_MDE"].astype(pd.Float32Dtype())
+    clean_df["age_at_mania"] = df["v1_scid_age_mania"].astype(pd.Float32Dtype())
+    clean_df["no_of_mania"] = df["v1_scid_no_mania"].astype(pd.Float32Dtype())
+    clean_df["age_at_hypomania"] = df["v1_scid_age_hypomania"].astype(pd.Float32Dtype())
+    clean_df["no_of_hypomania"] = df["v1_scid_no_hypomania"].astype(pd.Float32Dtype())
 
-    clean_df["ever_delus"] = _map_yes_no(df["v1_scid_ever_delus"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["ever_halluc"] = _map_yes_no(df["v1_scid_ever_halls"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["ever_psyc"] = _map_yes_no(df["v1_scid_ever_psyc"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["ever_suic_ide"] = _map_yes_no(df["v1_scid_evr_suic_ide"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
-    clean_df["severity_suic_ide"] = (
-        df["v1_scid_suic_ide"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
-    )
-    clean_df["suic_methods"] = (
-        df["v1_scid_suic_thght_mth"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "-999"]))
-    )
-    clean_df["suic_note"] = (
-        df["v1_scid_suic_note_thgts"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
-    )
-    clean_df["suic_attempt"] = (
-        df["v1_suic_attmpt"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "-999"]))
-    )
-    clean_df["no_suic_attempt"] = (
-        df["v1_scid_no_suic_attmpt"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
-    )
-    clean_df["prep_suic_attempt_ord"] = (
+    clean_df["ever_delus"] = _map_yes_no_control(df["v1_scid_ever_delus"])
+    clean_df["ever_halluc"] = _map_yes_no_control(df["v1_scid_ever_halls"])
+    clean_df["ever_psyc"] = _map_yes_no_control(df["v1_scid_ever_psyc"])
+    clean_df["ever_suic_ide"] = _map_yes_no_control(df["v1_scid_evr_suic_ide"])
+    clean_df["severity_suic_ide"] = _map_cat_severity_suic_ide(df["v1_scid_suic_ide"])
+    clean_df["suic_methods"] = _map_cat_suic_methods(df["v1_scid_suic_thght_mth"])
+    clean_df["suic_note"] = _map_cat_suic_note(df["v1_scid_suic_note_thgts"])
+    clean_df["suic_attempt"] = _map_cat_suic_attempt(df["v1_suic_attmpt"])
+    clean_df["no_suic_attempt"] = _map_cat_no_suic_attempt(df["v1_scid_no_suic_attmpt"])
+    clean_df["prep_suic_attempt_ord"] = _map_cat_prep_suic_attempt_ord(
         df["v1_prep_suic_attp_ord"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
     )
-    clean_df["suic_attempt_note"] = (
-        df["v1_suic_note_attmpt"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "-999"]))
-    )
-
-    panss_dtype = pd.CategoricalDtype(
-        categories=["1", "2", "3", "4", "5", "6", "7"], ordered=True
-    )
-    for i in range(1, 8):
-        clean_df[f"panss_p{i}"] = (
-            df[f"v1_panss_p{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(panss_dtype)
-        )
-    clean_df["panss_sum_pos"] = (
-        df["v1_panss_sum_pos"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["suic_attempt_note"] = _map_cat_suic_note(df["v1_suic_note_attmpt"])
 
     for i in range(1, 8):
-        clean_df[f"panss_n{i}"] = (
-            df[f"v1_panss_n{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(panss_dtype)
-        )
+        clean_df[f"panss_p{i}"] = _map_cat_panss(df[f"v1_panss_p{i}"])
+    clean_df["panss_sum_pos"] = df["v1_panss_sum_pos"].astype(pd.Float32Dtype())
+    for i in range(1, 8):
+        clean_df[f"panss_n{i}"] = _map_cat_panss(df[f"v1_panss_n{i}"])
 
-    clean_df["panss_sum_neg"] = (
-        df["v1_panss_sum_neg"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["panss_sum_neg"] = df["v1_panss_sum_neg"].astype(pd.Float32Dtype())
 
     for i in range(1, 16):
-        clean_df[f"panss_g{i}"] = (
-            df[f"v1_panss_g{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(panss_dtype)
-        )
+        clean_df[f"panss_g{i}"] = _map_cat_panss(df[f"v1_panss_g{i}"])
 
-    clean_df["panss_sum_gen"] = (
-        df["v1_panss_sum_gen"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["panss_total_score"] = (
-        df["v1_panss_sum_tot"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["panss_sum_gen"] = df["v1_panss_sum_gen"].astype(pd.Float32Dtype())
+    clean_df["panss_total_score"] = df["v1_panss_sum_tot"].astype(pd.Float32Dtype())
 
     idsc_dtype = pd.CategoricalDtype(categories=["0", "1", "2", "3"], ordered=True)
 
     for i in range(1, 10):
         clean_df[f"idsc_{i}"] = (
-            df[f"v1_idsc_itm{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(idsc_dtype)
+            df[f"v1_idsc_itm{i}"].astype("Int64").astype("string").astype(idsc_dtype)
         )
 
-    clean_df["idsc_9a"] = (
-        df["v1_idsc_itm9a"]
-        .replace(np.nan, pd.NA)
-        .astype(pd.CategoricalDtype(categories=["-999", "A", "M", "N"]))
+    clean_df["idsc_9a"] = df["v1_idsc_itm9a"].astype(
+        pd.CategoricalDtype(categories=["-999", "A", "M", "N"])
     )
-    clean_df["idsc_9b"] = _map_yes_no(df["v1_idsc_itm9b"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no", "-999"])
-    )
+    clean_df["idsc_9b"] = _map_yes_no_control(df["v1_idsc_itm9b"])
 
     for i in range(10, 31):
         clean_df[f"idsc_{i}"] = (
-            df[f"v1_idsc_itm{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(idsc_dtype)
+            df[f"v1_idsc_itm{i}"].astype("Int64").astype("string").astype(idsc_dtype)
         )
 
-    clean_df["idsc_total"] = (
-        df["v1_idsc_sum"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["idsc_total"] = df["v1_idsc_sum"].astype(pd.Float32Dtype())
 
     ymrs_dtype_single = pd.CategoricalDtype(
         categories=["0", "1", "2", "3", "4"], ordered=True
@@ -430,7 +202,6 @@ def clean_phenotypic_data(df):
     for i in ymrs_single_items:
         clean_df[f"ymrs_{i}"] = (
             df[f"v1_ymrs_itm{i}"]
-            .replace(np.nan, pd.NA)
             .astype("Int64")
             .astype("string")
             .astype(ymrs_dtype_single)
@@ -439,145 +210,329 @@ def clean_phenotypic_data(df):
     for i in ymrs_double_items:
         clean_df[f"ymrs_{i}"] = (
             df[f"v1_ymrs_itm{i}"]
-            .replace(np.nan, pd.NA)
             .astype("Int64")
             .astype("string")
             .astype(ymrs_dtype_double)
         )
 
-    clean_df["ymrs_total"] = (
-        df["v1_ymrs_sum"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    clean_df["ymrs_total"] = df["v1_ymrs_sum"].astype(pd.Float32Dtype())
     clean_df["cgi"] = (
         df["v1_cgi_s"]
-        .replace(np.nan, pd.NA)
         .astype("Int64")
         .astype("string")
         .astype(
             pd.CategoricalDtype(
-                categories=["1", "2", "3", "4", "5", "6", "7", "-999"], ordered=True
+                categories=["-999", "1", "2", "3", "4", "5", "6", "7"], ordered=True
             )
         )
     )
 
-    clean_df["gaf"] = df["v1_gaf"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    clean_df["language_skill"] = df["v1_nrpsy_lng"].replace(np.nan, pd.NA)
-    clean_df["tmt_a_time"] = (
-        df["v1_nrpsy_tmt_A_rt"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["tmt_a_err"] = (
-        df["v1_nrpsy_tmt_A_err"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["tmt_b_time"] = (
-        df["v1_nrpsy_tmt_B_rt"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["tmt_b_err"] = (
-        df["v1_nrpsy_tmt_B_err"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["dgt_sp_fwd"] = (
-        df["v1_nrpsy_dgt_sp_frw"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["dgt_sp_bck"] = (
-        df["v1_nrpsy_dgt_sp_bck"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["dst"] = (
-        df["v1_nrpsy_dg_sym"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["mwtb"] = (
-        df["v1_nrpsy_mwtb"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"]).astype(
-        pd.CategoricalDtype(categories=["yes", "no"])
-    )
-    clean_df["rel_act"] = (
-        df["v1_rel_act"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"]))
-    )
-    clean_df["med_compliance_week"] = (
-        df["v1_med_pst_wk"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
-    )
-    clean_df["med_compliance_6_months"] = (
+    clean_df["gaf"] = df["v1_gaf"].astype(pd.Float32Dtype())
+    clean_df["language_skill"] = df["v1_nrpsy_lng"]
+    clean_df["tmt_a_time"] = df["v1_nrpsy_tmt_A_rt"].astype(pd.Float32Dtype())
+    clean_df["tmt_a_err"] = df["v1_nrpsy_tmt_A_err"].astype(pd.Float32Dtype())
+    clean_df["tmt_b_time"] = df["v1_nrpsy_tmt_B_rt"].astype(pd.Float32Dtype())
+    clean_df["tmt_b_err"] = df["v1_nrpsy_tmt_B_err"].astype(pd.Float32Dtype())
+    clean_df["dgt_sp_fwd"] = df["v1_nrpsy_dgt_sp_frw"].astype(pd.Float32Dtype())
+    clean_df["dgt_sp_bck"] = df["v1_nrpsy_dgt_sp_bck"].astype(pd.Float32Dtype())
+    clean_df["dst"] = df["v1_nrpsy_dg_sym"].astype(pd.Float32Dtype())
+    clean_df["mwtb"] = df["v1_nrpsy_mwtb"].astype(pd.Float32Dtype())
+    clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"])
+    clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"])
+    clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
+    clean_df["rel_act"] = _map_cat_rel_act(df["v1_rel_act"])
+    clean_df["med_compliance_week"] = _map_cat_med_compliance(df["v1_med_pst_wk"])
+
+    clean_df["med_compliance_6_months"] = _map_cat_med_compliance(
         df["v1_med_pst_sx_mths"]
-        .replace(np.nan, pd.NA)
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "-999"]))
     )
 
-    whoqol_cat = pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"])
-    for i in range(1, 27):
-        clean_df[f"whoqol_{i}"] = (
-            df[f"v1_whoqol_itm{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(whoqol_cat)
-        )
+    for i in (1, 15):
+        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_1_and_15(df[f"v1_whoqol_itm{i}"])
 
-    clean_df["whoqol_total"] = (
-        df["v1_whoqol_dom_glob"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["whoqol_phys_health"] = (
-        df["v1_whoqol_dom_phys"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["whoqol_psych_health"] = (
-        df["v1_whoqol_dom_psy"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["whoqol_soc"] = (
-        df["v1_whoqol_dom_soc"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["whoqol_env"] = (
-        df["v1_whoqol_dom_env"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
+    for i in [2] + list(range(16, 27)):
+        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_2_and_16_25(df[f"v1_whoqol_itm{i}"])
 
-    big_five_cat = pd.CategoricalDtype(categories=["1", "2", "3", "4", "5"])
+    for i in range(3, 15):
+        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_3_14(df[f"v1_whoqol_itm{i}"])
+
+    clean_df["whoqol_26"] = _map_cat_whoqol_26(df["v1_whoqol_itm26"])
+
+    clean_df["whoqol_total"] = df["v1_whoqol_dom_glob"].astype(pd.Float32Dtype())
+    clean_df["whoqol_phys_health"] = df["v1_whoqol_dom_phys"].astype(pd.Float32Dtype())
+    clean_df["whoqol_psych_health"] = df["v1_whoqol_dom_psy"].astype(pd.Float32Dtype())
+    clean_df["whoqol_soc"] = df["v1_whoqol_dom_soc"].astype(pd.Float32Dtype())
+    clean_df["whoqol_env"] = df["v1_whoqol_dom_env"].astype(pd.Float32Dtype())
+
     for i in range(1, 11):
-        clean_df[f"big_five_{i}"] = (
-            df[f"v1_big_five_itm{i}"]
-            .replace(np.nan, pd.NA)
-            .astype("Int64")
-            .astype("string")
-            .astype(big_five_cat)
-        )
-    clean_df["big_five_extraversion"] = (
-        df["v1_big_five_extra"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+        clean_df[f"big_five_{i}"] = _map_cat_big_five(df[f"v1_big_five_itm{i}"])
+    clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(
+        pd.Float32Dtype()
     )
-    clean_df["big_five_neuroticism"] = (
-        df["v1_big_five_neuro"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    clean_df["big_five_neuroticism"] = df["v1_big_five_neuro"].astype(pd.Float32Dtype())
+    clean_df["big_five_conscientiousness"] = df["v1_big_five_consc"].astype(
+        pd.Float32Dtype()
     )
-    clean_df["big_five_conscientiousness"] = (
-        df["v1_big_five_consc"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["big_five_openness"] = (
-        df["v1_big_five_openn"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
-    )
-    clean_df["big_five_agreeableness"] = (
-        df["v1_big_five_agree"].replace(np.nan, pd.NA).astype(pd.Float32Dtype())
+    clean_df["big_five_openness"] = df["v1_big_five_openn"].astype(pd.Float32Dtype())
+    clean_df["big_five_agreeableness"] = df["v1_big_five_agree"].astype(
+        pd.Float32Dtype()
     )
 
-    clean_df_clinical = clean_df[clean_df["stat"] == "CLINICAL"]
+    clean_df_clinical = clean_df.query("stat == 'CLINICAL'")
     return clean_df_clinical
 
 
 def _map_yes_no(sr):
-    """Maps the 'currently has a partner' column to "yes", "no", "pd.NA" """
+    """Maps the column values to "yes", "no", "pd.NA" """
+
+    mapping = {"N": "no", "Y": "yes", np.nan: pd.NA}
+
+    return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no"]))
+
+
+def _map_yes_no_control(sr):
+    """Maps the column values to "yes", "no", "pd.NA" """
 
     mapping = {"-999": "-999", "N": "no", "Y": "yes", np.nan: pd.NA}
 
-    return sr.map(mapping)
+    return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no", "-999"]))
+
+
+def _map_cat_school(sr):
+    school_mapping = {
+        0: "no_graduation",
+        1: "Hauptschule",
+        2: "Realschule_Polytechnischule_Oberschule",
+        3: "Allgemeine_Hochschulreife",
+        -999: "still_in_school/other",
+    }
+    dtype = pd.CategoricalDtype(categories=school_mapping.values(), ordered=True)
+    return sr.map(school_mapping).astype(dtype)
+
+
+def _map_cat_psych_treatment(sr):
+    mapping = {
+        1: "no",
+        2: "yes, outpatient",
+        3: "yes, day patient",
+        4: "yes, inpatient",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_outpat_treatment(sr):
+    mapping = {
+        1: "no",
+        2: "yes_consultation_short_trm",
+        3: "yes_cont_trm_six_months_multiple_short_ep",
+        4: "yes_cont_trm_years_many_short_ep",
+        -999: "no_info",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_times_treated_inpatient(sr):
+    mapping = {
+        1: "smaller_5_times",
+        2: "6-10_times",
+        3: "11-14_times",
+        4: "15_times_or_more",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_lith_dur(sr):
+    mapping = {
+        -999: "never_or_control",
+        1: "less_than_1_year",
+        2: "1-2_years",
+        3: "2_years_or_more",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_alc_5_drinks(sr):
+    mapping = {
+        -999: "skipped_irregular",
+        1: "never",
+        2: "1-2_times",
+        3: "3-5_times",
+        4: "6-11_times",
+        5: "1_times_month",
+        6: "2-3_times_month",
+        7: "1-2_times_week",
+        8: "3-4_times_week",
+        9: "daily",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_severity_suic_ide(sr):
+    mapping = {
+        -999: "skipped",
+        1: "only_fleeting",
+        2: "serious_thoughts",
+        3: "persistent_thoughts",
+        4: "serious_and_persistent_thoughts",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_suic_methods(sr):
+    mapping = {
+        -999: "skipped",
+        1: "no",
+        2: "yes_without_details",
+        3: "yes_with_details",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_suic_note(sr):
+    mapping = {
+        -999: "skipped",
+        1: "no",
+        2: "thought_about",
+        3: "persistent_thoughts",
+        4: "thought_about_and_persistent_thoughts",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_suic_attempt(sr):
+    mapping = {-999: "skipped", 1: "no", 2: "interruption_of_attempt", 3: "yes"}
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_no_suic_attempt(sr):
+    mapping = {
+        -999: "skipped",
+        1: "1_time",
+        2: "2_times",
+        3: "3_times",
+        4: "4_times",
+        5: "5_times",
+        6: "6_or_more_times",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_prep_suic_attempt_ord(sr):
+    mapping = {
+        -999: "skipped",
+        1: "no_prep",
+        2: "little_prep",
+        3: "moderate_prep",
+        4: "extensive_prep",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_panss(sr):
+    mapping = {
+        1: "absent",
+        2: "minimal",
+        3: "mild",
+        4: "moderate",
+        5: "moderate severe",
+        6: "severe",
+        7: "extreme",
+    }
+
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_rel_act(sr):
+    mapping = {
+        1: "not_at_all",
+        2: "little_active",
+        3: "moderately_active",
+        4: "rather_active",
+        5: "very_active",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_med_compliance(sr):
+    mapping = {
+        -999: "control",
+        1: "every_day_as_prescribed",
+        2: "every_day_but_not_as_prescribed",
+        3: "regularly_but_not_every_day",
+        4: "sometimes_but_not_regularly",
+        5: "seldom",
+        6: "not_at_all",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_whoqol_1_and_15(sr):
+    mapping = {
+        1: "very_poor",
+        2: "poor",
+        3: "neither_poor_nor_good",
+        4: "good",
+        5: "very_good",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_whoqol_2_and_16_25(sr):
+    mapping = {
+        1: "very_dissatisfied",
+        2: "dissatisfied",
+        3: "neither_dis_nor_satisfied",
+        4: "satisfied",
+        5: "very_satisfied",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_whoqol_3_14(sr):
+    mapping = {
+        1: "not_at_all",
+        2: "a_little",
+        3: "moderate_amount",
+        4: "very_much",
+        5: "an_extreme_amount",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_whoqol_26(sr):
+    mapping = {1: "never", 2: "seldom", 3: "quite_often", 4: "very_often", 5: "always"}
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
+def _map_cat_big_five(sr):
+    mapping = {
+        1: "disagree_strongly",
+        2: "disagree_little",
+        3: "neither_dis_nor_agree",
+        4: "agree_little",
+        5: "agree_strongly",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
 
 
 if __name__ == "__main__":
