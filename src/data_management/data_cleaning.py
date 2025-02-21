@@ -10,6 +10,9 @@ BLD_DATA = ROOT / "bld" / "data"
 BLD_DATA.mkdir(parents=True, exist_ok=True)
 
 
+# --------------------------------------------------------------------------------------
+# PHENOTYPIC DATA #
+# --------------------------------------------------------------------------------------
 def clean_phenotypic_data(df):
     """Cleans the phenotypic data from '230614_v6.0_psycourse_wd.csv' by:
 
@@ -129,12 +132,7 @@ def clean_phenotypic_data(df):
         .astype(pd.CategoricalDtype(categories=["never", "yes", "former"]))
     )
     clean_df["no_cig"] = df["v1_no_cig"].astype(pd.Float32Dtype())
-    clean_df["alc_past_year"] = (
-        df["v1_alc_pst12_mths"]
-        .astype("Int64")
-        .astype("string")
-        .astype(pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6", "7"]))
-    )
+    clean_df["alc_past_year"] = _map_cat_alc_past_year(df["v1_alc_pst12_mths"])
     clean_df["alc_5_drinks"] = _map_cat_alc_5_drinks(df["v1_alc_5orm"])
     clean_df["alc_dependence"] = _map_yes_no(df["v1_lftm_alc_dep"])
     clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"])
@@ -355,6 +353,20 @@ def _map_cat_lith_dur(sr):
     return sr.map(mapping).astype(dtype)
 
 
+def _map_cat_alc_past_year(sr):
+    mapping = {
+        1: "never",
+        2: "only_on_special_occacions",
+        3: "once_per_month",
+        4: "2-4_times_month",
+        5: "2-3_times_week",
+        6: "4_times_week",
+        7: "daily",
+    }
+    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
+    return sr.map(mapping).astype(dtype)
+
+
 def _map_cat_alc_5_drinks(sr):
     mapping = {
         -999: "skipped_irregular",
@@ -533,6 +545,65 @@ def _map_cat_big_five(sr):
     }
     dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
     return sr.map(mapping).astype(dtype)
+
+
+# --------------------------------------------------------------------------------------
+# LIPIDOMIC DATA
+# --------------------------------------------------------------------------------------
+
+
+def clean_lipidomic_data(sample_description, lipid_intensities):
+    """Cleans the lipidomic data. Takes the lipid_intensities file and the
+    sample description file; removes duplicates and removes the lipids that are affected
+    by fasting status according to Tkachev et al., 2023
+
+    Args:
+        df (pd.DataFrame): The input dataframe containing raw lipidomic data.
+        sample_desc (pd.DataFrame): The input dataframe containing sample descriptions.
+
+    Returns:
+        pd.DataFrame: The cleaned lipidomic dataframe.
+
+    """
+    clean_sample_description = _clean_sample_description(sample_description)
+    clean_lipid_intensities = _clean_lipid_intensities(lipid_intensities)
+    merged_df = clean_sample_description.join(clean_lipid_intensities, on="ind")
+
+    return merged_df
+
+
+def _clean_sample_description(df):
+    """Takes sample description, sets index and drops unnecessary columns."""
+
+    clean_sample_description = df.drop_duplicates(subset="Patient_ID")
+    clean_sample_description = clean_sample_description.set_index(["Patient_ID", "ind"])
+    clean_sample_description["age"] = clean_sample_description["age"].astype(
+        pd.Int8Dtype()
+    )
+    clean_sample_description["sex"] = clean_sample_description["sex"].astype(
+        pd.CategoricalDtype()
+    )
+    unnecessary_columns = [
+        "bmi",
+        "diagnosis",
+        "STARLIMS_sic",
+        "clinic",
+        "year",
+        "repeated visit (delete)",
+    ]
+    clean_sample_description = clean_sample_description.drop(
+        columns=unnecessary_columns
+    )
+    return clean_sample_description
+
+
+def _clean_lipid_intensities(df):
+    """Takes the lipid intensities and sets the correct index."""
+
+    clean_lipid_intensities = df.set_index("originalMS#").rename_axis(
+        "ind", axis="rows"
+    )
+    return clean_lipid_intensities
 
 
 if __name__ == "__main__":
