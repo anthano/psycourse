@@ -21,15 +21,33 @@ def encode_data(df):
 
     """
     encoded_df = df.copy()
+
+    # ==================================================================================
+    # Create ordinal variables
+    # ==================================================================================
+
+    # for var in ordinal_vars:
+    #     encoded_df[var] = encoded_df[var].cat.codes
+
+    # ==================================================================================
+    # Create binary variables
+    # ==================================================================================
     encoded_df["sex"] = encoded_df["sex"].map({"F": 0, "M": 1})
 
+    # ----------------------------------------------------------------------------------
+    # Perform one-hot encoding on categorical variables with more than 2 categories
+    # ----------------------------------------------------------------------------------
+    ### OPEN QUESTION: What do I do with the ordinal variables? ###
     variables_to_encode = ["seas_birth", "marital_stat", "smoker", "language_skill"]
-    for variable in variables_to_encode:
-        encoded_df = pd.get_dummies(
-            encoded_df, columns=[variable], dtype=pd.Int8Dtype()
-        )
+    encoded_df = pd.get_dummies(
+        encoded_df, columns=variables_to_encode, dtype=pd.Int8Dtype()
+    )
 
-    variables_to_int = [
+    # ----------------------------------------------------------------------------------
+    # Convert dichotomous variables to 0-1
+    # ----------------------------------------------------------------------------------
+
+    dichotomous_variables = [
         "partner",
         "living_alone",
         "employment",
@@ -72,8 +90,19 @@ def encode_data(df):
         "beh",
     ]
 
-    for variable in variables_to_int:
+    for variable in dichotomous_variables:
         encoded_df[variable] = _map_yes_no(encoded_df[variable])
+
+    encoded_df["ever_mde"] = encoded_df["age_at_mde"].gt(0).astype(pd.Int8Dtype())
+    encoded_df["ever_mania"] = encoded_df["age_at_mania"].gt(0).astype(pd.Int8Dtype())
+    encoded_df["ever_hypomania"] = (
+        encoded_df["age_at_hypomania"].gt(0).astype(pd.Int8Dtype())
+    )
+
+    # Convert auxiliary dichotomous variables to 0-1; these are only required to
+    # construct the disease variables
+
+    # _aux_df = pd.DataFrame(index=df.index)
 
     cd_cols = ["cholesterol", "hypertension", "angina_pectoris", "heartattack"]
     metabolic_cols = ["diabetes"]
@@ -137,26 +166,23 @@ def encode_data(df):
         pd.Int8Dtype()
     )
 
-    cols_to_drop = sum(
-        [
-            cd_cols,
-            metabolic_cols,
-            thyroid_cols,
-            rheumatological_cols,
-            lung_cols,
-            allergies_cols,
-            gastro_cols,
-            liver_cols,
-            skin_cols,
-            kidney_cols,
-            neuro_cols,
-            eyear_cols,
-            inf_cols,
-            cancer_cols,
-            other_cols,
-        ],
-        [],
-    )  # Start summing from an empty list
+    cols_to_drop = [
+        *cd_cols,
+        *metabolic_cols,
+        *thyroid_cols,
+        *rheumatological_cols,
+        *lung_cols,
+        *allergies_cols,
+        *gastro_cols,
+        *liver_cols,
+        *skin_cols,
+        *kidney_cols,
+        *neuro_cols,
+        *eyear_cols,
+        *inf_cols,
+        *cancer_cols,
+        *other_cols,
+    ]
 
     encoded_df = encoded_df.drop(columns=cols_to_drop)
 
@@ -166,3 +192,7 @@ def encode_data(df):
 def _map_yes_no(sr):
     """Maps yes to 1 and no to 0."""
     return sr.map({"yes": 1, "no": 0}).astype(pd.Int8Dtype())
+
+
+if __name__ == "__main__":
+    pass
