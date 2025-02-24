@@ -59,22 +59,16 @@ def clean_phenotypic_data(df):
     clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Float32Dtype())
     clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Float32Dtype())
     clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"])
-    clean_df["school"] = _map_cat_school(df["v1_school"])
-    clean_df["ed_status"] = (
-        df["v1_ed_status"]
-        .astype("Int64")
-        .astype("string")
-        .astype(
-            pd.CategoricalDtype(categories=["1", "2", "3", "4", "5", "6"], ordered=True)
-        )
-    )
+    clean_df["school"] = df["v1_school"].astype(pd.Float32Dtype())
+    clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Float32Dtype())
+
     clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"])
     clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"])
     clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"])
     clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Float32Dtype())
     clean_df["work_impairment"] = _map_yes_no(df["v1_cur_work_restr"])
-    clean_df["current_psych_treatment"] = _map_cat_psych_treatment(df["v1_cur_psy_trm"])
-    clean_df["outpat_treatment"] = _map_cat_outpat_treatment(df["v1_cur_psy_trm"])
+    clean_df["current_psych_treatment"] = df["v1_cur_psy_trm"].astype(pd.Float32Dtype())
+    clean_df["outpat_treatment"] = df["v1_outpat_psy_trm"].astype(pd.Float32Dtype())
     clean_df["outpat_treatment_age"] = df["v1_age_1st_out_trm"].astype(
         pd.Float32Dtype()
     )
@@ -87,13 +81,13 @@ def clean_phenotypic_data(df):
     clean_df["times_treated_inpatient_cont"] = df["v1_tms_daypat_outpat_trm"].astype(
         pd.Float32Dtype()
     )
-    clean_df["times_treated_inpatient_ord"] = _map_cat_times_treated_inpatient(
-        df["v1_cat_daypat_outpat_trm"]
+    clean_df["times_treated_inpatient_ord"] = df["v1_cat_daypat_outpat_trm"].astype(
+        pd.Float32Dtype()
     )
     clean_df["adverse_events_curr_medication"] = _map_yes_no_control(df["v1_adv"])
     clean_df["med_change"] = _map_yes_no_control(df["v1_medchange"])
     clean_df["lithium"] = _map_yes_no_control(df["v1_lith"])
-    clean_df["lithium_dur"] = _map_cat_lith_dur(df["v1_lith_prd"])
+    clean_df["lithium_dur"] = df["v1_lith_prd"].astype(pd.Float32Dtype())
     clean_df["fam_hist"] = _map_yes_no_control(df["v1_fam_hist"])
     clean_df["height"] = df["v1_height"].astype(pd.Float32Dtype())
     clean_df["weight"] = df["v1_weight"].astype(pd.Float32Dtype())
@@ -132,8 +126,8 @@ def clean_phenotypic_data(df):
         .astype(pd.CategoricalDtype(categories=["never", "yes", "former"]))
     )
     clean_df["no_cig"] = df["v1_no_cig"].astype(pd.Float32Dtype())
-    clean_df["alc_past_year"] = _map_cat_alc_past_year(df["v1_alc_pst12_mths"])
-    clean_df["alc_5_drinks"] = _map_cat_alc_5_drinks(df["v1_alc_5orm"])
+    clean_df["alc_past_year"] = df["v1_alc_pst12_mths"].astype(pd.Float32Dtype())
+    clean_df["alc_5_drinks"] = df["v1_alc_5orm"].astype(pd.Float32Dtype())
     clean_df["alc_dependence"] = _map_yes_no(df["v1_lftm_alc_dep"])
     clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"])
     clean_df["age_at_mde"] = df["v1_scid_age_MDE"].astype(pd.Float32Dtype())
@@ -146,26 +140,27 @@ def clean_phenotypic_data(df):
     clean_df["ever_halluc"] = _map_yes_no_control(df["v1_scid_ever_halls"])
     clean_df["ever_psyc"] = _map_yes_no_control(df["v1_scid_ever_psyc"])
     clean_df["ever_suic_ide"] = _map_yes_no_control(df["v1_scid_evr_suic_ide"])
-    clean_df["severity_suic_ide"] = _map_cat_severity_suic_ide(df["v1_scid_suic_ide"])
-    clean_df["suic_methods"] = _map_cat_suic_methods(df["v1_scid_suic_thght_mth"])
-    clean_df["suic_note"] = _map_cat_suic_note(df["v1_scid_suic_note_thgts"])
-    clean_df["suic_attempt"] = _map_cat_suic_attempt(df["v1_suic_attmpt"])
-    clean_df["no_suic_attempt"] = _map_cat_no_suic_attempt(df["v1_scid_no_suic_attmpt"])
-    clean_df["prep_suic_attempt_ord"] = _map_cat_prep_suic_attempt_ord(
-        df["v1_prep_suic_attp_ord"]
+    clean_df["severity_suic_ide"] = df["v1_scid_suic_ide"].astype(pd.Float32Dtype())
+    clean_df["suic_methods"] = df["v1_scid_suic_thght_mth"].astype(pd.Float32Dtype())
+    clean_df["suic_note"] = df["v1_scid_suic_note_thgts"].astype(pd.Float32Dtype())
+    clean_df["suic_attempt"] = df["v1_suic_attmpt"].astype(pd.Float32Dtype())
+    clean_df["no_suic_attempt"] = df["v1_scid_no_suic_attmpt"].astype(pd.Float32Dtype())
+    clean_df["prep_suic_attempt_ord"] = df["v1_prep_suic_attp_ord"].astype(
+        pd.Float32Dtype()
     )
-    clean_df["suic_attempt_note"] = _map_cat_suic_note(df["v1_suic_note_attmpt"])
+    clean_df["suic_attempt_note"] = df["v1_suic_note_attmpt"].astype(pd.Float32Dtype())
 
     for i in range(1, 8):
-        clean_df[f"panss_p{i}"] = _map_cat_panss(df[f"v1_panss_p{i}"])
+        clean_df[f"panss_p{i}"] = df[f"v1_panss_p{i}"].astype(pd.Float32Dtype())
+
     clean_df["panss_sum_pos"] = df["v1_panss_sum_pos"].astype(pd.Float32Dtype())
     for i in range(1, 8):
-        clean_df[f"panss_n{i}"] = _map_cat_panss(df[f"v1_panss_n{i}"])
+        clean_df[f"panss_n{i}"] = df[f"v1_panss_n{i}"].astype(pd.Float32Dtype())
 
     clean_df["panss_sum_neg"] = df["v1_panss_sum_neg"].astype(pd.Float32Dtype())
 
     for i in range(1, 16):
-        clean_df[f"panss_g{i}"] = _map_cat_panss(df[f"v1_panss_g{i}"])
+        clean_df[f"panss_g{i}"] = df[f"v1_panss_g{i}"].astype(pd.Float32Dtype())
 
     clean_df["panss_sum_gen"] = df["v1_panss_sum_gen"].astype(pd.Float32Dtype())
     clean_df["panss_total_score"] = df["v1_panss_sum_tot"].astype(pd.Float32Dtype())
@@ -238,23 +233,23 @@ def clean_phenotypic_data(df):
     clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"])
     clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"])
     clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
-    clean_df["rel_act"] = _map_cat_rel_act(df["v1_rel_act"])
-    clean_df["med_compliance_week"] = _map_cat_med_compliance(df["v1_med_pst_wk"])
+    clean_df["rel_act"] = df["v1_rel_act"].astype(pd.Float32Dtype())
+    clean_df["med_compliance_week"] = df["v1_med_pst_wk"].astype(pd.Float32Dtype())
 
-    clean_df["med_compliance_6_months"] = _map_cat_med_compliance(
-        df["v1_med_pst_sx_mths"]
+    clean_df["med_compliance_6_months"] = df["v1_med_pst_sx_mths"].astype(
+        pd.Float32Dtype()
     )
 
     for i in (1, 15):
-        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_1_and_15(df[f"v1_whoqol_itm{i}"])
+        clean_df[f"whoqol_{i}"] = df[f"v1_whoqol_itm{i}"].astype(pd.Float32Dtype())
 
     for i in [2] + list(range(16, 27)):
-        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_2_and_16_25(df[f"v1_whoqol_itm{i}"])
+        clean_df[f"whoqol_{i}"] = df[f"v1_whoqol_itm{i}"].astype(pd.Float32Dtype())
 
     for i in range(3, 15):
-        clean_df[f"whoqol_{i}"] = _map_cat_whoqol_3_14(df[f"v1_whoqol_itm{i}"])
+        clean_df[f"whoqol_{i}"] = df[f"v1_whoqol_itm{i}"].astype(pd.Float32Dtype())
 
-    clean_df["whoqol_26"] = _map_cat_whoqol_26(df["v1_whoqol_itm26"])
+    clean_df["whoqol_26"] = df["v1_whoqol_itm26"].astype(pd.Float32Dtype())
 
     clean_df["whoqol_total"] = df["v1_whoqol_dom_glob"].astype(pd.Float32Dtype())
     clean_df["whoqol_phys_health"] = df["v1_whoqol_dom_phys"].astype(pd.Float32Dtype())
@@ -263,7 +258,7 @@ def clean_phenotypic_data(df):
     clean_df["whoqol_env"] = df["v1_whoqol_dom_env"].astype(pd.Float32Dtype())
 
     for i in range(1, 11):
-        clean_df[f"big_five_{i}"] = _map_cat_big_five(df[f"v1_big_five_itm{i}"])
+        clean_df[f"big_five_{i}"] = df[f"v1_big_five_itm{i}"].astype(pd.Float32Dtype())
     clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(
         pd.Float32Dtype()
     )
