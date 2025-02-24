@@ -165,12 +165,8 @@ def clean_phenotypic_data(df):
     clean_df["panss_sum_gen"] = df["v1_panss_sum_gen"].astype(pd.Float32Dtype())
     clean_df["panss_total_score"] = df["v1_panss_sum_tot"].astype(pd.Float32Dtype())
 
-    idsc_dtype = pd.CategoricalDtype(categories=["0", "1", "2", "3"], ordered=True)
-
     for i in range(1, 10):
-        clean_df[f"idsc_{i}"] = (
-            df[f"v1_idsc_itm{i}"].astype("Int64").astype("string").astype(idsc_dtype)
-        )
+        clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
 
     clean_df["idsc_9a"] = df["v1_idsc_itm9a"].astype(
         pd.CategoricalDtype(categories=["-999", "A", "M", "N"])
@@ -178,47 +174,14 @@ def clean_phenotypic_data(df):
     clean_df["idsc_9b"] = _map_yes_no_control(df["v1_idsc_itm9b"])
 
     for i in range(10, 31):
-        clean_df[f"idsc_{i}"] = (
-            df[f"v1_idsc_itm{i}"].astype("Int64").astype("string").astype(idsc_dtype)
-        )
+        clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
 
     clean_df["idsc_total"] = df["v1_idsc_sum"].astype(pd.Float32Dtype())
-
-    ymrs_dtype_single = pd.CategoricalDtype(
-        categories=["0", "1", "2", "3", "4"], ordered=True
-    )
-    ymrs_dtype_double = pd.CategoricalDtype(
-        categories=["0", "2", "4", "6", "8"], ordered=True
-    )
-    ymrs_single_items = [1, 2, 3, 4, 7, 10, 11]
-    ymrs_double_items = [5, 6, 8, 9]
-    for i in ymrs_single_items:
-        clean_df[f"ymrs_{i}"] = (
-            df[f"v1_ymrs_itm{i}"]
-            .astype("Int64")
-            .astype("string")
-            .astype(ymrs_dtype_single)
-        )
-
-    for i in ymrs_double_items:
-        clean_df[f"ymrs_{i}"] = (
-            df[f"v1_ymrs_itm{i}"]
-            .astype("Int64")
-            .astype("string")
-            .astype(ymrs_dtype_double)
-        )
+    for i in range(1, 12):
+        clean_df[f"ymrs_{i}"] = df[f"v1_ymrs_itm{i}"].astype(pd.Float32Dtype())
 
     clean_df["ymrs_total"] = df["v1_ymrs_sum"].astype(pd.Float32Dtype())
-    clean_df["cgi"] = (
-        df["v1_cgi_s"]
-        .astype("Int64")
-        .astype("string")
-        .astype(
-            pd.CategoricalDtype(
-                categories=["-999", "1", "2", "3", "4", "5", "6", "7"], ordered=True
-            )
-        )
-    )
+    clean_df["cgi"] = df["v1_cgi_s"].astype(pd.Float32Dtype())
 
     clean_df["gaf"] = df["v1_gaf"].astype(pd.Float32Dtype())
     clean_df["language_skill"] = df["v1_nrpsy_lng"]
