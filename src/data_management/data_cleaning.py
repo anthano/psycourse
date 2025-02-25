@@ -254,257 +254,6 @@ def _map_yes_no_control(sr):
     return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no", "-999"]))
 
 
-def _map_cat_school(sr):
-    school_mapping = {
-        0: "no_graduation",
-        1: "Hauptschule",
-        2: "Realschule_Polytechnischule_Oberschule",
-        3: "Allgemeine_Hochschulreife",
-        -999: "still_in_school/other",
-    }
-    dtype = pd.CategoricalDtype(categories=school_mapping.values(), ordered=True)
-    return sr.map(school_mapping).astype(dtype)
-
-
-def _map_cat_psych_treatment(sr):
-    mapping = {
-        1: "no",
-        2: "yes, outpatient",
-        3: "yes, day patient",
-        4: "yes, inpatient",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_outpat_treatment(sr):
-    mapping = {
-        1: "no",
-        2: "yes_consultation_short_trm",
-        3: "yes_cont_trm_six_months_multiple_short_ep",
-        4: "yes_cont_trm_years_many_short_ep",
-        -999: "no_info",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_times_treated_inpatient(sr):
-    mapping = {
-        1: "smaller_5_times",
-        2: "6-10_times",
-        3: "11-14_times",
-        4: "15_times_or_more",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_lith_dur(sr):
-    mapping = {
-        -999: "never_or_control",
-        1: "less_than_1_year",
-        2: "1-2_years",
-        3: "2_years_or_more",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_alc_past_year(sr):
-    mapping = {
-        1: "never",
-        2: "only_on_special_occacions",
-        3: "once_per_month",
-        4: "2-4_times_month",
-        5: "2-3_times_week",
-        6: "4_times_week",
-        7: "daily",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_alc_5_drinks(sr):
-    mapping = {
-        -999: "skipped_irregular",
-        1: "never",
-        2: "1-2_times",
-        3: "3-5_times",
-        4: "6-11_times",
-        5: "1_times_month",
-        6: "2-3_times_month",
-        7: "1-2_times_week",
-        8: "3-4_times_week",
-        9: "daily",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_severity_suic_ide(sr):
-    mapping = {
-        -999: "skipped",
-        1: "only_fleeting",
-        2: "serious_thoughts",
-        3: "persistent_thoughts",
-        4: "serious_and_persistent_thoughts",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_suic_methods(sr):
-    mapping = {
-        -999: "skipped",
-        1: "no",
-        2: "yes_without_details",
-        3: "yes_with_details",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_suic_note(sr):
-    mapping = {
-        -999: "skipped",
-        1: "no",
-        2: "thought_about",
-        3: "persistent_thoughts",
-        4: "thought_about_and_persistent_thoughts",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_suic_attempt(sr):
-    mapping = {-999: "skipped", 1: "no", 2: "interruption_of_attempt", 3: "yes"}
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_no_suic_attempt(sr):
-    mapping = {
-        -999: "skipped",
-        1: "1_time",
-        2: "2_times",
-        3: "3_times",
-        4: "4_times",
-        5: "5_times",
-        6: "6_or_more_times",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_prep_suic_attempt_ord(sr):
-    mapping = {
-        -999: "skipped",
-        1: "no_prep",
-        2: "little_prep",
-        3: "moderate_prep",
-        4: "extensive_prep",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_panss(sr):
-    mapping = {
-        1: "absent",
-        2: "minimal",
-        3: "mild",
-        4: "moderate",
-        5: "moderate severe",
-        6: "severe",
-        7: "extreme",
-    }
-
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_rel_act(sr):
-    mapping = {
-        1: "not_at_all",
-        2: "little_active",
-        3: "moderately_active",
-        4: "rather_active",
-        5: "very_active",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_med_compliance(sr):
-    mapping = {
-        -999: "control",
-        1: "every_day_as_prescribed",
-        2: "every_day_but_not_as_prescribed",
-        3: "regularly_but_not_every_day",
-        4: "sometimes_but_not_regularly",
-        5: "seldom",
-        6: "not_at_all",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_whoqol_1_and_15(sr):
-    mapping = {
-        1: "very_poor",
-        2: "poor",
-        3: "neither_poor_nor_good",
-        4: "good",
-        5: "very_good",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_whoqol_2_and_16_25(sr):
-    mapping = {
-        1: "very_dissatisfied",
-        2: "dissatisfied",
-        3: "neither_dis_nor_satisfied",
-        4: "satisfied",
-        5: "very_satisfied",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_whoqol_3_14(sr):
-    mapping = {
-        1: "not_at_all",
-        2: "a_little",
-        3: "moderate_amount",
-        4: "very_much",
-        5: "an_extreme_amount",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_whoqol_26(sr):
-    mapping = {1: "never", 2: "seldom", 3: "quite_often", 4: "very_often", 5: "always"}
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
-def _map_cat_big_five(sr):
-    mapping = {
-        1: "disagree_strongly",
-        2: "disagree_little",
-        3: "neither_dis_nor_agree",
-        4: "agree_little",
-        5: "agree_strongly",
-    }
-    dtype = pd.CategoricalDtype(categories=mapping.values(), ordered=True)
-    return sr.map(mapping).astype(dtype)
-
-
 # --------------------------------------------------------------------------------------
 # LIPIDOMIC DATA
 # --------------------------------------------------------------------------------------
@@ -513,11 +262,14 @@ def _map_cat_big_five(sr):
 def clean_lipidomic_data(sample_description, lipid_intensities):
     """Cleans the lipidomic data. Takes the lipid_intensities file and the
     sample description file; removes duplicates and removes the lipids that are affected
-    by fasting status according to Tkachev et al., 2023
+    by fasting status according to Tkachev et al., 2023 or have a skewed distribution
+    according to analysis by colleagues in Munich (did not check myself).
 
     Args:
-        df (pd.DataFrame): The input dataframe containing raw lipidomic data.
-        sample_desc (pd.DataFrame): The input dataframe containing sample descriptions.
+        sample_description(pd.DataFrame): The input dataframe containing
+                                        sample descriptions.
+        lipid_intensities(pd.DataFrame): The input dataframe containing
+                                        raw lipidomic data.
 
     Returns:
         pd.DataFrame: The cleaned lipidomic dataframe.
@@ -526,6 +278,7 @@ def clean_lipidomic_data(sample_description, lipid_intensities):
     clean_sample_description = _clean_sample_description(sample_description)
     clean_lipid_intensities = _clean_lipid_intensities(lipid_intensities)
     merged_df = clean_sample_description.join(clean_lipid_intensities, on="ind")
+    merged_df = merged_df.set_index("Patient_ID")
 
     return merged_df
 
@@ -534,7 +287,7 @@ def _clean_sample_description(df):
     """Takes sample description, sets index and drops unnecessary columns."""
 
     clean_sample_description = df.drop_duplicates(subset="Patient_ID")
-    clean_sample_description = clean_sample_description.set_index(["Patient_ID", "ind"])
+    clean_sample_description = clean_sample_description.set_index("ind")
     clean_sample_description["age"] = clean_sample_description["age"].astype(
         pd.Int8Dtype()
     )
@@ -556,12 +309,498 @@ def _clean_sample_description(df):
 
 
 def _clean_lipid_intensities(df):
-    """Takes the lipid intensities and sets the correct index."""
+    """Takes the lipid intensities and sets the correct index, only keeps lipids that
+    are annotated, not affected by fasting status and not skewed."""
 
     clean_lipid_intensities = df.set_index("originalMS#").rename_axis(
         "ind", axis="rows"
     )
+
+    clean_lipid_intensities = _remove_non_annotated_lipids(clean_lipid_intensities)
+    clean_lipid_intensities = _remove_skewed_lipids(clean_lipid_intensities)
+    clean_lipid_intensities = _remove_fasting_lipids(clean_lipid_intensities)
+
     return clean_lipid_intensities
+
+
+def _remove_non_annotated_lipids(df):
+    """Removes lipids that are not annotated in the annotated_lipids list"""
+    annotated_lipids = [
+        "gpeakpos7470",
+        "gpeakpos7514",
+        "gpeakpos7730",
+        "gpeakpos7769",
+        "gpeakpos7961",
+        "gpeakpos7997",
+        "gpeakpos8043",
+        "gpeakpos8324",
+        "gpeakpos8631",
+        "gpeakpos8679",
+        "gpeakpos8733",
+        "gpeakpos9000",
+        "gpeakpos9264",
+        "gpeakpos9328",
+        "gpeakpos9390",
+        "gpeakpos9446",
+        "gpeakpos9505",
+        "gpeakpos9794",
+        "gpeakpos9863",
+        "gpeakpos9918",
+        "gpeakpos10107",
+        "gpeakpos10171",
+        "gpeakpos10236",
+        "gpeakpos10371",
+        "gpeakpos10445",
+        "gpeakpos10660",
+        "gpeakpos10723",
+        "gpeakpos10860",
+        "gpeakpos10926",
+        "gpeakpos11003",
+        "gpeakpos11076",
+        "gpeakpos11134",
+        "gpeakpos11200",
+        "gpeakpos11253",
+        "gpeakpos11314",
+        "gpeakpos11389",
+        "gpeakpos11522",
+        "gpeakpos11585",
+        "gpeakpos11639",
+        "gpeakpos11690",
+        "gpeakpos11823",
+        "gpeakpos11828",
+        "gpeakpos11905",
+        "gpeakpos11964",
+        "gpeakpos12022",
+        "gpeakpos12080",
+        "gpeakpos12125",
+        "gpeakpos12192",
+        "gpeakpos12323",
+        "gpeakpos12430",
+        "gpeakpos12484",
+        "gpeakpos12743",
+        "gpeakpos12792",
+        "gpeakpos12841",
+        "gpeakpos12892",
+        "gpeakpos12955",
+        "gpeakpos13012",
+        "gpeakpos13066",
+        "gpeakpos13118",
+        "gpeakpos13174",
+        "gpeakpos13342",
+        "gpeakpos13459",
+        "gpeakpos13500",
+        "gpeakpos13549",
+        "gpeakpos13594",
+        "gpeakpos13728",
+        "gpeakpos13775",
+        "gpeakpos13980",
+        "gpeakpos14026",
+        "gpeakpos14078",
+        "gpeakpos14294",
+        "gpeakpos1999",
+        "gpeakpos2041",
+        "gpeakpos2069",
+        "gpeakpos2099",
+        "gpeakpos2229",
+        "gpeakpos2348",
+        "gpeakpos2417",
+        "gpeakpos2561",
+        "gpeakpos2582",
+        "gpeakpos2688",
+        "gpeakpos2726",
+        "gpeakpos2767",
+        "gpeakpos3064",
+        "gpeakpos3079",
+        "gpeakpos3098",
+        "gpeakpos3375",
+        "gpeakpos3419",
+        "gpeakpos3441",
+        "gpeakpos6622",
+        "gpeakpos6657",
+        "gpeakpos7122",
+        "gpeakpos7158",
+        "gpeakpos7549",
+        "gpeakpos7586",
+        "gpeakpos4442",
+        "gpeakpos4173",
+        "gpeakpos4188",
+        "gpeakpos4465",
+        "gpeakpos4494",
+        "gpeakpos5151",
+        "gpeakpos5531",
+        "gpeakpos5562",
+        "gpeakpos5917",
+        "gpeakneg4189",
+        "gpeakneg4215",
+        "gpeakneg4417",
+        "gpeakneg4439",
+        "gpeakneg4457",
+        "gpeakneg4477",
+        "gpeakneg4581",
+        "gpeakneg4632",
+        "gpeakneg4687",
+        "gpeakneg4707",
+        "gpeakneg4783",
+        "gpeakneg4835",
+        "gpeakneg4867",
+        "gpeakneg4889",
+        "gpeakneg4888",
+        "gpeakneg4907",
+        "gpeakneg5123",
+        "gpeakneg5161",
+        "gpeakneg5189",
+        "gpeakneg5363",
+        "gpeakneg5385",
+        "gpeakneg5503",
+        "gpeakneg5513",
+        "gpeakneg5524",
+        "gpeakneg5547",
+        "gpeakneg5647",
+        "gpeakneg4244",
+        "gpeakneg4456",
+        "gpeakneg4476",
+        "gpeakneg4501",
+        "gpeakneg4671",
+        "gpeakneg4706",
+        "gpeakneg4724",
+        "gpeakneg4798",
+        "gpeakneg4906",
+        "gpeakneg4920",
+        "gpeakneg4939",
+        "gpeakneg4960",
+        "gpeakneg5145",
+        "gpeakneg5173",
+        "gpeakneg5174",
+        "gpeakneg5190",
+        "gpeakneg5191",
+        "gpeakneg5209",
+        "gpeakneg5352",
+        "gpeakneg5361",
+        "gpeakneg5373",
+        "gpeakneg5386",
+        "gpeakneg5400",
+        "gpeakneg5416",
+        "gpeakneg5502",
+        "gpeakneg5512",
+        "gpeakneg5546",
+        "gpeakneg5660",
+        "gpeakneg5675",
+        "gpeakneg5691",
+        "gpeakneg5701",
+        "gpeakneg2637",
+        "gpeakneg2747",
+        "gpeakneg2765",
+        "gpeakneg2886",
+        "gpeakneg2895",
+        "gpeakneg3053",
+        "gpeakneg3252",
+        "gpeakneg3264",
+        "gpeakneg3276",
+        "gpeakneg3402",
+        "gpeakneg3514",
+        "gpeakneg3531",
+        "gpeakneg3543",
+        "gpeakneg3566",
+        "gpeakneg3666",
+        "gpeakneg3685",
+        "gpeakneg3687",
+        "gpeakneg3714",
+        "gpeakneg3839",
+        "gpeakneg3840",
+        "gpeakneg4081",
+        "gpeakneg4106",
+        "gpeakneg4323",
+        "gpeakneg4342",
+        "gpeakneg4363",
+        "gpeakneg4454",
+        "gpeakneg4472",
+        "gpeakneg4494",
+        "gpeakneg4563",
+        "gpeakneg4579",
+        "gpeakneg4580",
+        "gpeakneg4593",
+        "gpeakneg4606",
+        "gpeakneg4623",
+        "gpeakneg4667",
+        "gpeakneg4684",
+        "gpeakneg4702",
+        "gpeakneg4721",
+        "gpeakneg4781",
+        "gpeakneg4782",
+        "gpeakneg4796",
+        "gpeakneg4797",
+        "gpeakneg4811",
+        "gpeakneg4831",
+        "gpeakneg4849",
+        "gpeakneg4872",
+        "gpeakneg4904",
+        "gpeakneg4958",
+        "gpeakneg5040",
+        "gpeakneg5055",
+        "gpeakneg5056",
+        "gpeakneg5079",
+        "gpeakneg5106",
+        "gpeakneg5107",
+        "gpeakneg5127",
+        "gpeakneg5187",
+        "gpeakneg5207",
+        "gpeakneg5292",
+        "gpeakneg5307",
+        "gpeakneg5322",
+        "gpeakneg5323",
+        "gpeakneg5336",
+        "gpeakneg5410",
+        "gpeakneg5450",
+        "gpeakneg5459",
+        "gpeakneg5470",
+        "gpeakneg3534",
+        "gpeakneg3819",
+        "gpeakneg3846",
+        "gpeakneg3944",
+        "gpeakneg3966",
+        "gpeakneg4047",
+        "gpeakneg4062",
+        "gpeakneg4077",
+        "gpeakneg4181",
+        "gpeakneg4200",
+        "gpeakneg4292",
+        "gpeakneg4304",
+        "gpeakneg4319",
+        "gpeakneg4333",
+        "gpeakneg4448",
+        "gpeakneg4574",
+        "gpeakneg4588",
+        "gpeakneg4698",
+        "gpeakneg4715",
+        "gpeakneg4805",
+        "gpeakneg4821",
+        "gpeakneg4929",
+        "gpeakneg4953",
+        "gpeakneg5034",
+        "gpeakneg5049",
+        "gpeakneg5070",
+        "gpeakneg5093",
+        "gpeakneg5218",
+        "gpeakneg5285",
+        "gpeakneg5302",
+        "gpeakneg5316",
+        "gpeakneg5331",
+        "gpeakneg163",
+        "gpeakneg291",
+        "gpeakneg300",
+        "gpeakneg305",
+        "gpeakneg349",
+        "gpeakneg372",
+        "gpeakneg378",
+        "gpeakneg384",
+        "gpeakneg391",
+        "gpeakneg437",
+        "gpeakneg451",
+        "gpeakneg574",
+        "gpeakneg588",
+        "gpeakneg596",
+        "gpeakneg731",
+        "gpeakneg828",
+        "gpeakneg838",
+        "gpeakneg852",
+        "gpeakneg892",
+        "gpeakneg902",
+        "gpeakneg910",
+        "gpeakneg925",
+        "gpeakneg935",
+        "gpeakneg940",
+        "gpeakneg954",
+        "gpeakneg1109",
+        "gpeakneg1173",
+        "gpeakneg1180",
+        "gpeakneg1214",
+        "gpeakneg1228",
+        "gpeakneg1241",
+        "gpeakneg1346",
+        "gpeakneg1373",
+        "gpeakneg1382",
+        "gpeakneg1395",
+        "gpeakneg1403",
+        "gpeakneg1412",
+        "gpeakneg1472",
+        "gpeakneg1488",
+        "gpeakneg1506",
+        "gpeakneg1516",
+        "gpeakneg1533",
+        "gpeakneg1541",
+        "gpeakneg1580",
+        "gpeakneg1638",
+        "gpeakneg1645",
+        "gpeakneg1652",
+        "gpeakneg1661",
+        "gpeakneg1677",
+        "gpeakneg1699",
+        "gpeakneg1723",
+        "gpeakneg1722",
+        "gpeakneg1737",
+        "gpeakneg1778",
+        "gpeakneg1793",
+        "gpeakneg1860",
+        "gpeakneg3735",
+        "gpeakneg3953",
+        "gpeakneg4151",
+        "gpeakneg4172",
+        "gpeakneg4669",
+        "gpeakneg3463",
+        "gpeakneg3495",
+        "gpeakneg3609",
+        "gpeakneg3680",
+        "gpeakneg3706",
+        "gpeakneg3762",
+        "gpeakneg3824",
+        "gpeakneg3836",
+        "gpeakneg3855",
+        "gpeakneg3952",
+        "gpeakneg3974",
+        "gpeakneg3993",
+        "gpeakneg3994",
+        "gpeakneg4014",
+        "gpeakneg4069",
+        "gpeakneg4187",
+        "gpeakneg4210",
+        "gpeakneg4239",
+        "gpeakneg4438",
+        "gpeakneg4474",
+        "gpeakneg4685",
+        "gpeakneg2026",
+        "gpeakneg2039",
+        "gpeakneg2174",
+        "gpeakneg2200",
+        "gpeakneg2206",
+        "gpeakneg2319",
+        "gpeakneg2333",
+        "gpeakneg2339",
+        "gpeakneg2428",
+        "gpeakneg2429",
+        "gpeakneg2515",
+        "gpeakneg2552",
+        "gpeakneg2559",
+        "gpeakneg2635",
+        "gpeakneg2660",
+        "gpeakneg2668",
+        "gpeakneg2680",
+        "gpeakneg2698",
+        "gpeakneg2744",
+        "gpeakneg2762",
+        "gpeakneg2787",
+        "gpeakneg2795",
+        "gpeakneg2811",
+        "gpeakneg2822",
+        "gpeakneg2832",
+        "gpeakneg2900",
+        "gpeakneg2914",
+        "gpeakneg2927",
+        "gpeakneg3029",
+        "gpeakneg3071",
+        "gpeakneg3239",
+        "gpeakneg3247",
+        "gpeakneg3257",
+        "gpeakneg3268",
+        "gpeakneg3285",
+        "gpeakneg3625",
+        "gpeakneg3647",
+        "gpeakneg3786",
+        "gpeakneg3852",
+        "gpeakneg3872",
+        "gpeakneg3892",
+        "gpeakneg3913",
+        "gpeakneg3935",
+        "gpeakneg4012",
+        "gpeakneg4079",
+        "gpeakneg4101",
+        "gpeakneg4124",
+        "gpeakneg4141",
+        "gpeakneg4321",
+        "gpeakneg4339",
+        "gpeakneg4359",
+        "gpeakneg4360",
+        "gpeakneg4380",
+    ]
+    return df.drop(columns=set(df.columns) - set(annotated_lipids), errors="ignore")
+
+
+def _remove_skewed_lipids(df):
+    """Removes lipids that have a skewed distribution"""
+
+    skewed_lipids = [
+        "gpeakpos6496",
+        "gpeakpos6657",
+        "gpeakpos6714",
+        "gpeakpos7639",
+        "gpeakpos7939",
+        "gpeakpos9077",
+        "gpeakpos9083",
+        "gpeakpos9393",
+        "gpeakpos9821",
+        "gpeakpos10301",
+        "gpeakpos12417",
+        "gpeakpos12493",
+        "gpeakpos15263",
+        "gpeakpos15939",
+        "gpeakpos16376",
+        "gpeakpos16716",
+        "gpeakpos16827",
+        "gpeakpos17328",
+        "gpeakpos17376",
+        "gpeakpos17381",
+        "gpeakneg163",
+        "gpeakneg305",
+        "gpeakneg1022",
+        "gpeakneg1010",
+        "gpeakneg2153",
+        "gpeakneg3930",
+        "gpeakneg4662",
+        "gpeakneg5486",
+        "gpeakneg5826",
+        "gpeakneg5907",
+        "gpeakneg5989",
+    ]
+
+    df = df.drop(columns=skewed_lipids, errors="ignore")
+
+    return df
+
+
+def _remove_fasting_lipids(df):
+    lipids_affected_by_fasting = [
+        "gpeakpos1328",
+        "gpeakneg400",
+        "gpeakneg443",
+        "gpeakneg690",
+        "gpeakneg678",
+        "gpeakneg650",
+        "gpeakneg932",
+        "gpeakneg928",
+        "gpeakneg911",
+        "gpeakneg996",
+        "gpeakneg989",
+        "gpeakneg982",
+        "gpeakneg107",
+        "gpeakneg106",
+        "gpeakneg105",
+        "gpeakneg102",
+        "gpeakneg130",
+        "gpeakneg144",
+        "gpeakneg142",
+        "gpeakneg139",
+        "gpeakneg135",
+        "gpeakneg160",
+        "gpeakneg157",
+        "gpeakneg156",
+        "gpeakneg155",
+        "gpeakneg154",
+        "gpeakneg171",
+        "gpeakpos172",
+        "gpeakneg514",
+        "gpeakneg566",
+    ]
+
+    return df.drop(columns=lipids_affected_by_fasting, errors="ignore")
 
 
 if __name__ == "__main__":
@@ -571,3 +810,11 @@ if __name__ == "__main__":
     clean_df = clean_phenotypic_data(df)
     clean_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
     clean_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
+
+    lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
+    sample_description = pd.read_csv(
+        DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
+    )
+    clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
+    clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
+    clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
