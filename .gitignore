@@ -26,6 +26,9 @@ sophies_files
 #sandbox
 src/sandbox/
 
+# notebooks
+*.ipynb
+
 # latex
 *.aux
 *.bbl
