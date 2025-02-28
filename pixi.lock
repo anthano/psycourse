@@ -2873,7 +2873,7 @@ packages:
   name: psycourse
   version: 0.1.dev47+g35eb5a5.d20250228
   path: .
-  sha256: 9c4859080413c9485ceab7764339bcf2b7d55c539f97d76c63f3f67c9af792bb
+  sha256: 6297ab4e90c940a0c6b6ccd96fb054a5d567b6ab1d6e67622eb9845600d2db1c
   requires_python: '>=3.11'
   editable: true
 - kind: conda
