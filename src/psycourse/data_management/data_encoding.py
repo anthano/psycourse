@@ -178,6 +178,9 @@ def encode_data(df):
         *inf_cols,
         *cancer_cols,
         *other_cols,
+        "stat",
+        "idsc_9a",
+        "idsc_9b",
     ]
 
     encoded_df = encoded_df.drop(columns=cols_to_drop)
@@ -191,4 +194,7 @@ def _map_yes_no(sr):
 
 
 if __name__ == "__main__":
-    pass
+    data = pd.read_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
+    encoded_df = encode_data(data)
+    encoded_df.to_csv(BLD_DATA / "encoded_phenotypic_data.csv")
+    encoded_df.to_pickle(BLD_DATA / "encoded_phenotypic_data.pkl")
