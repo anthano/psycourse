@@ -3,7 +3,7 @@
 # ======================================================================================
 
 [project]
-name = "psycourse_py"
+name = "psycourse"
 description = "Template for reproducible research projects in economics"
 requires-python = ">=3.11"
 dynamic = ["version"]
@@ -49,7 +49,7 @@ requires = ["hatchling", "hatch_vcs"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/psycourse_py/_version.py"
+version-file = "src/psycourse/_version.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = ["tests"]
@@ -70,37 +70,22 @@ allow-direct-references = true
 # ======================================================================================
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["linux-64", "osx-arm64"]
-
-[tool.pixi.system-requirements]
-linux = "4.2.14"
-libc = { family="glibc", version="2.26" }
+platforms = ["osx-arm64"]
 
 [tool.pixi.dependencies]
 python = "==3.12"
-# Development dependencies
 jupyterlab = "*"
 pre-commit = "*"
-# Language agnostic template project dependencies
 pytask = ">=0.5.0"
 pytest = "*"
-# Python template project dependencies
-statsmodels = "*"
 numpy = "*"
 pandas = ">=2.2"
-plotly = ">=5.2.0,<6"
-python-kaleido = ">=0.2.1,<0.3"
-# R template project dependencies
-pytask-r = ">=0.4.1"
-pyreadr = "*"
-r-plyr = "*"
-r-precommit = "*"
-r-yaml = "*"
-r-forcats = "*"
+matplotlib = ">=3.10.0,<4"
+scikit-learn = ">=1.6.1,<2"
 
 [tool.pixi.pypi-dependencies]
 pdbp = "*"
-psycourse_py = {path = ".", editable = true}
+psycourse = {path = ".", editable = true}
 
 
 # ======================================================================================
@@ -108,7 +93,7 @@ psycourse_py = {path = ".", editable = true}
 # ======================================================================================
 
 [tool.pytask.ini_options]
-paths = ["./src/psycourse_py"]
+paths = ["./src/psycourse"]
 pdbcls = "pdbp:Pdb"
 
 # ======================================================================================
@@ -118,6 +103,7 @@ pdbcls = "pdbp:Pdb"
 [tool.ruff]
 target-version = "py312"
 fix = true
+exclude = ["src/psycourse/sandbox"]
 
 [tool.ruff.lint]
 select = [

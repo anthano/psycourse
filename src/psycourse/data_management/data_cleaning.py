@@ -1,13 +1,7 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
-THIS_DIR = Path(".").resolve()
-ROOT = THIS_DIR.parent.parent.resolve()
-DATA_DIR = ROOT / "src" / "data"
-BLD_DATA = ROOT / "bld" / "data"
-BLD_DATA.mkdir(parents=True, exist_ok=True)
+from psycourse.config import BLD_DATA, DATA_DIR
 
 
 # --------------------------------------------------------------------------------------

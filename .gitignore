@@ -18,16 +18,14 @@
 bld/
 
 #data
-/src/data
+/src/psycourse/data
 
 #sophies files
 sophies_files
 
 #sandbox
 src/sandbox/
-
-# notebooks
-*.ipynb
+sandbox.ipynb
 
 # latex
 *.aux

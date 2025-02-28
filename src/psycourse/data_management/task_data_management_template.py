@@ -1,9 +1,9 @@
 """Tasks for managing the data."""
 
 import pandas as pd
-from psycourse.config import BLD, SRC
-
 from data_management.data_cleaning.py import clean_phenotypic_data
+
+from psycourse.config import BLD, SRC
 
 
 def task_clean_phenotypic_data(
