@@ -1,5 +1,4 @@
-from pathlib import Path
-
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -14,12 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, MinMaxScaler
 from sklearn.svm import LinearSVC
 
-THIS_DIR = Path(".").resolve()
-ROOT = THIS_DIR.parent.parent.resolve()
-DATA_DIR = ROOT / "src" / "data"
-BLD_DATA = ROOT / "bld" / "data"
-BLD_DATA.mkdir(parents=True, exist_ok=True)
-
+from psycourse.config import BLD_DATA
 
 ###############################################################################
 # Main SVM Model Function
@@ -39,7 +33,7 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
     Returns:
         tuple: Mean and standard deviation of nested CV scores.
     """
-    phenotypic_df = _keep_only_rows_with_target(phenotypic_df, target_df)
+    phenotypic_df, target_df = _keep_only_rows_with_target(phenotypic_df, target_df)
 
     # Use the DataFrame directly so that column names are preserved.
     X_val = phenotypic_df.copy()
@@ -66,7 +60,13 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
             (
                 "preprocessor",
                 ColumnTransformer(
-                    transformers=[("scaler", MinMaxScaler(), scaling_cols_names)],
+                    transformers=[
+                        (
+                            "scaler",
+                            MinMaxScaler(feature_range=(-1, 1)),
+                            scaling_cols_names,
+                        )
+                    ],
                     remainder="passthrough",
                 ),
             ),
@@ -92,7 +92,7 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
         param_grid=parameters_grid,
         cv=inner_cv,
         scoring="balanced_accuracy",
-        n_jobs=-1,
+        n_jobs=1,
     )
     nested_scores = cross_val_score(clf, X=X_val, y=y_val, cv=outer_cv)
 
@@ -102,7 +102,25 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
     print(f"Mean Nested CV Score: {mean_score:.4f}")
     print(f"Standard Deviation of Nested CV Scores: {std_score:.4f}")
 
-    return mean_score, std_score
+    # get probabilities for cluster 5
+    X_new = phenotypic_df.copy()
+    final_model = pipeline.fit(X_val, y_val)
+    probabilities = final_model.predict_proba(X_new)
+    print(probabilities)
+
+    # Find the index of cluster 5 in the classes array:
+    class_index = np.where(final_model.classes_ == 5)[0][0]
+
+    # Extract the probabilities corresponding to cluster 5:
+    cluster5_probs = probabilities[:, class_index]
+
+    # Create a DataFrame using the sample IDs from X_new's index:
+    result_df = pd.DataFrame(
+        {"sample_id": X_new.index, "cluster5_probability": cluster5_probs}
+    )
+
+    print(result_df.head())
+    return mean_score, std_score, result_df
 
 
 ###############################################################################
@@ -120,9 +138,11 @@ def _keep_only_rows_with_target(phenotypic_df, target_df):
     Returns:
         pd.DataFrame: The filtered predictor variables.
     """
-    target_df = target_df.set_index("cases")
+    # target_df = target_df.set_index("cases")
 
-    return phenotypic_df[phenotypic_df.index.isin(target_df.index)]
+    return phenotypic_df[phenotypic_df.index.isin(target_df.index)], target_df[
+        target_df.index.isin(phenotypic_df.index)
+    ]
 
 
 class DataFrameImputer(BaseEstimator, TransformerMixin):
@@ -140,14 +160,19 @@ class DataFrameImputer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X_t = self.imputer.transform(X)
-        return pd.DataFrame(X_t, columns=X.columns, index=X.index)
+        imputed = pd.DataFrame(X_t, columns=X.columns, index=X.index)
+        # convert imputed integer values to integers
+        # for all columns that have integer dtype (in X), floor the imputed values
+        int_dtypes = [pd.Int8Dtype(), pd.Int16Dtype(), pd.Int32Dtype(), pd.Int64Dtype()]
+        for col in X.select_dtypes(include=int_dtypes).columns:
+            imputed[col] = imputed[col].round()
+        return imputed.astype(X.dtypes)
 
 
 class CovariateResidualizer(BaseEstimator, TransformerMixin):
     """
     Transformer to residualize features by removing the linear effects of specified
     covariates.
-    Operates on pandas DataFrames using column names.
     """
 
     def __init__(self, covariate_cols):
@@ -158,8 +183,9 @@ class CovariateResidualizer(BaseEstimator, TransformerMixin):
         for col in X.columns:
             if col not in self.covariate_cols:
                 reg = LinearRegression().fit(X[self.covariate_cols], X[col])
+                # fit intercept =true?
                 self.models_[col] = reg
-        return self
+        return self  # test
 
     def transform(self, X):
         X_res = X.copy()
@@ -194,11 +220,9 @@ def _identify_scaling_cols(df, covariate_cols):
 if __name__ == "__main__":
     # Load the data
     data = pd.read_pickle(BLD_DATA / "encoded_phenotypic_data.pkl")
-    target = pd.read_csv(DATA_DIR / "ClusterLabels.csv")
-
-    # Process the target data
-    target.set_index("cases", inplace=True)
-    target_series = target["cluster_label"]
+    targets = pd.read_pickle(BLD_DATA / "clean_cluster_labels.pkl")
 
     covariates = ["age", "bmi", "sex"]
-    mean_score, std_score = svm_model(data, target_series, covariates)
+    mean_score, std_score, result_df = svm_model(data, targets, covariates)
+    # result_df.to_csv(BLD_DATA / "cluster5_probabilities.csv")
+    # result_df.to_pickle(BLD_DATA / "cluster5_probabilities.pkl")
