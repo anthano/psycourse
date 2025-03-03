@@ -1,12 +1,6 @@
-from pathlib import Path
-
 import pandas as pd
 
-THIS_DIR = Path(".").resolve()
-ROOT = THIS_DIR.parent.parent.resolve()
-DATA_DIR = ROOT / "src" / "data"
-BLD_DATA = ROOT / "bld" / "data"
-BLD_DATA.mkdir(parents=True, exist_ok=True)
+from psycourse.config import BLD_DATA
 
 
 def encode_data(df):
@@ -86,7 +80,7 @@ def encode_data(df):
         "autoimm",
         "rel_christianity",
         "rel_islam",
-        "rel_other",
+        # "rel_other",
         "beh",
     ]
 

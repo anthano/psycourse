@@ -12,7 +12,7 @@ def clean_phenotypic_data(df):
 
     - Selecting relevant columns based on criteria analogous to Dwyer et al. (2020).
     - Renaming columns for clarity.
-    - Setting appropriate data types.
+    - Setting appropriate data types. Note: For now, -999 are turned into NAs.
 
     Args:
         df (pd.DataFrame): The input dataframe containing raw phenotypic data.
@@ -22,6 +22,7 @@ def clean_phenotypic_data(df):
 
     """
     df = df.set_index("v1_id")
+    df = df.replace(-999, np.nan)
     clean_df = pd.DataFrame(index=df.index).rename_axis("id", axis="index")
     clean_df["stat"] = df["v1_stat"].astype(
         pd.CategoricalDtype(categories=["CLINICAL", "CONTROL"])
@@ -33,8 +34,8 @@ def clean_phenotypic_data(df):
             categories=["Spring", "Summer", "Fall", "Winter"], ordered=True
         )
     )
-    clean_df["age_m_birth"] = df["v1_age_m_birth"].astype(pd.Float32Dtype())
-    clean_df["age_f_birth"] = df["v1_age_f_birth"].astype(pd.Float32Dtype())
+    clean_df["age_m_birth"] = df["v1_age_m_birth"].astype(pd.Int32Dtype())
+    clean_df["age_f_birth"] = df["v1_age_f_birth"].astype(pd.Int8Dtype())
     clean_df["marital_stat"] = df["v1_marital_stat"].astype(
         pd.CategoricalDtype(
             categories=[
@@ -47,19 +48,19 @@ def clean_phenotypic_data(df):
         )
     )
     clean_df["partner"] = _map_yes_no(df["v1_partner"])
-    clean_df["no_bio_children"] = df["v1_no_bio_chld"].astype(pd.Float32Dtype())
-    clean_df["no_step_children"] = df["v1_stp_chld"].astype(pd.Float32Dtype())
-    clean_df["no_adpt_children"] = df["v1_no_adpt_chld"].astype(pd.Float32Dtype())
-    clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Float32Dtype())
-    clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Float32Dtype())
+    clean_df["no_bio_children"] = df["v1_no_bio_chld"].astype(pd.Int8Dtype())
+    clean_df["no_step_children"] = df["v1_stp_chld"].astype(pd.Int8Dtype())
+    clean_df["no_adpt_children"] = df["v1_no_adpt_chld"].astype(pd.Int8Dtype())
+    clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Int8Dtype())
+    clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Int8Dtype())
     clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"])
-    clean_df["school"] = df["v1_school"].astype(pd.Float32Dtype())
-    clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Float32Dtype())
+    clean_df["school"] = df["v1_school"].astype(pd.Int8Dtype())
+    clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Int8Dtype())
 
     clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"])
     clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"])
     clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"])
-    clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Float32Dtype())
+    clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Int8Dtype())
     clean_df["work_impairment"] = _map_yes_no(df["v1_cur_work_restr"])
     clean_df["current_psych_treatment"] = df["v1_cur_psy_trm"].astype(pd.Float32Dtype())
     clean_df["outpat_treatment"] = df["v1_outpat_psy_trm"].astype(pd.Float32Dtype())
@@ -189,7 +190,8 @@ def clean_phenotypic_data(df):
     clean_df["mwtb"] = df["v1_nrpsy_mwtb"].astype(pd.Float32Dtype())
     clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"])
     clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"])
-    clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
+    # clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
+    # # zero variance and messes up
     clean_df["rel_act"] = df["v1_rel_act"].astype(pd.Float32Dtype())
     clean_df["med_compliance_week"] = df["v1_med_pst_wk"].astype(pd.Float32Dtype())
 
@@ -215,18 +217,14 @@ def clean_phenotypic_data(df):
     clean_df["whoqol_env"] = df["v1_whoqol_dom_env"].astype(pd.Float32Dtype())
 
     for i in range(1, 11):
-        clean_df[f"big_five_{i}"] = df[f"v1_big_five_itm{i}"].astype(pd.Float32Dtype())
-    clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(
-        pd.Float32Dtype()
-    )
-    clean_df["big_five_neuroticism"] = df["v1_big_five_neuro"].astype(pd.Float32Dtype())
+        clean_df[f"big_five_{i}"] = df[f"v1_big_five_itm{i}"].astype(pd.Int8Dtype())
+    clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(pd.Int32Dtype())
+    clean_df["big_five_neuroticism"] = df["v1_big_five_neuro"].astype(pd.Int8Dtype())
     clean_df["big_five_conscientiousness"] = df["v1_big_five_consc"].astype(
-        pd.Float32Dtype()
+        pd.Int32Dtype()
     )
-    clean_df["big_five_openness"] = df["v1_big_five_openn"].astype(pd.Float32Dtype())
-    clean_df["big_five_agreeableness"] = df["v1_big_five_agree"].astype(
-        pd.Float32Dtype()
-    )
+    clean_df["big_five_openness"] = df["v1_big_five_openn"].astype(pd.Int32Dtype())
+    clean_df["big_five_agreeableness"] = df["v1_big_five_agree"].astype(pd.Int32Dtype())
 
     clean_df_clinical = clean_df.query("stat == 'CLINICAL'")
     return clean_df_clinical
@@ -243,9 +241,9 @@ def _map_yes_no(sr):
 def _map_yes_no_control(sr):
     """Maps the column values to "yes", "no", "pd.NA" """
 
-    mapping = {"-999": "-999", "N": "no", "Y": "yes", np.nan: pd.NA}
+    mapping = {"-999": np.nan, "N": "no", "Y": "yes", np.nan: pd.NA}
 
-    return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no", "-999"]))
+    return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no"]))
 
 
 # --------------------------------------------------------------------------------------
@@ -797,18 +795,33 @@ def _remove_fasting_lipids(df):
     return df.drop(columns=lipids_affected_by_fasting, errors="ignore")
 
 
-if __name__ == "__main__":
-    df = pd.read_csv(
-        DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
-    )
-    clean_df = clean_phenotypic_data(df)
-    clean_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
-    clean_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
+def clean_labels_df(labels_df):
+    """Cleans the cluster labels dataframe. Sets ind; removes unnecessary columns."""
 
-    lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
-    sample_description = pd.read_csv(
-        DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
-    )
-    clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
-    clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
-    clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
+    labels_df = labels_df.set_index("cases").rename_axis("ind", axis="rows")
+    clean_labels_df = pd.DataFrame(index=labels_df.index)
+    clean_labels_df["cluster_label"] = labels_df["cluster_label"]
+
+    return clean_labels_df
+
+
+if __name__ == "__main__":
+    # df = pd.read_csv(
+    #   DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
+    # )
+    # cleaned_df = clean_phenotypic_data(df)
+    # cleaned_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
+    # cleaned_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
+
+    # lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
+    # sample_description = pd.read_csv(
+    #    DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
+    # )
+    # clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
+    # clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
+    # clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
+
+    labels_df = pd.read_csv(DATA_DIR / "ClusterLabels.csv")
+    clean_labels_df = clean_labels_df(labels_df)
+    clean_labels_df.to_csv(BLD_DATA / "clean_cluster_labels.csv")
+    clean_labels_df.to_pickle(BLD_DATA / "clean_cluster_labels.pkl")
