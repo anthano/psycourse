@@ -22,11 +22,10 @@ def clean_phenotypic_data(df):
 
     """
     df = df.set_index("v1_id")
-    df = df.replace(-999, np.nan)
+    df = df.query(
+        "v1_stat == 'CLINICAL'"
+    )  # raw_data only contains clinical patients now
     clean_df = pd.DataFrame(index=df.index).rename_axis("id", axis="index")
-    clean_df["stat"] = df["v1_stat"].astype(
-        pd.CategoricalDtype(categories=["CLINICAL", "CONTROL"])
-    )
     clean_df["sex"] = df["v1_sex"].astype(pd.CategoricalDtype(categories=["F", "M"]))
     clean_df["age"] = df["v1_age"].astype(pd.Int8Dtype())
     clean_df["seas_birth"] = df["v1_seas_birth"].astype(
@@ -54,16 +53,18 @@ def clean_phenotypic_data(df):
     clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Int8Dtype())
     clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Int8Dtype())
     clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"])
-    clean_df["school"] = df["v1_school"].astype(pd.Int8Dtype())
-    clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Int8Dtype())
+    clean_df["school"] = _replace_999_with_NA(df["v1_school"]).astype(pd.Int8Dtype())
+    # clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Int8Dtype())
 
     clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"])
     clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"])
     clean_df["supported_employment"] = _map_yes_no(df["v1_spec_emp"])
-    clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Int8Dtype())
+    # clean_df["work_absence"] = df["v1_wrk_abs_pst_5_yrs"].astype(pd.Int8Dtype())
     clean_df["work_impairment"] = _map_yes_no(df["v1_cur_work_restr"])
     clean_df["current_psych_treatment"] = df["v1_cur_psy_trm"].astype(pd.Float32Dtype())
-    clean_df["outpat_treatment"] = df["v1_outpat_psy_trm"].astype(pd.Float32Dtype())
+    clean_df["outpat_treatment"] = _replace_999_with_NA(df["v1_outpat_psy_trm"]).astype(
+        pd.Int8Dtype()
+    )
     clean_df["outpat_treatment_age"] = df["v1_age_1st_out_trm"].astype(
         pd.Float32Dtype()
     )
@@ -72,18 +73,20 @@ def clean_phenotypic_data(df):
         pd.Float32Dtype()
     )
     clean_df["duration_illness"] = df["v1_dur_illness"].astype(pd.Float32Dtype())
-    clean_df["first_ep"] = _map_yes_no_control(df["v1_1st_ep"])
+    clean_df["first_ep"] = _map_yes_no(df["v1_1st_ep"])
     clean_df["times_treated_inpatient_cont"] = df["v1_tms_daypat_outpat_trm"].astype(
         pd.Float32Dtype()
     )
     clean_df["times_treated_inpatient_ord"] = df["v1_cat_daypat_outpat_trm"].astype(
         pd.Float32Dtype()
     )
-    clean_df["adverse_events_curr_medication"] = _map_yes_no_control(df["v1_adv"])
-    clean_df["med_change"] = _map_yes_no_control(df["v1_medchange"])
-    clean_df["lithium"] = _map_yes_no_control(df["v1_lith"])
-    clean_df["lithium_dur"] = df["v1_lith_prd"].astype(pd.Float32Dtype())
-    clean_df["fam_hist"] = _map_yes_no_control(df["v1_fam_hist"])
+    clean_df["adverse_events_curr_medication"] = _map_yes_no(df["v1_adv"])
+    clean_df["med_change"] = _map_yes_no(df["v1_medchange"])
+    clean_df["lithium"] = _map_yes_no(df["v1_lith"])
+    clean_df["lithium_dur"] = _replace_999_with_0(df["v1_lith_prd"]).astype(
+        pd.Int8Dtype()
+    )
+    clean_df["fam_hist"] = _map_yes_no(df["v1_fam_hist"])  # -999 -> NA
     clean_df["height"] = df["v1_height"].astype(pd.Float32Dtype())
     clean_df["weight"] = df["v1_weight"].astype(pd.Float32Dtype())
     clean_df["bmi"] = df["v1_bmi"].astype(pd.Float32Dtype())
@@ -120,30 +123,48 @@ def clean_phenotypic_data(df):
         .replace({np.nan: pd.NA, "N": "never", "Y": "yes", "F": "former"})
         .astype(pd.CategoricalDtype(categories=["never", "yes", "former"]))
     )
-    clean_df["no_cig"] = df["v1_no_cig"].astype(pd.Float32Dtype())
+    clean_df["no_cig"] = _replace_999_with_0(df["v1_no_cig"]).astype(pd.Int64Dtype())
     clean_df["alc_past_year"] = df["v1_alc_pst12_mths"].astype(pd.Float32Dtype())
-    clean_df["alc_5_drinks"] = df["v1_alc_5orm"].astype(pd.Float32Dtype())
+    clean_df["alc_5_drinks"] = _replace_999_with_0(df["v1_alc_5orm"]).astype(
+        pd.Int8Dtype()
+    )
     clean_df["alc_dependence"] = _map_yes_no(df["v1_lftm_alc_dep"])
     clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"])
     clean_df["age_at_mde"] = df["v1_scid_age_MDE"].astype(pd.Float32Dtype())
     clean_df["age_at_mania"] = df["v1_scid_age_mania"].astype(pd.Float32Dtype())
-    clean_df["no_of_mania"] = df["v1_scid_no_mania"].astype(pd.Float32Dtype())
-    clean_df["age_at_hypomania"] = df["v1_scid_age_hypomania"].astype(pd.Float32Dtype())
-    clean_df["no_of_hypomania"] = df["v1_scid_no_hypomania"].astype(pd.Float32Dtype())
-
-    clean_df["ever_delus"] = _map_yes_no_control(df["v1_scid_ever_delus"])
-    clean_df["ever_halluc"] = _map_yes_no_control(df["v1_scid_ever_halls"])
-    clean_df["ever_psyc"] = _map_yes_no_control(df["v1_scid_ever_psyc"])
-    clean_df["ever_suic_ide"] = _map_yes_no_control(df["v1_scid_evr_suic_ide"])
-    clean_df["severity_suic_ide"] = df["v1_scid_suic_ide"].astype(pd.Float32Dtype())
-    clean_df["suic_methods"] = df["v1_scid_suic_thght_mth"].astype(pd.Float32Dtype())
-    clean_df["suic_note"] = df["v1_scid_suic_note_thgts"].astype(pd.Float32Dtype())
-    clean_df["suic_attempt"] = df["v1_suic_attmpt"].astype(pd.Float32Dtype())
-    clean_df["no_suic_attempt"] = df["v1_scid_no_suic_attmpt"].astype(pd.Float32Dtype())
-    clean_df["prep_suic_attempt_ord"] = df["v1_prep_suic_attp_ord"].astype(
+    clean_df["no_of_mania"] = _replace_999_with_0(df["v1_scid_no_mania"]).astype(
         pd.Float32Dtype()
     )
-    clean_df["suic_attempt_note"] = df["v1_suic_note_attmpt"].astype(pd.Float32Dtype())
+    clean_df["age_at_hypomania"] = df["v1_scid_age_hypomania"].astype(pd.Float32Dtype())
+    clean_df["no_of_hypomania"] = _replace_999_with_0(
+        df["v1_scid_no_hypomania"]
+    ).astype(pd.Float32Dtype())
+
+    clean_df["ever_delus"] = _map_yes_no(df["v1_scid_ever_delus"])
+    clean_df["ever_halluc"] = _map_yes_no(df["v1_scid_ever_halls"])
+    clean_df["ever_psyc"] = _map_yes_no(df["v1_scid_ever_psyc"])
+    clean_df["ever_suic_ide"] = _map_yes_no(df["v1_scid_evr_suic_ide"])
+    clean_df["severity_suic_ide"] = _replace_999_with_0(df["v1_scid_suic_ide"]).astype(
+        pd.Int8Dtype()
+    )
+    clean_df["suic_methods"] = _replace_999_with_0(df["v1_scid_suic_thght_mth"]).astype(
+        pd.Int8Dtype()
+    )
+    clean_df["suic_note"] = _replace_999_with_0(df["v1_scid_suic_note_thgts"]).astype(
+        pd.Int8Dtype()
+    )
+    clean_df["suic_attempt"] = _replace_999_with_0(df["v1_suic_attmpt"]).astype(
+        pd.Int8Dtype()
+    )
+    clean_df["no_suic_attempt"] = _replace_999_with_0(
+        df["v1_scid_no_suic_attmpt"]
+    ).astype(pd.Int8Dtype())
+    clean_df["prep_suic_attempt_ord"] = _replace_999_with_0(
+        df["v1_prep_suic_attp_ord"]
+    ).astype(pd.Int8Dtype())
+    clean_df["suic_attempt_note"] = _replace_999_with_0(
+        df["v1_suic_note_attmpt"]
+    ).astype(pd.Int8Dtype())
 
     for i in range(1, 8):
         clean_df[f"panss_p{i}"] = df[f"v1_panss_p{i}"].astype(pd.Float32Dtype())
@@ -163,10 +184,10 @@ def clean_phenotypic_data(df):
     for i in range(1, 10):
         clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
 
-    clean_df["idsc_9a"] = df["v1_idsc_itm9a"].astype(
-        pd.CategoricalDtype(categories=["-999", "A", "M", "N"])
-    )
-    clean_df["idsc_9b"] = _map_yes_no_control(df["v1_idsc_itm9b"])
+    # many missing values/ subsequent question, not useful
+    # clean_df["idsc_9a"] = df["v1_idsc_itm9a"].astype(
+    #    pd.CategoricalDtype(categories=["-999", "A", "M", "N"]))
+    # clean_df["idsc_9b"] = _map_yes_no_control(df["v1_idsc_itm9b"])
 
     for i in range(10, 31):
         clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
@@ -176,7 +197,7 @@ def clean_phenotypic_data(df):
         clean_df[f"ymrs_{i}"] = df[f"v1_ymrs_itm{i}"].astype(pd.Float32Dtype())
 
     clean_df["ymrs_total"] = df["v1_ymrs_sum"].astype(pd.Float32Dtype())
-    clean_df["cgi"] = df["v1_cgi_s"].astype(pd.Float32Dtype())
+    clean_df["cgi"] = _replace_999_with_NA(df["v1_cgi_s"]).astype(pd.Float32Dtype())
 
     clean_df["gaf"] = df["v1_gaf"].astype(pd.Float32Dtype())
     clean_df["language_skill"] = df["v1_nrpsy_lng"]
@@ -190,7 +211,7 @@ def clean_phenotypic_data(df):
     clean_df["mwtb"] = df["v1_nrpsy_mwtb"].astype(pd.Float32Dtype())
     clean_df["rel_christianity"] = _map_yes_no(df["v1_rel_chr"])
     clean_df["rel_islam"] = _map_yes_no(df["v1_rel_isl"])
-    # clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
+    clean_df["rel_other"] = _map_yes_no(df["v1_rel_oth"])
     # # zero variance and messes up
     clean_df["rel_act"] = df["v1_rel_act"].astype(pd.Float32Dtype())
     clean_df["med_compliance_week"] = df["v1_med_pst_wk"].astype(pd.Float32Dtype())
@@ -218,16 +239,19 @@ def clean_phenotypic_data(df):
 
     for i in range(1, 11):
         clean_df[f"big_five_{i}"] = df[f"v1_big_five_itm{i}"].astype(pd.Int8Dtype())
-    clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(pd.Int32Dtype())
-    clean_df["big_five_neuroticism"] = df["v1_big_five_neuro"].astype(pd.Int8Dtype())
-    clean_df["big_five_conscientiousness"] = df["v1_big_five_consc"].astype(
-        pd.Int32Dtype()
+    clean_df["big_five_extraversion"] = df["v1_big_five_extra"].astype(
+        pd.Float32Dtype()
     )
-    clean_df["big_five_openness"] = df["v1_big_five_openn"].astype(pd.Int32Dtype())
-    clean_df["big_five_agreeableness"] = df["v1_big_five_agree"].astype(pd.Int32Dtype())
+    clean_df["big_five_neuroticism"] = df["v1_big_five_neuro"].astype(pd.Float32Dtype())
+    clean_df["big_five_conscientiousness"] = df["v1_big_five_consc"].astype(
+        pd.Float32Dtype()
+    )
+    clean_df["big_five_openness"] = df["v1_big_five_openn"].astype(pd.Float32Dtype())
+    clean_df["big_five_agreeableness"] = df["v1_big_five_agree"].astype(
+        pd.Float32Dtype()
+    )
 
-    clean_df_clinical = clean_df.query("stat == 'CLINICAL'")
-    return clean_df_clinical
+    return clean_df
 
 
 def _map_yes_no(sr):
@@ -238,12 +262,16 @@ def _map_yes_no(sr):
     return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no"]))
 
 
-def _map_yes_no_control(sr):
-    """Maps the column values to "yes", "no", "pd.NA" """
+def _replace_999_with_NA(sr):
+    """Replaces -999 with pd.NA in the series."""
 
-    mapping = {"-999": np.nan, "N": "no", "Y": "yes", np.nan: pd.NA}
+    return sr.replace(-999, np.nan)
 
-    return sr.map(mapping).astype(pd.CategoricalDtype(categories=["yes", "no"]))
+
+def _replace_999_with_0(sr):
+    """Replaces -999 with 0 in the series."""
+
+    return sr.replace(-999, 0)
 
 
 # --------------------------------------------------------------------------------------
@@ -806,20 +834,19 @@ def clean_labels_df(labels_df):
 
 
 if __name__ == "__main__":
-    # df = pd.read_csv(
-    #   DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
-    # )
-    # cleaned_df = clean_phenotypic_data(df)
-    # cleaned_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
-    # cleaned_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
-
-    # lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
-    # sample_description = pd.read_csv(
-    #    DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
-    # )
-    # clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
-    # clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
-    # clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
+    df = pd.read_csv(
+        DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
+    )
+    cleaned_df = clean_phenotypic_data(df)
+    cleaned_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
+    cleaned_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
+    lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
+    sample_description = pd.read_csv(
+        DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
+    )
+    clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
+    clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
+    clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
 
     labels_df = pd.read_csv(DATA_DIR / "ClusterLabels.csv")
     clean_labels_df = clean_labels_df(labels_df)

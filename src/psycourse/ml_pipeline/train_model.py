@@ -5,7 +5,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
-from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import GridSearchCV, KFold, cross_val_score
 from sklearn.multiclass import OneVsRestClassifier
@@ -14,6 +13,7 @@ from sklearn.preprocessing import FunctionTransformer, MinMaxScaler
 from sklearn.svm import LinearSVC
 
 from psycourse.config import BLD_DATA
+from psycourse.ml_pipeline.impute import KNNMedianImputer
 
 ###############################################################################
 # Main SVM Model Function
@@ -39,8 +39,8 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
     X_val = phenotypic_df.copy()
     y_val = target_df.copy()
 
-    # Identify columns to be scaled (using column names)
-    scaling_cols_names = _identify_scaling_cols(phenotypic_df, covariate_cols)
+    # Identify columns to be residualized and scaled (using column names)
+    scaling_cols_names = _identify_continuous_cols(phenotypic_df, covariate_cols)
 
     # Define a transformer to drop the covariate columns.
     drop_covariates_transformer = FunctionTransformer(
@@ -54,11 +54,11 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
     # Build the pipeline:
     pipeline = Pipeline(
         [
-            ("imputer", DataFrameImputer(KNNImputer(n_neighbors=7))),
+            ("imputer", DataFrameImputer(KNNMedianImputer(n_neighbors=7))),
             ("residualize", CovariateResidualizer(covariate_cols=covariate_cols)),
             ("drop_covariates", drop_covariates_transformer),
             (
-                "preprocessor",
+                "first_scaling",
                 ColumnTransformer(
                     transformers=[
                         (
@@ -71,6 +71,7 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
                 ),
             ),
             ("pca", PCA()),
+            # Add a scaling step here again
             ("svm", OneVsRestClassifier(calibrated_svm)),
         ]
     )
@@ -183,7 +184,6 @@ class CovariateResidualizer(BaseEstimator, TransformerMixin):
         for col in X.columns:
             if col not in self.covariate_cols:
                 reg = LinearRegression().fit(X[self.covariate_cols], X[col])
-                # fit intercept =true?
                 self.models_[col] = reg
         return self  # test
 
@@ -195,7 +195,7 @@ class CovariateResidualizer(BaseEstimator, TransformerMixin):
         return X_res
 
 
-def _identify_scaling_cols(df, covariate_cols):
+def _identify_continuous_cols(df, covariate_cols):
     """
     Identify the columns that need to be scaled. We scale continuous or
     quasi-continuous variables that are not covariates. Dichotomous variables

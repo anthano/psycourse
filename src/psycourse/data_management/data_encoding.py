@@ -3,9 +3,10 @@ import pandas as pd
 from psycourse.config import BLD_DATA
 
 
-def encode_data(df):
+def encode_and_prune_data(df):
     """Takes the cleaned phenotypic dataframes and encodes them for future model
-    statistics.
+    statistics. Additionally, removes the columns that have (1) more than 25% missing or
+    (2) limited variance (> 95% of the values are the same).
 
     Args:
         df (pd.DataFrame): The cleaned phenotypic dataframe.
@@ -172,12 +173,12 @@ def encode_data(df):
         *inf_cols,
         *cancer_cols,
         *other_cols,
-        "stat",
-        "idsc_9a",
-        "idsc_9b",
     ]
 
-    encoded_df = encoded_df.drop(columns=cols_to_drop)
+    low_var_high_na_cols = _identify_low_variance_high_na_cols(encoded_df)
+
+    all_cols_to_drop = set(cols_to_drop) | set(low_var_high_na_cols)
+    encoded_df = encoded_df.drop(columns=list(all_cols_to_drop))
 
     return encoded_df
 
@@ -187,8 +188,27 @@ def _map_yes_no(sr):
     return sr.map({"yes": 1, "no": 0}).astype(pd.Int8Dtype())
 
 
+def _identify_low_variance_high_na_cols(df):
+    """
+    Identifies columns that have low variance (95% of non-missing values are the same)
+    or high missingness (>25% missing values), and returns a list of those columns.
+    """
+    low_var_cols = []
+    high_na_cols = []
+
+    for col in df.columns:
+        if df[col].isna().mean() > 0.25:
+            high_na_cols.append(col)
+
+        if df[col].dropna().value_counts(normalize=True).max() >= 0.95:
+            low_var_cols.append(col)
+
+    # Return the union of both lists without duplicates
+    return list(set(low_var_cols + high_na_cols))
+
+
 if __name__ == "__main__":
     data = pd.read_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
-    encoded_df = encode_data(data)
+    encoded_df = encode_and_prune_data(data)
     encoded_df.to_csv(BLD_DATA / "encoded_phenotypic_data.csv")
     encoded_df.to_pickle(BLD_DATA / "encoded_phenotypic_data.pkl")
