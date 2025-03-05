@@ -1,7 +1,5 @@
 import pandas as pd
 
-from psycourse.config import BLD_DATA
-
 
 def encode_and_prune_data(df):
     """Takes the cleaned phenotypic dataframes and encodes them for future model
@@ -205,10 +203,3 @@ def _identify_low_variance_high_na_cols(df):
 
     # Return the union of both lists without duplicates
     return list(set(low_var_cols + high_na_cols))
-
-
-if __name__ == "__main__":
-    data = pd.read_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
-    encoded_df = encode_and_prune_data(data)
-    encoded_df.to_csv(BLD_DATA / "encoded_phenotypic_data.csv")
-    encoded_df.to_pickle(BLD_DATA / "encoded_phenotypic_data.pkl")

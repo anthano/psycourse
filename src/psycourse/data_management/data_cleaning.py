@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 
-from psycourse.config import BLD_DATA, DATA_DIR
-
 
 # --------------------------------------------------------------------------------------
 # PHENOTYPIC DATA #
@@ -831,24 +829,3 @@ def clean_labels_df(labels_df):
     clean_labels_df["cluster_label"] = labels_df["cluster_label"]
 
     return clean_labels_df
-
-
-if __name__ == "__main__":
-    df = pd.read_csv(
-        DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv", delimiter="\t"
-    )
-    cleaned_df = clean_phenotypic_data(df)
-    cleaned_df.to_csv(BLD_DATA / "clean_phenotypic_data.csv")
-    cleaned_df.to_pickle(BLD_DATA / "clean_phenotypic_data.pkl")
-    lipid_intensities = pd.read_csv(DATA_DIR / "lipidomics" / "lipid_intensities.csv")
-    sample_description = pd.read_csv(
-        DATA_DIR / "lipidomics" / "sample_description.csv", delimiter=";"
-    )
-    clean_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
-    clean_lipidomic_df.to_csv(BLD_DATA / "clean_lipidomic_data.csv")
-    clean_lipidomic_df.to_pickle(BLD_DATA / "clean_lipidomic_data.pkl")
-
-    labels_df = pd.read_csv(DATA_DIR / "ClusterLabels.csv")
-    clean_labels_df = clean_labels_df(labels_df)
-    clean_labels_df.to_csv(BLD_DATA / "clean_cluster_labels.csv")
-    clean_labels_df.to_pickle(BLD_DATA / "clean_cluster_labels.pkl")
