@@ -19,6 +19,25 @@ def encode_and_prune_data(df):
     # Create binary variables
     # ==================================================================================
     encoded_df["sex"] = encoded_df["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
+    encoded_df["ever_mde"] = encoded_df["age_at_mde"].gt(0).astype(pd.Int8Dtype())
+    encoded_df["ever_mania"] = encoded_df["age_at_mania"].gt(0).astype(pd.Int8Dtype())
+    encoded_df["ever_hypomania"] = (
+        encoded_df["age_at_hypomania"].gt(0).astype(pd.Int8Dtype())
+    )
+
+    # ==================================================================================
+    # Change the -999 values to NaN
+    # ==================================================================================
+
+    encoded_df["age_at_mde"] = (
+        encoded_df["age_at_mde"].replace(-999, pd.NA).astype(pd.Int8Dtype())
+    )
+    encoded_df["age_at_mania"] = (
+        encoded_df["age_at_mania"].replace(-999, pd.NA).astype(pd.Int8Dtype())
+    )
+    encoded_df["ever_hypomania"] = (
+        encoded_df["ever_hypomania"].replace(-999, pd.NA).astype(pd.Int8Dtype())
+    )
 
     # ----------------------------------------------------------------------------------
     # Perform one-hot encoding on categorical variables with more than 2 categories
@@ -79,7 +98,7 @@ def encode_and_prune_data(df):
         "autoimm",
         "rel_christianity",
         "rel_islam",
-        # "rel_other",
+        "rel_other",
         "beh",
     ]
 
@@ -87,11 +106,9 @@ def encode_and_prune_data(df):
         encoded_df[variable] = encoded_df[variable].cat.remove_unused_categories()
         encoded_df[variable] = _map_yes_no(encoded_df[variable])
 
-    encoded_df["ever_mde"] = encoded_df["age_at_mde"].gt(0).astype(pd.Int8Dtype())
-    encoded_df["ever_mania"] = encoded_df["age_at_mania"].gt(0).astype(pd.Int8Dtype())
-    encoded_df["ever_hypomania"] = (
-        encoded_df["age_at_hypomania"].gt(0).astype(pd.Int8Dtype())
-    )
+    # ----------------------------------------------------------------------------------
+    # Create summary variables for disease categories
+    # ----------------------------------------------------------------------------------
 
     cd_cols = ["cholesterol", "hypertension", "angina_pectoris", "heartattack"]
     metabolic_cols = ["diabetes"]
@@ -155,6 +172,9 @@ def encode_and_prune_data(df):
         pd.Int8Dtype()
     )
 
+    # --------------------------------------------------------------------------------
+    # Drop the individual disease columns + low variance/high missingness columns
+    # --------------------------------------------------------------------------------
     cols_to_drop = [
         *cd_cols,
         *metabolic_cols,
@@ -198,6 +218,7 @@ def _identify_low_variance_high_na_cols(df):
         if df[col].isna().mean() > 0.25:
             high_na_cols.append(col)
 
+    if not df[col].dropna().empty:
         if df[col].dropna().value_counts(normalize=True).max() >= 0.95:
             low_var_cols.append(col)
 

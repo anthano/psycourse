@@ -51,8 +51,8 @@ def clean_phenotypic_data(df):
     clean_df["no_brothers"] = df["v1_brothers"].astype(pd.Int8Dtype())
     clean_df["no_sisters"] = df["v1_sisters"].astype(pd.Int8Dtype())
     clean_df["living_alone"] = _map_yes_no(df["v1_liv_aln"])
-    clean_df["school"] = _replace_999_with_NA(df["v1_school"]).astype(pd.Int8Dtype())
-    # clean_df["ed_status"] = df["v1_ed_status"].astype(pd.Int8Dtype())
+    clean_df["school"] = _bump_ordinal(df["v1_school"])
+    clean_df["ed_status"] = _bump_ordinal(df["v1_ed_status"])
 
     clean_df["employment"] = _map_yes_no(df["v1_curr_paid_empl"])
     clean_df["disability_pension"] = _map_yes_no(df["v1_disabl_pens"])
@@ -130,11 +130,9 @@ def clean_phenotypic_data(df):
     clean_df["illicit_drugs"] = _map_yes_no(df["v1_evr_ill_drg"])
     clean_df["age_at_mde"] = df["v1_scid_age_MDE"].astype(pd.Float32Dtype())
     clean_df["age_at_mania"] = df["v1_scid_age_mania"].astype(pd.Float32Dtype())
-    clean_df["no_of_mania"] = _replace_999_with_0(df["v1_scid_no_mania"]).astype(
-        pd.Float32Dtype()
-    )
+    clean_df["no_of_mania"] = _map_999_with_0_99_to_NA(df["v1_scid_no_mania"])
     clean_df["age_at_hypomania"] = df["v1_scid_age_hypomania"].astype(pd.Float32Dtype())
-    clean_df["no_of_hypomania"] = _replace_999_with_0(
+    clean_df["no_of_hypomania"] = _map_999_with_0_99_to_NA(
         df["v1_scid_no_hypomania"]
     ).astype(pd.Float32Dtype())
 
@@ -165,40 +163,37 @@ def clean_phenotypic_data(df):
     ).astype(pd.Int8Dtype())
 
     for i in range(1, 8):
-        clean_df[f"panss_p{i}"] = df[f"v1_panss_p{i}"].astype(pd.Float32Dtype())
+        clean_df[f"panss_p{i}"] = df[f"v1_panss_p{i}"].astype(pd.Int8Dtype())
 
-    clean_df["panss_sum_pos"] = df["v1_panss_sum_pos"].astype(pd.Float32Dtype())
+    clean_df["panss_sum_pos"] = df["v1_panss_sum_pos"].astype(pd.Int8Dtype())
     for i in range(1, 8):
-        clean_df[f"panss_n{i}"] = df[f"v1_panss_n{i}"].astype(pd.Float32Dtype())
+        clean_df[f"panss_n{i}"] = df[f"v1_panss_n{i}"].astype(pd.Int8Dtype())
 
     clean_df["panss_sum_neg"] = df["v1_panss_sum_neg"].astype(pd.Float32Dtype())
 
     for i in range(1, 16):
-        clean_df[f"panss_g{i}"] = df[f"v1_panss_g{i}"].astype(pd.Float32Dtype())
+        clean_df[f"panss_g{i}"] = df[f"v1_panss_g{i}"].astype(pd.Int8Dtype())
 
     clean_df["panss_sum_gen"] = df["v1_panss_sum_gen"].astype(pd.Float32Dtype())
     clean_df["panss_total_score"] = df["v1_panss_sum_tot"].astype(pd.Float32Dtype())
 
-    for i in range(1, 10):
-        clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
-
-    # many missing values/ subsequent question, not useful
-    # clean_df["idsc_9a"] = df["v1_idsc_itm9a"].astype(
-    #    pd.CategoricalDtype(categories=["-999", "A", "M", "N"]))
-    # clean_df["idsc_9b"] = _map_yes_no_control(df["v1_idsc_itm9b"])
-
-    for i in range(10, 31):
+    for i in range(1, 31):
         clean_df[f"idsc_{i}"] = df[f"v1_idsc_itm{i}"].astype(pd.Float32Dtype())
 
     clean_df["idsc_total"] = df["v1_idsc_sum"].astype(pd.Float32Dtype())
     for i in range(1, 12):
-        clean_df[f"ymrs_{i}"] = df[f"v1_ymrs_itm{i}"].astype(pd.Float32Dtype())
+        clean_df[f"ymrs_{i}"] = df[f"v1_ymrs_itm{i}"].astype(pd.Int8Dtype())
 
     clean_df["ymrs_total"] = df["v1_ymrs_sum"].astype(pd.Float32Dtype())
-    clean_df["cgi"] = _replace_999_with_NA(df["v1_cgi_s"]).astype(pd.Float32Dtype())
+    clean_df["cgi"] = _replace_999_with_NA(df["v1_cgi_s"]).astype(pd.Int8Dtype())
 
     clean_df["gaf"] = df["v1_gaf"].astype(pd.Float32Dtype())
-    clean_df["language_skill"] = df["v1_nrpsy_lng"]
+    clean_df["language_skill"] = df["v1_nrpsy_lng"].astype(
+        pd.CategoricalDtype(
+            categories=["not sufficient", "sufficient", "good", "mother tongue"],
+            ordered=True,
+        )
+    )
     clean_df["tmt_a_time"] = df["v1_nrpsy_tmt_A_rt"].astype(pd.Float32Dtype())
     clean_df["tmt_a_err"] = df["v1_nrpsy_tmt_A_err"].astype(pd.Float32Dtype())
     clean_df["tmt_b_time"] = df["v1_nrpsy_tmt_B_rt"].astype(pd.Float32Dtype())
@@ -270,6 +265,21 @@ def _replace_999_with_0(sr):
     """Replaces -999 with 0 in the series."""
 
     return sr.replace(-999, 0)
+
+
+def _map_999_with_0_99_to_NA(sr):
+    """Replaces -999 with 0 in the series."""
+
+    mapping = {-999: 0, 99: np.nan}
+    return sr.map(mapping).astype(pd.Float32Dtype())
+
+
+def _bump_ordinal(sr):
+    """Bumps the ordinal values by 1, -999 to 0."""
+    # Apply the transformation: if value == 0, assign -999, else add 1.
+    bumped_transformed = sr.apply(lambda x: 0 if x == -999 else x + 1)
+    # Convert to a nullable integer type
+    return bumped_transformed.astype(pd.Int8Dtype())
 
 
 # --------------------------------------------------------------------------------------
@@ -821,11 +831,16 @@ def _remove_fasting_lipids(df):
     return df.drop(columns=lipids_affected_by_fasting, errors="ignore")
 
 
-def clean_labels_df(labels_df):
+######################################################################################
+# CLUSTER LABELS
+######################################################################################
+
+
+def clean_cluster_labels(labels_df):
     """Cleans the cluster labels dataframe. Sets ind; removes unnecessary columns."""
 
     labels_df = labels_df.set_index("cases").rename_axis("ind", axis="rows")
-    clean_labels_df = pd.DataFrame(index=labels_df.index)
-    clean_labels_df["cluster_label"] = labels_df["cluster_label"]
+    cleaned_labels = pd.DataFrame(index=labels_df.index)
+    cleaned_labels["cluster_label"] = labels_df["cluster_label"]
 
-    return clean_labels_df
+    return cleaned_labels
