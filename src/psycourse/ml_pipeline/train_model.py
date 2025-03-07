@@ -78,22 +78,35 @@ def svm_model(phenotypic_df, target_df, covariate_cols):
 
     # Define grid search parameters.
     parameters_grid = {
-        # "pca__n_components": [0.25, 0.5, 0.75, 1],
-        "pca__n_components": [0.25],
-        "svm__estimator__estimator__C": [0.015625, 0.03125],
-        # "svm__estimator__estimator__C": [0.015625, 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16]  # noqa: E501
+        "pca__n_components": [0.25, 0.5, 0.75, 1],
+        # "pca__n_components": [0.25],
+        # "svm__estimator__estimator__C": [0.015625, 0.03125],
+        "svm__estimator__estimator__C": [
+            0.015625,
+            0.03125,
+            0.0625,
+            0.125,
+            0.25,
+            0.5,
+            1,
+            2,
+            4,
+            8,
+            16,
+        ],  # noqa: E501
     }
 
     # Set up nested cross-validation (10 inner folds and 10 outer folds)
-    inner_cv = KFold(n_splits=2, shuffle=True, random_state=42)
-    outer_cv = KFold(n_splits=2, shuffle=True, random_state=42)
+    inner_cv = KFold(n_splits=10, shuffle=True, random_state=42)
+    outer_cv = KFold(n_splits=10, shuffle=True, random_state=42)
 
     clf = GridSearchCV(
         estimator=pipeline,
         param_grid=parameters_grid,
         cv=inner_cv,
         scoring="balanced_accuracy",
-        n_jobs=1,
+        n_jobs=-2,
+        verbose=True,
     )
     nested_scores = cross_val_score(clf, X=X_val, y=y_val, cv=outer_cv)
 
@@ -220,7 +233,7 @@ def _identify_continuous_cols(df, covariate_cols):
 if __name__ == "__main__":
     # Load the data
     data = pd.read_pickle(BLD_DATA / "encoded_phenotypic_data.pkl")
-    targets = pd.read_pickle(BLD_DATA / "clean_cluster_labels.pkl")
+    targets = pd.read_pickle(BLD_DATA / "cleaned_cluster_labels.pkl")
 
     covariates = ["age", "bmi", "sex"]
     mean_score, std_score, result_df = svm_model(data, targets, covariates)
