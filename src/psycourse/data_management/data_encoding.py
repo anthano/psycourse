@@ -193,10 +193,7 @@ def encode_and_prune_data(df):
         *other_cols,
     ]
 
-    low_var_high_na_cols = _identify_low_variance_high_na_cols(encoded_df)
-
-    all_cols_to_drop = set(cols_to_drop) | set(low_var_high_na_cols)
-    encoded_df = encoded_df.drop(columns=list(all_cols_to_drop))
+    encoded_df = encoded_df.drop(columns=list(cols_to_drop))
 
     return encoded_df
 

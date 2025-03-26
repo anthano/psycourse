@@ -98,6 +98,8 @@ def svm_model(full_dataset_for_classifier):
         ],
     }
 
+    # \\TODO: adjust range from hyperparameter tuning to 2**-6 to 2**6
+
     # Set up nested cross-validation (10 inner folds and 10 outer folds)
     inner_cv = KFold(n_splits=10, shuffle=True, random_state=42)
     outer_cv = KFold(n_splits=10, shuffle=True, random_state=42)
