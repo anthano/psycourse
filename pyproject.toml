@@ -20,9 +20,6 @@ classifiers = [
 authors = [
     { name = "JANE DOE", email = "janedoe@example-university.com" },
 ]
-maintainers = [
-    { name = "JANE DOE", email = "janedoe@example-university.com" },
-]
 
 [project.readme]
 file = "README.md"
@@ -32,10 +29,7 @@ content-type = "text/markdown"
 text = "MIT"
 
 [project.urls]
-Changelog = "https://github.com/OpenSourceEconomics/econ-project-templates"
-Documentation = "https://github.com/OpenSourceEconomics/econ-project-templates"
-Github = "https://github.com/OpenSourceEconomics/econ-project-templates"
-Tracker = "https://github.com/OpenSourceEconomics/econ-project-templates/issues"
+Github = "https://github.com/anthano/psycourse"
 
 # ======================================================================================
 # Build system configuration
@@ -80,6 +74,8 @@ pandas = ">=2.2"
 matplotlib = ">=3.10.0,<4"
 scikit-learn = ">=1.6.1,<2"
 pygraphviz = "*"
+ipykernel = ">=6.29.5,<7"
+pip = ">=25.0.1,<26"
 
 [tool.pixi.pypi-dependencies]
 pdbp = "*"

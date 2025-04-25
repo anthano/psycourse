@@ -32,20 +32,18 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 ###############################################################################
 
 
-def svm_model(full_dataset_for_classifier):
+def svm_model(clean_dataset_for_classifier):
     """
     Train an SVM model with nested cross-validation on the given data.
 
     Args:
-        phenotypic_df (pd.DataFrame): Predictor variables (including covariates).
-        target_df (pd.DataFrame): Target variable (Cluster Labels).
-        covariate_cols (list): List of covariate column names (e.g., ['bmi', 'age',
-            'sex']).
+        clean_dataset_for_classifier (pd.DataFrame): The dataset to train the model on.
+        The dataset should contain features and a target column named "cluster_label".
 
     Returns:
         tuple: Mean and standard deviation of nested CV scores.
     """
-    data = full_dataset_for_classifier
+    data = clean_dataset_for_classifier
 
     X = data.drop("cluster_label", axis=1).copy()
     y = data["cluster_label"].copy()
@@ -177,7 +175,7 @@ def svm_model(full_dataset_for_classifier):
     plt.ylabel("Balanced Accuracy")
     plt.title("Learning Curve")
     plt.legend(loc="best")
-    # plt.show()
+    plt.show()
 
     # Obtain predicted probabilities for each class
     y_score = best_model.predict_proba(X_test)
@@ -217,7 +215,7 @@ def svm_model(full_dataset_for_classifier):
     plt.ylabel("True Positive Rate")
     plt.title("ROC Curves for Each Class")
     plt.legend(loc="lower right")
-    # plt.show()
+    plt.show()
 
     # Compute and display the confusion matrix
     y_pred = best_model.predict(X_test)
