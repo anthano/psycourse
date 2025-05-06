@@ -243,9 +243,32 @@ def svm_model(clean_dataset_for_classifier):
     prob_df["true_label"] = y_test
     prob_df["predicted_label"] = best_model.predict(X_test)
 
-    print(prob_df.head())
+    # Refit the model on the entire dataset (X, y):
 
-    return prob_df
+    # Unpack best hyperparameters:
+    best_params = clf.best_params_
+
+    # Reconfigure the pipeline with those params:
+    final_model = pipeline.set_params(**best_params)
+
+    # Fit on the entire dataset (X, y):
+    final_model.fit(X, y)
+
+    # Predict probabilities and labels on the full X:
+    probs_full = final_model.predict_proba(X)
+    preds_full = final_model.predict(X)
+
+    # Build a DataFrame with the original index:
+    full_df = pd.DataFrame(
+        probs_full,
+        index=X.index,
+        columns=[f"prob_class_{cls}" for cls in final_model.classes_],
+    )
+    full_df["true_label"] = y
+    full_df["predicted_label"] = preds_full
+    print(full_df.head())
+
+    return full_df
 
 
 ###############################################################################
