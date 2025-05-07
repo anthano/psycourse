@@ -26,6 +26,8 @@ def clean_phenotypic_data(df):
     clean_df = pd.DataFrame(index=df.index).rename_axis("id", axis="index")
     clean_df["sex"] = df["v1_sex"].astype(pd.CategoricalDtype(categories=["F", "M"]))
     clean_df["age"] = df["v1_age"].astype(pd.Int8Dtype())
+    clean_df["diagnosis"] = df["v1_scid_dsm_dx"]
+    clean_df["gsa_id"] = df["gsa_id"]
     clean_df["seas_birth"] = df["v1_seas_birth"].astype(
         pd.CategoricalDtype(
             categories=["Spring", "Summer", "Fall", "Winter"], ordered=True
@@ -306,7 +308,7 @@ def clean_lipidomic_data(sample_description, lipid_intensities):
     clean_sample_description = _clean_sample_description(sample_description)
     clean_lipid_intensities = _clean_lipid_intensities(lipid_intensities)
     merged_df = clean_sample_description.join(clean_lipid_intensities, on="ind")
-    merged_df = merged_df.set_index("Patient_ID")
+    merged_df = merged_df.set_index("Patient_ID").rename_axis("id", axis="index")
 
     return merged_df
 
