@@ -6,3 +6,4 @@ DATA_DIR = SRC / "data"
 ROOT = SRC.parent.parent.resolve()
 BLD = ROOT / "bld"
 BLD_DATA = BLD / "data"
+BLD_MODELS = BLD / "models"

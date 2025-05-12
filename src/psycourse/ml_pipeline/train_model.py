@@ -1,3 +1,5 @@
+import pickle
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,7 +26,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, label_binarize
 from sklearn.svm import LinearSVC
 
-from psycourse.config import BLD_DATA
+from psycourse.config import BLD_DATA, BLD_MODELS
 from psycourse.ml_pipeline.impute import KNNMedianImputer
 
 ###############################################################################
@@ -198,7 +200,7 @@ def svm_model(clean_dataset_for_classifier):
 
     # Plot ROC curves for each class
     plt.figure(figsize=(8, 6))
-    colors = ["blue", "red", "green", "orange", "purple"]  # Adjust if needed
+    colors = ["blue", "red", "green", "orange", "purple"]
     for i in range(n_classes):
         plt.plot(
             fpr[i],
@@ -267,6 +269,9 @@ def svm_model(clean_dataset_for_classifier):
     full_df["true_label"] = y
     full_df["predicted_label"] = preds_full
     print(full_df.head())
+
+    with open(BLD_MODELS / "svm_classifier.pkl", "wb") as f:
+        pickle.dump(final_model, f)
 
     return full_df
 
