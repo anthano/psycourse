@@ -81,4 +81,8 @@ def create_sparse_dataset_for_classifier(phenotypic_df, target_df):
         [sparse_phenotypic_df, target_df], axis=1, join="inner"
     )
 
-    return sparse_phenotypic_df_with_targets
+    sparse_phenotypic_new_df_without_targets = sparse_phenotypic_df.loc[
+        ~sparse_phenotypic_df.index.isin(target_df.index)
+    ]
+
+    return sparse_phenotypic_df_with_targets, sparse_phenotypic_new_df_without_targets
