@@ -8,6 +8,7 @@ from psycourse.data_management.data_cleaning import (
     clean_cluster_labels,
     clean_lipidomic_data,
     clean_phenotypic_data,
+    clean_prs_data,
 )
 
 
@@ -24,7 +25,6 @@ def task_clean_phenotypic_data(
     cleaned_phenotypic_df.to_pickle(produces)
 
 
-@pytask.mark.wip
 def task_clean_lipidomic_data(
     script_path=SRC / "data_management" / "data_cleaning.py",
     lipid_intensities_path=DATA_DIR / "lipidomics" / "lipid_intensities.csv",
@@ -49,3 +49,17 @@ def task_clean_cluster_labels_data(
     cluster_labels = pd.read_csv(cluster_labels_path)
     cleaned_cluster_labels = clean_cluster_labels(cluster_labels)
     cleaned_cluster_labels.to_pickle(produces)
+
+
+def task_clean_prs_data(
+    script_path=SRC / "data_management" / "data_cleaning.py",
+    prs_data_path=DATA_DIR
+    / "prs"
+    / "reduced_final_no_lipids_2025-05-28_prs_collection.csv",
+    produces=BLD_DATA / "cleaned_prs_data.pkl",
+):
+    """Clean the polygenic risk scores (PRS) data."""
+
+    prs_data = pd.read_csv(prs_data_path, sep="\t")
+    cleaned_prs_data = clean_prs_data(prs_data)
+    cleaned_prs_data.to_pickle(produces)

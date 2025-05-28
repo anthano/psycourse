@@ -846,3 +846,36 @@ def clean_cluster_labels(labels_df):
     cleaned_labels["cluster_label"] = labels_df["cluster_label"]
 
     return cleaned_labels
+
+
+########################################################################################
+# PRS DATA
+########################################################################################
+
+
+def clean_prs_data(prs_data):
+    prs_data = prs_data.set_index(prs_data["FID"])
+    clean_prs_df = pd.DataFrame(index=(prs_data["FID"]).rename("gsa_id"))
+    prs_renaming_dict = {
+        "ADHD_Demontis2023_pst_eff_a1_b0.5_phiauto": "ADHD_PRS",
+        "ASD_Grove2019_pst_eff_a1_b0.5_phiauto": "ASD_PRS",
+        "BIP_OConnell2025_pst_eff_a1_b0.5_phiauto": "BPD_PRS",
+        "EduYears_Okbay2022_pst_eff_a1_b0.5_phiauto": "Education_PRS",
+        "SCZ_core_Trubetskoy2022_pst_eff_a1_b0.5_phiauto": "SCZ_PRS",
+        "agreeableness_Gupta2024_pst_eff_a1_b0.5_phiauto": "Agreeableness_PRS",
+        "alzheimer_bellenguez2022_pst_eff_a1_b0.5_phiauto": "Alzheimer_PRS",
+        "conscientiousness_Gupta2024_pst_eff_a1_b0.5_phiauto": "Conscientiousness_PRS",
+        "extraversion_Gupta2024_pst_eff_a1_b0.5_phiauto": "Extraversion_PRS",
+        "mdd_adams2025_pst_eff_a1_b0.5_phiauto": "MDD_PRS",
+        "neuroticism_Gupta2024_pst_eff_a1_b0.5_phiauto": "Neuroticism_PRS",
+        "openness_Gupta2024_pst_eff_a1_b0.5_phiauto": "Openness_PRS",
+        "sleep_disturbance_long_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDisturbanceLong_PRS",  # noqa: E501
+        "sleep_disturbance_short_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDisturbanceShort_PRS",  # noqa: E501
+    }
+    for key, value in prs_renaming_dict.items():
+        if key in prs_data.columns:
+            clean_prs_df[value] = prs_data[key].astype(pd.Float64Dtype())
+        else:
+            print(f"Warning: {key} not found in prs_data columns.")
+
+    return clean_prs_df
