@@ -55,7 +55,7 @@ def task_clean_prs_data(
     script_path=SRC / "data_management" / "data_cleaning.py",
     prs_data_path=DATA_DIR
     / "prs"
-    / "reduced_final_no_lipids_2025-05-28_prs_collection.csv",
+    / "final_diagnosed_only_2025-06-12_prs_collection.tsv",
     produces=BLD_DATA / "cleaned_prs_data.pkl",
 ):
     """Clean the polygenic risk scores (PRS) data."""

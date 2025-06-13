@@ -77,6 +77,11 @@ pygraphviz = "*"
 ipykernel = ">=6.29.5,<7"
 pip = ">=25.0.1,<26"
 statsmodels = ">=0.14.0,<1"
+seaborn = ">=0.13.2,<0.14"
+libgfortran = "*"
+libgfortran5 = ">=11"
+openblas = "*"
+scipy = ">=1.13.0"
 
 [tool.pixi.pypi-dependencies]
 pdbp = "*"

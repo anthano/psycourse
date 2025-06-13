@@ -7,3 +7,4 @@ ROOT = SRC.parent.parent.resolve()
 BLD = ROOT / "bld"
 BLD_DATA = BLD / "data"
 BLD_MODELS = BLD / "models"
+BLD_RESULTS = BLD / "results"
