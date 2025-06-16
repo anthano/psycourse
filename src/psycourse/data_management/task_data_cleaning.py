@@ -1,7 +1,6 @@
 """Tasks for managing the data."""
 
 import pandas as pd
-import pytask
 
 from psycourse.config import BLD_DATA, DATA_DIR, SRC
 from psycourse.data_management.data_cleaning import (
@@ -12,7 +11,6 @@ from psycourse.data_management.data_cleaning import (
 )
 
 
-@pytask.mark.wip
 def task_clean_phenotypic_data(
     script_path=SRC / "data_management" / "data_cleaning.py",
     phenotypic_data_path=DATA_DIR / "230614_v6.0" / "230614_v6.0_psycourse_wd.csv",
