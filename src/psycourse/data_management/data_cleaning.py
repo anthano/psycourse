@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 
 # --------------------------------------------------------------------------------------
@@ -349,6 +350,7 @@ def _clean_lipid_intensities(df):
     clean_lipid_intensities = _remove_non_annotated_lipids(clean_lipid_intensities)
     clean_lipid_intensities = _remove_skewed_lipids(clean_lipid_intensities)
     clean_lipid_intensities = _remove_fasting_lipids(clean_lipid_intensities)
+    clean_lipid_intensities = _remove_outliers(clean_lipid_intensities)
 
     return clean_lipid_intensities
 
@@ -831,6 +833,22 @@ def _remove_fasting_lipids(df):
     ]
 
     return df.drop(columns=lipids_affected_by_fasting, errors="ignore")
+
+
+def _remove_outliers(lipid_data):
+    """Remove outliers from lipid data using Z-score method.
+    Args:
+        lipid_data (pd.DataFrame): DataFrame containing lipidomic data.
+    Returns:
+        pd.DataFrame: DataFrame with outliers removed.
+    """
+    threshold = 3
+    cleaned_lipids = lipid_data.copy()
+    z_scores = cleaned_lipids.iloc[:, 2:].apply(stats.zscore)
+    outlier_mask = np.abs(z_scores) > threshold
+    cleaned_lipids.iloc[:, 2:] = cleaned_lipids.iloc[:, 2:].mask(outlier_mask, np.nan)
+
+    return cleaned_lipids
 
 
 ######################################################################################
