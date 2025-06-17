@@ -851,6 +851,24 @@ def _remove_outliers(lipid_data):
     return cleaned_lipids
 
 
+def clean_lipidomic_class_label(annotation_data):
+    """Takes the annotation.csv and makes a pd.DataFrame containing lipid class info.
+    Args:
+        annotation_data (pd.DataFrame):
+        The input dataframe with lipid class annotations
+    Returns:
+        pd.DataFrame: The cleaned lipid class dataframe."""
+
+    annotation_data = annotation_data.set_index("GER").rename_axis("lipid", axis="rows")
+    clean_annotation_data = pd.DataFrame(index=annotation_data.index)
+
+    clean_annotation_data["class"] = annotation_data["Lipid class"].astype(
+        pd.CategoricalDtype()
+    )
+
+    return clean_annotation_data
+
+
 ######################################################################################
 # CLUSTER LABELS
 ######################################################################################
