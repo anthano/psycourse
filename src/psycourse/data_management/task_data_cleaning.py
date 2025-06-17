@@ -5,6 +5,7 @@ import pandas as pd
 from psycourse.config import BLD_DATA, DATA_DIR, SRC
 from psycourse.data_management.data_cleaning import (
     clean_cluster_labels,
+    clean_lipidomic_class_label,
     clean_lipidomic_data,
     clean_phenotypic_data,
     clean_prs_data,
@@ -35,6 +36,18 @@ def task_clean_lipidomic_data(
     sample_description = pd.read_csv(sample_description_path, delimiter=";")
     cleaned_lipidomic_df = clean_lipidomic_data(sample_description, lipid_intensities)
     cleaned_lipidomic_df.to_pickle(produces)
+
+
+def task_clean_lipid_class_data(
+    script_path=SRC / "data_management" / "data_cleaning.py",
+    lipid_class_path=DATA_DIR / "lipidomics" / "annotation.csv",
+    produces=BLD_DATA / "cleaned_lipid_class_data.pkl",
+):
+    """Clean the lipid class data."""
+
+    lipid_class_data = pd.read_csv(lipid_class_path)
+    cleaned_lipid_class_df = clean_lipidomic_class_label(lipid_class_data)
+    cleaned_lipid_class_df.to_pickle(produces)
 
 
 def task_clean_cluster_labels_data(
