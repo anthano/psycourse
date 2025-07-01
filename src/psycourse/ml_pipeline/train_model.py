@@ -24,7 +24,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, label_binarize
 from sklearn.svm import LinearSVC
 
-from psycourse.config import BLD_DATA
 from psycourse.ml_pipeline.impute import KNNMedianImputer
 
 ###############################################################################
@@ -314,60 +313,3 @@ class DataFrameImputer(BaseEstimator, TransformerMixin):
                 imputed[col] = imputed[col].round()
             return imputed.astype(self.dtypes_)
         return X_t
-
-
-if __name__ == "__main__":
-    # Load the data
-    # data = pd.read_pickle(BLD_DATA / "full_dataset_for_classifier.pkl")
-    sparse_data = pd.read_pickle(BLD_DATA / "sparse_dataset_with_targets.pkl")
-
-    prob_df = svm_model(sparse_data)
-    prob_df.to_pickle(BLD_DATA / "svm_predicted_probabilities.pkl")
-
-
-# \\ TODO: Remove once verified that code works:
-
-# def _identify_continuous_cols(df, covariate_cols):
-#    """
-#    Identify the columns that need to be scaled. We scale continuous or
-#    quasi-continuous variables that are not covariates. Dichotomous variables
-#    are not scaled.
-#
-#    Args:
-#        df (pd.DataFrame): The cleaned phenotypic dataframe.
-#        covariate_cols (list): The names of the covariate columns.
-#
-#    Returns:
-#        list: The names of the columns that need to be scaled.
-#    """
-#    scaling_cols = []
-#    for col in df.columns:
-#        if col in covariate_cols:
-#           continue
-#        if is_numeric_dtype(df[col]):
-#            scaling_cols.append(col)
-#    return scaling_cols
-
-# class CovariateResidualizer(BaseEstimator, TransformerMixin):
-#    """
-#    Transformer to residualize features by removing the linear effects of specified
-#    covariates.
-#    """
-#
-#    def __init__(self, covariate_cols):
-#        self.covariate_cols = covariate_cols
-#
-#    def fit(self, X, y=None):
-#        self.models_ = {}
-#        for col in X.columns:
-#            if col not in self.covariate_cols:
-#                reg = LinearRegression().fit(X[self.covariate_cols], X[col])
-#                self.models_[col] = reg
-#        return self  # test
-#
-#    def transform(self, X):
-#        X_res = X.copy()
-#        for col, reg in self.models_.items():
-#            # Subtract the predicted influence of the covariates.
-#            X_res[col] = X[col] - reg.predict(X[self.covariate_cols])
-#        return X_res
