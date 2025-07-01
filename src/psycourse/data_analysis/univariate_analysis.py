@@ -3,6 +3,8 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 
+############## PRS ################
+
 
 def univariate_prs_regression(multimodal_df):
     """
@@ -33,6 +35,7 @@ def univariate_prs_regression(multimodal_df):
 
     results_df = pd.DataFrame(prs_records).set_index("prs")
     results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
 
     return results_df
 
@@ -70,8 +73,49 @@ def univariate_prs_regression_cov_diag(multimodal_df):
     results_df_cov_diag["FDR"] = multipletests(
         results_df_cov_diag["pval"], method="fdr_bh"
     )[1]
+    results_df_cov_diag["log10_FDR"] = -np.log10(results_df_cov_diag["FDR"])
 
     return results_df_cov_diag
+
+
+def univariate_prs_ancova(multimodal_df):
+    """
+    Perform univariate ANCOVA analysis for PRS (Polygenic Risk Scores) against
+    the probability of class 5, focusing on the top and bottom 50 extreme values.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+    Returns:
+        pd.DataFrame: DataFrame with PRS names as index, coefficients, p-values,
+        and FDR-corrected p-values.
+    """
+
+    clean_df = multimodal_df.dropna()
+    top_50_idx = clean_df["prob_class_5"].nlargest(50).index
+    bottom_50_idx = clean_df["prob_class_5"].nsmallest(50).index
+    extreme_df = clean_df.loc[top_50_idx.union(bottom_50_idx)].copy()
+    extreme_df["extreme_group"] = 0  # default: bottom 50
+    extreme_df.loc[top_50_idx, "extreme_group"] = 1  # mark top 50
+
+    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    print(prs_columns)
+
+    prs_records = []
+    for prs in prs_columns:
+        formula = f"prob_class_5 ~ {prs} + age + C(sex) + bmi "
+        model = smf.ols(formula, data=extreme_df).fit()
+        coef = model.params.get(prs, np.nan)
+        pval = model.pvalues.get(prs, np.nan)
+        prs_records.append({"prs": prs, "coef": coef, "pval": pval})
+
+    results_df = pd.DataFrame(prs_records).set_index("prs")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+
+    return results_df
+
+
+######################### Lipids #########################
 
 
 def univariate_lipid_regression(multimodal_df):
@@ -104,8 +148,10 @@ def univariate_lipid_regression(multimodal_df):
 
     results_df = pd.DataFrame(records).set_index("lipid")
     results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
 
     top20 = results_df.nsmallest(20, "FDR")
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
 
     return top20, results_df
 
@@ -142,46 +188,11 @@ def univariate_lipid_regression_cov_diag(multimodal_df):
     results_df_cov_diag["FDR"] = multipletests(
         results_df_cov_diag["pval"], method="fdr_bh"
     )[1]
+    results_df_cov_diag["log10_FDR"] = -np.log10(results_df_cov_diag["FDR"])
 
     top20_cov_diag = results_df_cov_diag.nsmallest(20, "FDR")
 
     return top20_cov_diag, results_df_cov_diag
-
-
-def univariate_prs_ancova(multimodal_df):
-    """
-    Perform univariate ANCOVA analysis for PRS (Polygenic Risk Scores) against
-    the probability of class 5, focusing on the top and bottom 50 extreme values.
-
-    Args:
-        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
-    Returns:
-        pd.DataFrame: DataFrame with PRS names as index, coefficients, p-values,
-        and FDR-corrected p-values.
-    """
-
-    clean_df = multimodal_df.dropna()
-    top_50_idx = clean_df["prob_class_5"].nlargest(50).index
-    bottom_50_idx = clean_df["prob_class_5"].nsmallest(50).index
-    extreme_df = clean_df.loc[top_50_idx.union(bottom_50_idx)].copy()
-    extreme_df["extreme_group"] = 0  # default: bottom 50
-    extreme_df.loc[top_50_idx, "extreme_group"] = 1  # mark top 50
-
-    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
-    print(prs_columns)
-
-    prs_records = []
-    for prs in prs_columns:
-        formula = f"prob_class_5 ~ {prs} + age + C(sex) + bmi "
-        model = smf.ols(formula, data=extreme_df).fit()
-        coef = model.params.get(prs, np.nan)
-        pval = model.pvalues.get(prs, np.nan)
-        prs_records.append({"prs": prs, "coef": coef, "pval": pval})
-
-    results_df = pd.DataFrame(prs_records).set_index("prs")
-    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
-
-    return results_df
 
 
 def univariate_lipids_ancova(multimodal_df):
@@ -217,6 +228,7 @@ def univariate_lipids_ancova(multimodal_df):
 
     results_df = pd.DataFrame(lipid_records).set_index("lipid")
     results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
 
     top20 = results_df.nsmallest(20, "FDR")
 

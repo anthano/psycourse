@@ -5,9 +5,13 @@ from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
+    plot_univariate_lipid_extremes,
     plot_univariate_lipid_regression,
+    plot_univariate_prs_extremes,
     plot_univariate_prs_regression,
 )
+
+############ Lipids ###################
 
 
 def task_plot_univariate_lipid_regression(
@@ -26,16 +30,49 @@ def task_plot_univariate_lipid_regression(
     plt.close()
 
 
+def task_plot_univariate_lipid_extremes(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    top20_lipids_path=BLD_RESULTS
+    / "univariate_lipids_extremes_ancova_results_top20.pkl",
+    produces=BLD_RESULTS / "plots" / "univariate_lipid_extremes_plot.png",
+):
+    """Plot the top 20 lipids associated with cluster 5 probability
+    using regression coefficients and FDR values."""
+
+    lipid_top20 = pd.read_pickle(top20_lipids_path)
+    plot_univariate_lipid_extremes(lipid_top20)
+
+    # Save the plot
+    plt.savefig(produces, bbox_inches="tight")
+    plt.close()
+
+
 def task_plot_univariate_prs_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     prs_results_path=BLD_RESULTS / "univariate_prs_results.pkl",
     produces=BLD_RESULTS / "plots" / "univariate_prs_regression_plot.png",
 ):
-    """Plot the top 20 lipids associated with cluster 5 probability
+    """Plot the prs associated with cluster 5 probability
     using regression coefficients and FDR values."""
 
     prs_results = pd.read_pickle(prs_results_path)
     plot_univariate_prs_regression(prs_results)
+
+    # Save the plot
+    plt.savefig(produces)
+    plt.close()
+
+
+def task_plot_univariate_prs_extremes(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    prs_results_path=BLD_RESULTS / "univariate_prs_extremes_ancova_results.pkl",
+    produces=BLD_RESULTS / "plots" / "univariate_prs_extremes.png",
+):
+    """Plot the prs associated with cluster 5 probability
+    using regression coefficients and FDR values for the top50 vs. bottom 50."""
+
+    prs_results = pd.read_pickle(prs_results_path)
+    plot_univariate_prs_extremes(prs_results)
 
     # Save the plot
     plt.savefig(produces)
