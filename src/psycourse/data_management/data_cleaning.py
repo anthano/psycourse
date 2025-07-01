@@ -851,6 +851,11 @@ def _remove_outliers(lipid_data):
     return cleaned_lipids
 
 
+######################################################################################
+# LIPIDOMIC CLASS DATA
+######################################################################################
+
+
 def clean_lipidomic_class_label(annotation_data):
     """Takes the annotation.csv and makes a pd.DataFrame containing lipid class info.
     Args:
