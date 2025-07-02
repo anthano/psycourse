@@ -2,6 +2,7 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
+    univariate_lipid_class_regression,
     univariate_lipid_regression,
     univariate_lipid_regression_cov_diag,
     univariate_lipids_ancova,
@@ -68,6 +69,18 @@ def task_univariate_lipid_regression(
     top20_lipids, univariate_lipid_results = univariate_lipid_regression(data)
     top20_lipids.to_pickle(produces["top20_lipids"])
     univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
+
+
+def task_univariate_lipid_class_regression(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=BLD_RESULTS / "univariate_lipid_class_results.pkl",
+):
+    """Perform univariate regression on lipid data."""
+
+    data = pd.read_pickle(multimodal_df_path)
+    univariate_lipid_class_results = univariate_lipid_class_regression(data)
+    univariate_lipid_class_results.to_pickle(produces)
 
 
 task_univariate_lipid_ancova_produces = {

@@ -156,6 +156,43 @@ def univariate_lipid_regression(multimodal_df):
     return top20, results_df
 
 
+def univariate_lipid_class_regression(multimodal_df):
+    """
+    Perform univariate regression analysis for PRS (Polygenic Risk Scores) against
+    the probability of class 5. This function iterates through all PRS columns in the
+    provided multimodal DataFrame, fits a GLM model for each, and returns a DataFrame
+    with coefficients, p-values, and FDR-corrected p-values.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+    Returns:
+        pd.DataFrame: DataFrame with PRS names as index, coefficients, p-values,
+        and FDR-corrected p-values.
+    """
+
+    lipid_class_cols = [col for col in multimodal_df.columns if col.endswith("mean")]
+
+    lipid_class_records = []
+    for lipid_class in lipid_class_cols:
+        subset = multimodal_df[
+            [lipid_class, "prob_class_5", "age", "sex", "bmi"]
+        ].dropna()
+
+        formula = f"prob_class_5 ~ {lipid_class} + age + C(sex) + bmi "
+        model = smf.glm(formula, data=subset).fit()
+        coef = model.params.get(lipid_class, np.nan)
+        pval = model.pvalues.get(lipid_class, np.nan)
+        lipid_class_records.append(
+            {"lipid_class": lipid_class, "coef": coef, "pval": pval}
+        )
+
+    results_df = pd.DataFrame(lipid_class_records).set_index("lipid_class")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+
+    return results_df
+
+
 def univariate_lipid_regression_cov_diag(multimodal_df):
     """
     Perform univariate regression analysis for lipid intensity values against
