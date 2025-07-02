@@ -2,13 +2,14 @@ import pandas as pd
 
 
 def merge_multimodal_complete_df(
-    lipid_data, phenotypic_data, cluster_probabilities_full, prs_data
+    lipid_data, lipid_class, phenotypic_data, cluster_probabilities_full, prs_data
 ):
     """
     Merges lipid data, phenotypic data, prs and cluster probabilites into a single
     dataframe for data analysis.
     Args:
         lipid_data (pd.DataFrame): Dataframe containing lipid data.
+        lipid_class (pd.DataFrame): Dataframe containing lipid class information.
         phenotypic_data (pd.DataFrame): Dataframe containing phenotypic data.
         cluster_probabilites (pd.DataFrame): Dataframe containing cluster probabilities,
         incl. the newly obtained (full).
@@ -35,4 +36,29 @@ def merge_multimodal_complete_df(
     multimodal_df = multimodal_df.join(prs_data, how="left")
     multimodal_df = multimodal_df.set_index("id")
 
+    class_means_df = compute_lipid_class_means(lipid_data, lipid_class)
+    multimodal_df = multimodal_df.join(class_means_df, how="left")
+
     return multimodal_df
+
+
+##################### Helper Function  #####################
+
+
+def compute_lipid_class_means(intensity_df, lipid_class):
+    lipid_dict = lipid_class.groupby("class").apply(lambda g: list(g.index)).to_dict()
+    class_means = {}
+
+    for class_name, species_list in lipid_dict.items():
+        # Only include species that exist in the intensity_df
+        valid_species = [
+            lipid for lipid in species_list if lipid in intensity_df.columns
+        ]
+        if not valid_species:
+            continue
+        # Compute mean across those species for each individual
+        class_means[f"{class_name}_mean"] = intensity_df[valid_species].mean(axis=1)
+
+    class_means_df = pd.DataFrame(class_means, index=intensity_df.index)
+
+    return class_means_df

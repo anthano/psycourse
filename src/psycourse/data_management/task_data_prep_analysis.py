@@ -7,6 +7,7 @@ from psycourse.data_management.data_prep_analysis import merge_multimodal_comple
 def task_merge_multimodal_complete_df(
     script_path=SRC / "data_management" / "data_prep_analysis.py",
     lipid_data_path=BLD_DATA / "cleaned_lipidomic_data.pkl",
+    lipid_class_path=BLD_DATA / "cleaned_lipid_class_data.pkl",
     phenotypic_data_path=BLD_DATA / "cleaned_phenotypic_data.pkl",
     cluster_probabilities_full_path=BLD_DATA / "svm_predicted_probabilities_full.pkl",
     prs_data_path=BLD_DATA / "cleaned_prs_data.pkl",
@@ -16,12 +17,17 @@ def task_merge_multimodal_complete_df(
     single dataframe."""
 
     lipid_data = pd.read_pickle(lipid_data_path)
+    lipid_class_data = pd.read_pickle(lipid_class_path)
     phenotypic_data = pd.read_pickle(phenotypic_data_path)
     cluster_probabilities_full = pd.read_pickle(cluster_probabilities_full_path)
     prs_data = pd.read_pickle(prs_data_path)
 
     multimodal_df = merge_multimodal_complete_df(
-        lipid_data, phenotypic_data, cluster_probabilities_full, prs_data
+        lipid_data,
+        lipid_class_data,
+        phenotypic_data,
+        cluster_probabilities_full,
+        prs_data,
     )
 
     multimodal_df.to_pickle(produces)
