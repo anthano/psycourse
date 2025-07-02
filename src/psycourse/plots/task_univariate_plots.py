@@ -3,8 +3,10 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.plots.univariate_plots import (
+    plot_corr_matrix_lipid_classes,
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
+    plot_univariate_lipid_class_regression,
     plot_univariate_lipid_extremes,
     plot_univariate_lipid_regression,
     plot_univariate_prs_extremes,
@@ -24,6 +26,22 @@ def task_plot_univariate_lipid_regression(
 
     lipid_top20 = pd.read_pickle(top20_lipids_path)
     plot_univariate_lipid_regression(lipid_top20)
+
+    # Save the plot
+    plt.savefig(produces, bbox_inches="tight")
+    plt.close()
+
+
+def task_plot_univariate_lipid_class_regression(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    lipid_class_results=BLD_RESULTS / "univariate_lipid_class_results.pkl",
+    produces=BLD_RESULTS / "plots" / "univariate_lipid_class_regression_plot.png",
+):
+    """Plot the top 20 lipids associated with cluster 5 probability
+    using regression coefficients and FDR values."""
+
+    lipid_class_results = pd.read_pickle(lipid_class_results)
+    plot_univariate_lipid_class_regression(lipid_class_results)
 
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")
@@ -90,6 +108,22 @@ def task_plot_corr_matrix_lipid_top20(
     multimodal_df = pd.read_pickle(multimodal_data_path)
     lipid_top20 = pd.read_pickle(top20_lipids_path)
     plot_corr_matrix_lipid_top20(multimodal_df, lipid_top20)
+
+    # Save the plot
+    plt.savefig(produces, bbox_inches="tight")
+    plt.close()
+
+
+def task_plot_corr_matrix_lipid_class(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
+    lipid_class_results_path=BLD_RESULTS / "univariate_lipid_class_results.pkl",
+    produces=BLD_RESULTS / "plots" / "lipid_class_corr_matrix.png",
+):
+    """Plot the correlation matrix of the lipid classes."""
+
+    multimodal_df = pd.read_pickle(multimodal_data_path)
+    plot_corr_matrix_lipid_classes(multimodal_df)
 
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")

@@ -47,6 +47,48 @@ def plot_univariate_lipid_regression(top20):
     # plt.show()
 
 
+def plot_univariate_lipid_class_regression(lipid_class_results):
+    """Plot the lipid classes associated with cluster 5 probability using regression
+    coefficients and FDR values.
+    Args:
+        lipid_class_results (pd.DataFrame): DataFrame containing the associations
+         between lipid class with columns 'coef' and 'FDR'.
+    Returns:
+        None: Displays a plot of the regression coefficients with FDR as color.
+    """
+    # Sort by FDR again to fix order
+    lipid_class_results_sorted = lipid_class_results.sort_values("FDR")
+
+    plt.figure(figsize=(8, 6))
+    sns.set_theme(style="whitegrid")
+
+    # Draw lines
+    for i, row in lipid_class_results_sorted.iterrows():
+        plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
+
+    # Draw points
+    sc = plt.scatter(
+        lipid_class_results_sorted["coef"],
+        lipid_class_results_sorted.index,
+        c=-np.log10(lipid_class_results_sorted["FDR"]),
+        cmap="plasma",
+        s=80,
+        edgecolor="k",
+    )
+
+    plt.axvline(0, color="gray", linestyle="--")
+    plt.xlabel("Regression Coefficient")
+    plt.ylabel("Lipid Class")
+    plt.title(
+        "Lipid Class Association with Cluster 5 Probability "
+        "(covariates: age, sex, bmi)"
+    )
+    cbar = plt.colorbar(sc)
+    cbar.set_label("-log10(FDR)")
+    plt.tight_layout()
+    # plt.show()
+
+
 def plot_univariate_lipid_extremes(top20):
     """Plot the top 20 lipids associated with cluster 5 probability using regression
     coefficients and FDR values for the top50 vs. bottom top50 cases.
@@ -112,6 +154,32 @@ def plot_corr_matrix_lipid_top20(multimodal_df, top20_results_df):
         cbar_kws={"shrink": 0.8},
     )
     plt.title("Correlation Matrix of Top 20 Lipids")
+    plt.tight_layout()
+    # plt.show()
+
+
+def plot_corr_matrix_lipid_classes(multimodal_df):
+    """Plot a correlation matrix for the top 20 lipids.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing prs (and more).
+
+    Returns:
+        None: Displays a correlation matrix plot.
+    """
+    lipid_class_columns = [col for col in multimodal_df.columns if col.endswith("mean")]
+    lipid_class_df = multimodal_df[lipid_class_columns]
+    lipid_class_df_corr_matrix = lipid_class_df.corr()
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(
+        lipid_class_df_corr_matrix,
+        annot=True,
+        fmt=".2f",
+        cmap="coolwarm",
+        square=True,
+        cbar_kws={"shrink": 0.8},
+    )
+    plt.title("Correlation Matrix of Lipid Classes")
     plt.tight_layout()
     # plt.show()
 
