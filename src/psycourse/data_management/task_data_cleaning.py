@@ -62,15 +62,20 @@ def task_clean_cluster_labels_data(
     cleaned_cluster_labels.to_pickle(produces)
 
 
+prs_data_paths = {
+    "prs_data": DATA_DIR / "prs" / "final_diagnosed_only_2025-06-12_prs_collection.tsv",
+    "bpd_data": DATA_DIR / "prs" / "final_bpd_2025-07-02_prs_collection.tsv",
+}
+
+
 def task_clean_prs_data(
     script_path=SRC / "data_management" / "data_cleaning.py",
-    prs_data_path=DATA_DIR
-    / "prs"
-    / "final_diagnosed_only_2025-06-12_prs_collection.tsv",
+    prs_data_paths=prs_data_paths,
     produces=BLD_DATA / "cleaned_prs_data.pkl",
 ):
     """Clean the polygenic risk scores (PRS) data."""
 
-    prs_data = pd.read_csv(prs_data_path, sep="\t")
-    cleaned_prs_data = clean_prs_data(prs_data)
+    prs_data = pd.read_csv(prs_data_paths["prs_data"], sep="\t")
+    bpd_data = pd.read_csv(prs_data_paths["bpd_data"], sep="\t")
+    cleaned_prs_data = clean_prs_data(prs_data, bpd_data)
     cleaned_prs_data.to_pickle(produces)
