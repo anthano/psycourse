@@ -40,7 +40,9 @@ def svm_model(clean_dataset_for_classifier):
         The dataset should contain features and a target column named "cluster_label".
 
     Returns:
-        tuple: Mean and standard deviation of nested CV scores.
+        model: The trained SVM model after hyperparameter tuning.
+        full_df: A DataFrame containing predicted probabilities and labels
+        for the entire dataset.
     """
     data = clean_dataset_for_classifier
 
