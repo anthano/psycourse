@@ -894,13 +894,12 @@ def clean_cluster_labels(labels_df):
 ########################################################################################
 
 
-def clean_prs_data(prs_data):
+def clean_prs_data(prs_data, bpd_data):
     prs_data = prs_data.set_index(prs_data["FID"])
     clean_prs_df = pd.DataFrame(index=(prs_data["FID"]).rename("gsa_id"))
     prs_renaming_dict = {
         "ADHD_Demontis2023_pst_eff_a1_b0.5_phiauto": "ADHD_PRS",
         "ASD_Grove2019_pst_eff_a1_b0.5_phiauto": "ASD_PRS",
-        "BIP_OConnell2025_pst_eff_a1_b0.5_phiauto": "BPD_PRS",
         "EduYears_Okbay2022_pst_eff_a1_b0.5_phiauto": "Education_PRS",
         "SCZ_core_Trubetskoy2022_pst_eff_a1_b0.5_phiauto": "SCZ_PRS",
         "agreeableness_Gupta2024_pst_eff_a1_b0.5_phiauto": "Agreeableness_PRS",
@@ -918,5 +917,10 @@ def clean_prs_data(prs_data):
             clean_prs_df[value] = prs_data[key].astype(pd.Float64Dtype())
         else:
             print(f"Warning: {key} not found in prs_data columns.")
+
+    bpd_data = bpd_data.set_index(bpd_data["FID"])
+    clean_prs_df["BPD_PRS"] = bpd_data[
+        "BIP_OConnell2025_no_psycourse_pst_eff_a1_b0.5_phiauto"
+    ].astype(pd.Float64Dtype())
 
     return clean_prs_df
