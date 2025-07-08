@@ -91,28 +91,39 @@ def univariate_prs_ancova(multimodal_df):
     """
 
     clean_df = multimodal_df.dropna()
-    top_50_idx = clean_df["prob_class_5"].nlargest(50).index
-    bottom_50_idx = clean_df["prob_class_5"].nsmallest(50).index
-    extreme_df = clean_df.loc[top_50_idx.union(bottom_50_idx)].copy()
-    extreme_df["extreme_group"] = 0  # default: bottom 50
-    extreme_df.loc[top_50_idx, "extreme_group"] = 1  # mark top 50
-
+    thresholds = [50, 100, 120]
     prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
-    print(prs_columns)
 
-    prs_records = []
-    for prs in prs_columns:
-        formula = f"prob_class_5 ~ {prs} + age + C(sex) + bmi "
-        model = smf.ols(formula, data=extreme_df).fit()
-        coef = model.params.get(prs, np.nan)
-        pval = model.pvalues.get(prs, np.nan)
-        prs_records.append({"prs": prs, "coef": coef, "pval": pval})
+    results_dfs = {}
 
-    results_df = pd.DataFrame(prs_records).set_index("prs")
-    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
-    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+    for threshold in thresholds:
+        top_idx = clean_df["prob_class_5"].nlargest(threshold).index
+        bottom_idx = clean_df["prob_class_5"].nsmallest(threshold).index
+        extreme_df = clean_df.loc[top_idx.union(bottom_idx)].copy()
+        extreme_df["extreme_group"] = 0  # default: bottom
+        extreme_df.loc[top_idx, "extreme_group"] = 1  # mark top
+        prs_records = []
+        subset_dfs = []
 
-    return results_df
+        for prs in prs_columns:
+            subset = extreme_df[
+                [prs, "prob_class_5", "extreme_group", "age", "sex", "bmi", "diagnosis"]
+            ].dropna()
+            formula = f"{prs} ~ C(extreme_group) + age + C(sex) + bmi"
+            model = smf.ols(formula, data=subset).fit()
+            group_coef = model.params.get("C(extreme_group)[T.1]", np.nan)
+            group_pval = model.pvalues.get("C(extreme_group)[T.1]", np.nan)
+
+            prs_records.append({"prs": prs, "coef": group_coef, "pval": group_pval})
+            subset_dfs.append(subset)
+
+        results_df = pd.DataFrame(prs_records).set_index("prs")
+        results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+        results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+        results_df = results_df.sort_values(by="FDR")
+        results_dfs[threshold] = results_df
+
+    return results_dfs
 
 
 ######################### Lipids #########################
@@ -246,27 +257,49 @@ def univariate_lipids_ancova(multimodal_df):
     """
 
     clean_df = multimodal_df.dropna()
-    top_50_idx = clean_df["prob_class_5"].nlargest(50).index
-    bottom_50_idx = clean_df["prob_class_5"].nsmallest(50).index
-    extreme_df = clean_df.loc[top_50_idx.union(bottom_50_idx)].copy()
-    extreme_df["extreme_group"] = 0  # default: bottom 50
-    extreme_df.loc[top_50_idx, "extreme_group"] = 1  # mark top 50
 
+    thresholds = [50, 100, 120]
     lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
-    print(lipid_columns)
+    results_dfs = {}
+    top20_dfs = {}
+    for threshold in thresholds:
+        top_idx = clean_df["prob_class_5"].nlargest(threshold).index
+        bottom_idx = clean_df["prob_class_5"].nsmallest(threshold).index
+        extreme_df = clean_df.loc[top_idx.union(bottom_idx)].copy()
+        extreme_df["extreme_group"] = 0  # default: bottom
+        extreme_df.loc[top_idx, "extreme_group"] = 1  # mark top
+        lipid_records = []
+        subset_dfs = []
 
-    lipid_records = []
-    for lipid in lipid_columns:
-        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi "
-        model = smf.ols(formula, data=extreme_df).fit()
-        coef = model.params.get(lipid, np.nan)
-        pval = model.pvalues.get(lipid, np.nan)
-        lipid_records.append({"lipid": lipid, "coef": coef, "pval": pval})
+        for lipid in lipid_columns:
+            subset = extreme_df[
+                [
+                    lipid,
+                    "prob_class_5",
+                    "extreme_group",
+                    "age",
+                    "sex",
+                    "bmi",
+                    "diagnosis",
+                ]
+            ].dropna()
+            formula = f"{lipid} ~ C(extreme_group) + age + C(sex) + bmi"
+            model = smf.ols(formula, data=subset).fit()
+            group_coef = model.params.get("C(extreme_group)[T.1]", np.nan)
+            group_pval = model.pvalues.get("C(extreme_group)[T.1]", np.nan)
 
-    results_df = pd.DataFrame(lipid_records).set_index("lipid")
-    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
-    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+            lipid_records.append(
+                {"lipid": lipid, "coef": group_coef, "pval": group_pval}
+            )
+            subset_dfs.append(subset)
 
-    top20 = results_df.nsmallest(20, "FDR")
+        results_df = pd.DataFrame(lipid_records).set_index("lipid")
+        results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+        results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+        results_df = results_df.sort_values(by="FDR")
+        results_dfs[threshold] = results_df
 
-    return results_df, top20
+        top20 = results_df.nsmallest(20, "FDR")
+        top20_dfs[threshold] = top20
+
+    return results_dfs, top20_dfs

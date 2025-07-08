@@ -38,16 +38,37 @@ def task_univariate_prs_regression_cov_diag(
     univariate_prs_results.to_pickle(produces)
 
 
+task_univariate_prs_ancova_produces = {
+    "prs_extremes_ancova_results[50]": BLD_RESULTS
+    / "prs"
+    / "prs_extremes_ancova_results_50.pkl",
+    "prs_extremes_ancova_results[100]": BLD_RESULTS
+    / "prs"
+    / "prs_extremes_ancova_results_100.pkl",
+    "prs_extremes_ancova_results[120]": BLD_RESULTS
+    / "prs"
+    / "prs_extremes_ancova_results_120.pkl",
+}
+
+
 def task_univariate_prs_ancova(
     script_path=SRC / "data_analysis" / "univariate_analysis.py",
     multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
-    produces=BLD_RESULTS / "univariate_prs_extremes_ancova_results.pkl",
+    produces=task_univariate_prs_ancova_produces,
 ):
     """Perform ANCOVA on PRS data focussing on extreme cases."""
 
     data = pd.read_pickle(multimodal_df_path)
-    univariate_prs_results = univariate_prs_ancova(data)
-    univariate_prs_results.to_pickle(produces)
+    univariate_prs_ancova_results = univariate_prs_ancova(data)
+    univariate_prs_ancova_results[50].to_pickle(
+        produces["prs_extremes_ancova_results[50]"]
+    )
+    univariate_prs_ancova_results[100].to_pickle(
+        produces["prs_extremes_ancova_results[100]"]
+    )
+    univariate_prs_ancova_results[120].to_pickle(
+        produces["prs_extremes_ancova_results[120]"]
+    )
 
 
 ##### LIPID DATA UNIVARIATE REGRESSION TASKS #####
@@ -84,10 +105,24 @@ def task_univariate_lipid_class_regression(
 
 
 task_univariate_lipid_ancova_produces = {
-    "univariate_lipids_extremes_ancova_results": BLD_RESULTS
-    / "univariate_lipids_extremes_ancova_results.pkl",
-    "univariate_lipids_extremes_ancova_results_top20": BLD_RESULTS
-    / "univariate_lipids_extremes_ancova_results_top20.pkl",
+    "lipids_ancova_results[50]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_50.pkl",
+    "lipids_ancova_results[100]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_100.pkl",
+    "lipids_ancova_results[120]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_120.pkl",
+    "lipids_ancova_results_top20[50]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_50_top20.pkl",
+    "lipids_ancova_results_top20[100]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_100_top20.pkl",
+    "lipids_ancova_results_top20[120]": BLD_RESULTS
+    / "lipids"
+    / "lipids_extremes_ancova_results_120_top20.pkl",
 }
 
 
@@ -102,11 +137,21 @@ def task_univariate_lipid_ancova(
     lipids_extremes_ancova_results, lipids_extremes_ancova_results_top20 = (
         univariate_lipids_ancova(data)
     )
-    lipids_extremes_ancova_results.to_pickle(
-        produces["univariate_lipids_extremes_ancova_results"]
+    lipids_extremes_ancova_results[50].to_pickle(produces["lipids_ancova_results[50]"])
+    lipids_extremes_ancova_results[100].to_pickle(
+        produces["lipids_ancova_results[100]"]
     )
-    lipids_extremes_ancova_results_top20.to_pickle(
-        produces["univariate_lipids_extremes_ancova_results_top20"]
+    lipids_extremes_ancova_results[120].to_pickle(
+        produces["lipids_ancova_results[120]"]
+    )
+    lipids_extremes_ancova_results_top20[50].to_pickle(
+        produces["lipids_ancova_results_top20[50]"]
+    )
+    lipids_extremes_ancova_results_top20[100].to_pickle(
+        produces["lipids_ancova_results_top20[100]"]
+    )
+    lipids_extremes_ancova_results_top20[120].to_pickle(
+        produces["lipids_ancova_results_top20[120]"]
     )
 
 
