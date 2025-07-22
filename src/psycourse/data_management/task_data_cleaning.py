@@ -9,6 +9,7 @@ from psycourse.data_management.data_cleaning import (
     clean_lipidomic_data,
     clean_phenotypic_data,
     clean_prs_data,
+    clean_prscope_data,
 )
 
 
@@ -79,3 +80,17 @@ def task_clean_prs_data(
     bpd_data = pd.read_csv(prs_data_paths["bpd_data"], sep="\t")
     cleaned_prs_data = clean_prs_data(prs_data, bpd_data)
     cleaned_prs_data.to_pickle(produces)
+
+
+def task_clean_prsscope_predictions(
+    script_path=SRC / "data_management" / "data_cleaning.py",
+    scz_predictions_path=DATA_DIR / "prscope_results" / "psy_schz_predictions_dx.txt",
+    bpd_predictions_path=DATA_DIR / "prscope_results" / "psy_bp_predictions_dx.txt",
+    produces=BLD_DATA / "cleaned_prsscope_predictions.pkl",
+):
+    """Clean the PRSScope predictions data."""
+
+    scz_predictions = pd.read_csv(scz_predictions_path, sep="\t")
+    bpd_predictions = pd.read_csv(bpd_predictions_path, sep="\t")
+    cleaned_prsscope_data = clean_prscope_data(scz_predictions, bpd_predictions)
+    cleaned_prsscope_data.to_pickle(produces)

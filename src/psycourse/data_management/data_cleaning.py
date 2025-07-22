@@ -924,3 +924,57 @@ def clean_prs_data(prs_data, bpd_data):
     ].astype(pd.Float64Dtype())
 
     return clean_prs_df
+
+
+########################################################################################
+# PRSCOPE DATA
+########################################################################################
+
+
+def clean_prscope_data(scz_prscope_data, bpd_prscope_data):
+    """Cleans the PRSCOPE data. Takes the prscope_data file and returns a
+    cleaned DataFrame.
+
+    Args:
+        scz_prscope_data (pd.DataFrame): The input dataframe containing PRSCOPE data.
+        bpd_prscope_data (pd.DataFrame): The input dataframe containing BPD PRSCOPE
+        data.
+
+    Returns:
+        pd.DataFrame: The cleaned PRSCOPE dataframe for feature size 24.
+    """
+    prsscope_predictions = pd.concat([scz_prscope_data, bpd_prscope_data], axis=0)
+    prsscope_predictions = prsscope_predictions.set_index("ID")
+
+    prsscope_predictions_feat24 = pd.DataFrame(
+        index=prsscope_predictions.index
+    ).rename_axis("gsa_id")
+    prsscope_predictions_feat24["biotype1_pred"] = prsscope_predictions[
+        "clust_1_feat_24"
+    ]
+    prsscope_predictions_feat24["biotype2_pred"] = prsscope_predictions[
+        "clust_2_feat_24"
+    ]
+    prsscope_predictions_feat24["disease_status"] = prsscope_predictions["DX"]
+    prsscope_predictions_feat24 = prsscope_predictions_feat24.query(
+        "disease_status == 2"
+    ).copy()
+    prsscope_predictions_feat24["biotype"] = prsscope_predictions_feat24.apply(
+        _assign_biotype, axis=1
+    ).astype("category")
+
+    return prsscope_predictions_feat24
+
+
+def _assign_biotype(row):
+    b1 = row["biotype1_pred"]
+    b2 = row["biotype2_pred"]
+
+    if b1 == 2 and b2 == 1:
+        return "biotype1"
+    elif b1 == 1 and b2 == 2:
+        return "biotype2"
+    elif b1 == 2 and b2 == 2:
+        return "ambiguous"
+    else:
+        return "unclassified"
