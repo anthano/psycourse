@@ -38,6 +38,7 @@ def merge_multimodal_complete_df(
 
     class_means_df = compute_lipid_class_means(lipid_data, lipid_class)
     multimodal_df = multimodal_df.join(class_means_df, how="left")
+    multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
 
     return multimodal_df
 

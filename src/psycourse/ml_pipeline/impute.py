@@ -6,8 +6,7 @@ class KNNMedianImputer(KNNImputer):
     def _calc_impute(self, dist_pot_donors, n_neighbors, fit_X_col, mask_fit_X_col):
         """Helper function to impute a single column.
 
-        Parameters
-        ----------
+        Args:
         dist_pot_donors : ndarray of shape (n_receivers, n_potential_donors)
             Distance matrix between the receivers and potential donors from
             training set. There must be at least one non-nan distance between
@@ -22,8 +21,7 @@ class KNNMedianImputer(KNNImputer):
         mask_fit_X_col : ndarray of shape (n_potential_donors,)
             Missing mask for fit_X_col.
 
-        Returns
-        -------
+        Returns:
         imputed_values: ndarray of shape (n_receivers,)
             Imputed values for receiver.
         """
