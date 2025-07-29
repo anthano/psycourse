@@ -143,10 +143,10 @@ def multivariate_analysis(multimodal_data):
         estimator=best_model,
         X=X_train,
         y=y_train_array,
-        cv=outer_cv,  # same CV you used before
-        n_permutations=1000,  # → 1000 shuffled repeats
+        cv=outer_cv,
+        n_permutations=1000,
         scoring="r2",
-        n_jobs=-2,  # parallelize
+        n_jobs=-2,
         random_state=42,
     )
 
