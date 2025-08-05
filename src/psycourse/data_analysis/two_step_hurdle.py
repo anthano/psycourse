@@ -36,12 +36,16 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
-def stage_one_classification(multimodal_data):
+def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
     Args:
         multimodal_data (pd.DataFrame): DataFrame containing multimodal features and
         target variable (cluster prob).
+        cutoff_quantile (float): Quantile to determine the cutoff for classification.
+        inner_cv (StratifiedKFold): Inner cross-validation for hyperparameter tuning.
+        outer_cv (StratifiedKFold): Outer cross-validation for model evaluation.
+
     Returns:
         model (Pipeline): Trained classification model.
     """
@@ -66,14 +70,14 @@ def stage_one_classification(multimodal_data):
         X, y, test_size=0.2, stratify=y_binary, random_state=42
     )
 
-    cutoff = y_train["prob_class_5"].quantile(0.25)  # TODO: very arbitrary
+    cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  # TODO: very arbitrary
     y_train_bin = (y_train["prob_class_5"] > cutoff).astype(int).values.ravel()
     print("Using cutoff =", cutoff)
     print("Class counts:", np.bincount(y_train_bin))
 
     # 3. Pre-processing and Model Definition
 
-    # Pre-Processor
+    # Pre-Processor: only need to standardize lipid features and covariates
     preprocessor = ColumnTransformer(
         transformers=[("scaler", StandardScaler(), lipid_features + covariates)],
         remainder="passthrough",
@@ -81,7 +85,7 @@ def stage_one_classification(multimodal_data):
 
     classifier = LogisticRegression(
         penalty="elasticnet",
-        l1_ratio=0.5,
+        l1_ratio=0.5,  # dummy placeholder, will be tuned later
         solver="saga",
         class_weight="balanced",
         max_iter=10000,
@@ -109,8 +113,8 @@ def stage_one_classification(multimodal_data):
 
     # 4. Nested cross-validation
 
-    inner_cv = StratifiedKFold(n_splits=2, shuffle=True, random_state=42)
-    outer_cv = StratifiedKFold(n_splits=2, shuffle=True, random_state=42)
+    inner_cv = StratifiedKFold(n_splits=inner_cv, shuffle=True, random_state=42)
+    outer_cv = StratifiedKFold(n_splits=outer_cv, shuffle=True, random_state=42)
 
     # 5. Model Training
 
@@ -141,36 +145,6 @@ def stage_one_classification(multimodal_data):
     model.fit(X_train, y_train_bin)
     best_model = model.best_estimator_
     best_params = model.best_params_
-
-    ## Get best parameters (back-project PCA)
-
-    # Extract components
-    logreg = best_model.named_steps["clf"]
-    pca = best_model.named_steps["pca"]
-
-    # Coefficients in PCA space
-    coef_pca_space = logreg.coef_
-
-    # Back-project to original (pre-PCA) space
-    coef_original_space = coef_pca_space @ pca.components_
-
-    # Get absolute values as importance
-    importances = np.abs(coef_original_space.ravel())
-
-    # Feature names before PCA (after preprocessing)
-    feature_names = best_model.named_steps["preprocessing"].get_feature_names_out()
-
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-
-    top20_features = feature_importance_df.head(20)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
-
-    # Fit on the entire dataset (X, y):
-    final_model = pipeline.set_params(**best_params)
-    final_model.fit(X, (y["prob_class_5"] > cutoff).astype(int).values.ravel())
 
     # Model Evaluation on Test Set
 
@@ -222,15 +196,27 @@ def stage_one_classification(multimodal_data):
 
     print("Report:", report)
 
+    # Fit on the entire dataset (X, y):
+    final_model = pipeline.set_params(**best_params)
+    final_model.fit(X, (y["prob_class_5"] > cutoff).astype(int).values.ravel())
+
+    # Get feature importances from the final model
+    top20_features = _get_feature_importances_classifier(final_model)
+    print("Top 20 Features by Importance:")
+    print(top20_features)
+
     return final_model, conf_mat, learning_curves_plot, report
 
 
-def stage_two_regression(multimodal_data):
+def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
     """
     Stage 2: Regress the magnitude among the non-zeros
     Args:
         multimodal_data (pd.DataFrame): DataFrame containing multimodal features and
         target variable (cluster prob).
+        cutoff_quantile (float): Quantile to determine the cutoff for classification.
+        inner_cv (int): Number of folds for inner cross-validation.
+        outer_cv (int): Number of folds for outer cross-validation.
     Returns:
         model (Pipeline): Trained regression model.
     """
@@ -255,7 +241,7 @@ def stage_two_regression(multimodal_data):
         X, y, test_size=0.2, stratify=y_binary, random_state=42
     )
 
-    cutoff = y_train["prob_class_5"].quantile(0.25)  # TODO: very arbitrary
+    cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  # TODO: very arbitrary
     y_train_bin = (y_train["prob_class_5"] > cutoff).astype(int).values.ravel()
     print("Using cutoff =", cutoff)
     print("Class counts:", np.bincount(y_train_bin))
@@ -269,7 +255,7 @@ def stage_two_regression(multimodal_data):
     print(f"Training set size for regression: {len(X_train_reg)}")
     print(f"Test set size for regression: {len(X_test_reg)}")
 
-    # Pre-Processer #TODO: can I get this more elegantly from previous step?
+    # Pre-Processor #TODO: can I get this more elegantly from previous step?
     preprocessor = ColumnTransformer(
         transformers=[("scaler", StandardScaler(), lipid_features + covariates)],
         remainder="passthrough",
@@ -297,8 +283,8 @@ def stage_two_regression(multimodal_data):
 
     # 4. Nested cross-validation
 
-    inner_cv = KFold(n_splits=5, shuffle=True, random_state=42)
-    outer_cv = KFold(n_splits=10, shuffle=True, random_state=42)
+    inner_cv = KFold(n_splits=inner_cv, shuffle=True, random_state=42)
+    outer_cv = KFold(n_splits=outer_cv, shuffle=True, random_state=42)
 
     ttr = TransformedTargetRegressor(
         regressor=pipeline_regression, func=np.log1p, inverse_func=np.expm1
@@ -333,45 +319,6 @@ def stage_two_regression(multimodal_data):
     mse = mean_squared_error(y_test_reg, y_pred)
     print(f"Test R² (raw): {r2_raw:.4f} Test MSE: {mse:.4f}")
 
-    # Final Model
-
-    # Refit the final model on the entire non-zero training set with best params
-    final_pipeline = pipeline_regression.set_params(
-        **{
-            key.replace("regressor__", ""): val
-            for key, val in model.best_params_.items()
-        }
-    )
-    final_ttr = TransformedTargetRegressor(
-        regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
-    )
-    final_ttr.fit(X_train_reg, y_train_reg)
-
-    # Back-project coefficients from PCA space
-    fitted_pipeline = final_ttr.regressor_
-    enet_model = fitted_pipeline.named_steps["enet"]
-    pca_model = fitted_pipeline.named_steps["pca"]
-    preprocessor = fitted_pipeline.named_steps["preprocessing"]
-
-    # Coefficients in PCA space
-    coef_pca_space = enet_model.coef_
-
-    # Back-projection to original feature space
-    coef_original_space = coef_pca_space @ pca_model.components_
-
-    # Absolute values as feature importances
-    importances = np.abs(coef_original_space)
-
-    # Get feature names after preprocessing
-    feature_names = preprocessor.get_feature_names_out()
-
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-    top20_features = feature_importance_df.head(20)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
-
     # Visualization
     plt = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
     plt.show()
@@ -399,6 +346,45 @@ def stage_two_regression(multimodal_data):
         "permutation_score": score,
         "permutation_pvalue": pvalue,
     }
+
+    # Final Model
+
+    # Refit the final model on the entire non-zero training set with best params
+    final_pipeline = pipeline_regression.set_params(
+        **{
+            key.replace("regressor__", ""): val
+            for key, val in model.best_params_.items()
+        }
+    )
+    final_ttr = TransformedTargetRegressor(
+        regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
+    )
+    final_ttr.fit(X_train_reg, y_train_reg)
+
+    # Get feature importances from the final model
+    top20_features = _get_feature_importances_regression(final_ttr)
+    print("Top 20 Features by Importance:")
+    print(top20_features)
+
+    # Back-project coefficients from PCA space
+    # fitted_pipeline = final_ttr.regressor_
+    # enet_model = fitted_pipeline.named_steps["enet"]
+    # pca_model = fitted_pipeline.named_steps["pca"]
+    # preprocessor = fitted_pipeline.named_steps["preprocessing"]
+    ## Coefficients in PCA space
+    # coef_pca_space = enet_model.coef_
+    ## Back-projection to original feature space
+    # coef_original_space = coef_pca_space @ pca_model.components_
+    ## Absolute values as feature importances
+    # importances = np.abs(coef_original_space)
+    ## Get feature names after preprocessing
+    # feature_names = preprocessor.get_feature_names_out()
+    # feature_importance_df = pd.DataFrame(
+    #    {"feature": feature_names, "importance": importances}
+    # ).sort_values(by="importance", ascending=False)
+    # top20_features = feature_importance_df.head(20)
+    # print("Top 20 Features by Importance:")
+    # print(top20_features)
 
     print("Metrics:", metrics)
 
@@ -445,7 +431,105 @@ def _plot_learning_curve_classifier(best_model, X_train, y_train):
     return plt
 
 
+def _get_feature_importances_classifier(final_model):
+    # Get feature importances from the final model
+    ## Get best parameters (back-project PCA)
+
+    # Extract components
+    logreg = final_model.named_steps["clf"]
+    pca = final_model.named_steps["pca"]
+
+    # Coefficients in PCA space
+    coef_pca_space = logreg.coef_
+
+    # Back-project to original (pre-PCA) space
+    coef_original_space = coef_pca_space @ pca.components_
+
+    # Get absolute values as importance
+    importances = np.abs(coef_original_space.ravel())
+
+    # Feature names before PCA (after preprocessing)
+    feature_names = final_model.named_steps["preprocessing"].get_feature_names_out()
+
+    feature_importance_df = pd.DataFrame(
+        {"feature": feature_names, "importance": importances}
+    ).sort_values(by="importance", ascending=False)
+
+    top20_features = feature_importance_df.head(20)
+
+    return top20_features
+
+
+def _get_feature_importances_regression(final_ttr):
+    fitted_pipeline = final_ttr.regressor_
+    enet_model = fitted_pipeline.named_steps["enet"]
+    pca_model = fitted_pipeline.named_steps["pca"]
+    preprocessor = fitted_pipeline.named_steps["preprocessing"]
+
+    # Coefficients in PCA space
+    coef_pca_space = enet_model.coef_
+
+    # Back-projection to original feature space
+    coef_original_space = coef_pca_space @ pca_model.components_
+
+    # Absolute values as feature importances
+    importances = np.abs(coef_original_space)
+
+    # Get feature names after preprocessing
+    feature_names = preprocessor.get_feature_names_out()
+
+    feature_importance_df = pd.DataFrame(
+        {"feature": feature_names, "importance": importances}
+    ).sort_values(by="importance", ascending=False)
+    top20_features = feature_importance_df.head(20)
+
+    return top20_features
+
+
+def get_feature_importances_from_pipeline(
+    pipeline, estimator_step="clf", top_n=20
+):  # TODO: get the other two functions into this one
+    """
+    Extracts feature importances by back-projecting PCA-transformed coefficients
+    to the original feature space, then returns top N features by absolute importance.
+
+    Args:
+    pipeline: Fitted sklearn Pipeline with 'pca' and preprocessing steps.
+    estimator_step: Name of the estimator step (e.g., "clf", "enet").
+    top_n: Number of top features to return.
+
+    Returns:
+    DataFrame (pd.DataFrame) with top N features and their importances.
+    """
+
+    estimator = pipeline.named_steps[estimator_step]
+    pca = pipeline.named_steps["pca"]
+    preprocessor = pipeline.named_steps["preprocessing"]
+
+    # Coefficients in PCA space
+    coef_pca_space = getattr(estimator, "coef_", None)
+    if coef_pca_space is None:
+        raise ValueError(f"Estimator '{estimator_step}' has no attribute 'coef_'")
+
+    # Back-project to original (pre-PCA) space
+    coef_original_space = coef_pca_space @ pca.components_
+
+    # Flatten and take absolute values
+    importances = np.abs(coef_original_space.ravel())
+
+    # Get feature names from preprocessor
+    feature_names = preprocessor.get_feature_names_out()
+
+    # Assemble importance DataFrame
+    feature_importance_df = pd.DataFrame(
+        {"feature": feature_names, "importance": importances}
+    ).sort_values(by="importance", ascending=False)
+
+    return feature_importance_df.head(top_n)
+
+
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    # stage_one_classification(multimodal_df)
-    stage_two_regression(multimodal_df)
+    # stage_one_classification(multimodal_df, cutoff_quantile=0.05,
+    #  inner_cv=2, outer_cv=2)
+    stage_two_regression(multimodal_df, cutoff_quantile=0.05, inner_cv=2, outer_cv=2)

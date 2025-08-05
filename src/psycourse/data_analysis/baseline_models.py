@@ -418,8 +418,11 @@ def stage_one_classification_lipids(multimodal_data):
     target = ["prob_class_5"]
     lipid_features = [col for col in data.columns if col.startswith("gpeak")]
     relevant_cols = covariates + lipid_features + target
+    data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
 
-    analysis_data = data[relevant_cols].copy()
+    print(len(data_with_lipids), "rows with lipid features")
+
+    analysis_data = data_with_lipids[relevant_cols].dropna().copy()
 
     # 2. Data Splitting
     X = analysis_data.drop(columns=target).copy()
@@ -473,8 +476,8 @@ def stage_one_classification_lipids(multimodal_data):
 
     # 4. Nested cross-validation
 
-    inner_cv = StratifiedKFold(n_splits=2, shuffle=True, random_state=42)
-    outer_cv = StratifiedKFold(n_splits=2, shuffle=True, random_state=42)
+    inner_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    outer_cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
     # 5. Model Training
 
@@ -810,5 +813,5 @@ def _plot_learning_curve_classifier(best_model, X_train, y_train):
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    # stage_one_classification_lipids(multimodal_df)
-    stage_two_regression_lipids(multimodal_df)
+    stage_one_classification_lipids(multimodal_df)
+    # stage_two_regression_lipids(multimodal_df)
