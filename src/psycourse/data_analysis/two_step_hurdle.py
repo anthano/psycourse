@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -7,11 +9,12 @@ from sklearn.decomposition import PCA
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.linear_model import ElasticNet, LogisticRegression
 from sklearn.metrics import (
+    ConfusionMatrixDisplay,
     PrecisionRecallDisplay,
     RocCurveDisplay,
     accuracy_score,
-    classification_report,
     confusion_matrix,
+    f1_score,
     mean_squared_error,
     precision_score,
     r2_score,
@@ -36,29 +39,47 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
-def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
+@dataclass
+class Report:
+    cutoff_quantile: float
+    cutoff: float
+    class_counts: np.ndarray
+    classifier: str
+    inner_cv: int
+    outer_cv: int
+    nested_scores: np.ndarray
+    parameters: dict
+    test_accuracy: float
+    test_roc_auc: float
+    test_precision: float
+    test_recall: float
+    confusion_matrix: np.ndarray
+    confusion_matrix_figure: plt.Figure
+    precision_recall_figure: plt.Figure
+    roc_figure: plt.Figure
+    learning_curves_figure: plt.Figure
+    top20_features: pd.DataFrame
+
+
+def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
     Args:
         multimodal_data (pd.DataFrame): DataFrame containing multimodal features and
         target variable (cluster prob).
         cutoff_quantile (float): Quantile to determine the cutoff for classification.
-        inner_cv (StratifiedKFold): Inner cross-validation for hyperparameter tuning.
-        outer_cv (StratifiedKFold): Outer cross-validation for model evaluation.
+        n_inner_cv (int): Number of inner cross-validation folds
+        for hyperparametertuning.
+        n_outer_cv (int): Number of outer cross-validation folds for model evaluation.
 
     Returns:
         model (Pipeline): Trained classification model.
     """
 
     # 1. Data Preparation
-    data = multimodal_data.copy()
-    data["sex"] = data["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
-    covariates = ["age", "bmi", "sex"]
-    target = ["prob_class_5"]
-    prs_features = [col for col in data.columns if col.endswith("PRS")]
-    lipid_features = [col for col in data.columns if col.startswith("gpeak")]
-    analysis_data = _prepare_data(
-        data, target, covariates, lipid_features, prs_features
+
+    analysis_data, covariates, target, lipid_features, prs_features = _prepare_data(
+        multimodal_data
     )
 
     # 2. Data Splitting
@@ -72,10 +93,11 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
 
     cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  # TODO: very arbitrary
     y_train_bin = (y_train["prob_class_5"] > cutoff).astype(int).values.ravel()
-    print("Using cutoff =", cutoff)
+    y_test_bin = (y_test["prob_class_5"] > cutoff).astype(int).values.ravel()
+    print("Using cutoff =", cutoff, cutoff_quantile)  # print-statements for now
     print("Class counts:", np.bincount(y_train_bin))
 
-    # 3. Pre-processing and Model Definition
+    # 3. Pre-processing
 
     # Pre-Processor: only need to standardize lipid features and covariates
     preprocessor = ColumnTransformer(
@@ -83,6 +105,7 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
         remainder="passthrough",
     )
 
+    # Define classifier
     classifier = LogisticRegression(
         penalty="elasticnet",
         l1_ratio=0.5,  # dummy placeholder, will be tuned later
@@ -104,7 +127,7 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
         ]
     )
 
-    # Parameters for Search
+    # Search space for hyperparameters
     param_distributions = {
         "pca__n_components": [None, 0.99, 0.95],
         "clf__C": loguniform(1e-4, 1e2),
@@ -113,8 +136,8 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
 
     # 4. Nested cross-validation
 
-    inner_cv = StratifiedKFold(n_splits=inner_cv, shuffle=True, random_state=42)
-    outer_cv = StratifiedKFold(n_splits=outer_cv, shuffle=True, random_state=42)
+    inner_cv = StratifiedKFold(n_splits=n_inner_cv, shuffle=True, random_state=42)
+    outer_cv = StratifiedKFold(n_splits=n_outer_cv, shuffle=True, random_state=42)
 
     # 5. Model Training
 
@@ -148,53 +171,31 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
 
     # Model Evaluation on Test Set
 
-    y_test_bin = (y_test["prob_class_5"] > cutoff).astype(int).values
-    y_pred_bin = best_model.predict(X_test)
-    y_pred_proba = best_model.predict_proba(X_test)[:, 1]
-
-    test_acc = accuracy_score(y_test_bin, y_pred_bin)
-    test_auc = roc_auc_score(y_test_bin, y_pred_proba)
-    test_precision = precision_score(y_test_bin, y_pred_bin)
-    test_recall = recall_score(y_test_bin, y_pred_bin)
-
-    conf_mat = confusion_matrix(y_test_bin, y_pred_bin)
-    # conf_mat.show()
-
-    PrecisionRecallDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    RocCurveDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    ## Plot
-    base_pipeline = model.estimator
-
-    pipeline_with_best_params = base_pipeline.set_params(**best_params)
-
-    learning_curves_plot = _plot_learning_curve_classifier(
-        pipeline_with_best_params, X_train, y_train_bin
+    y_pred_bin, y_pred_proba, eval_metrics = _evaluate_classifier(
+        best_model, X_test, y_test_bin
     )
-    learning_curves_plot.show()
+    # print("Test Set Evaluation Metrics:", eval_metrics)
+    ## Precision: Of all predicted positives, how many were true positives?
+    ## Recall = Sensitivity: Of all actual positives,
+    # how many were predicted as positive?
+    ## F1 Score: Harmonic mean of precision and recall
 
-    # Print Classification Report
-    print("Classification Report:")
-    print(classification_report(y_test_bin, y_pred_bin))
+    # Plotting
 
-    report = {
-        "cutoff": cutoff,
-        "class_counts": np.bincount(y_train_bin),
-        "classifier": "Logistic Regression",
-        "Inner CV": inner_cv,
-        "Outer CV": outer_cv,
-        "nested_scores": nested_scores,
-        "parameters": model.best_params_,
-        "test_accuracy": test_acc,
-        "test_auc": test_auc,
-        "test_precision": test_precision,
-        "test_recall": test_recall,
-    }
-
-    print("Report:", report)
+    conf_mat_figure = ConfusionMatrixDisplay.from_predictions(y_test_bin, y_pred_bin)
+    precision_recall_figure = PrecisionRecallDisplay.from_predictions(
+        y_test_bin, y_pred_proba
+    )
+    roc_figure = RocCurveDisplay.from_predictions(y_test_bin, y_pred_proba)
+    # ROC AUC: Area under the ROC curve, a measure of model's ability to
+    # distinguish between classes
+    learning_curves_figure = _plot_learning_curve_classifier(
+        best_model, X_train, y_train_bin
+    )
+    plt.close(conf_mat_figure.figure_)
+    plt.close(precision_recall_figure.figure_)
+    plt.close(roc_figure.figure_)
+    plt.close(learning_curves_figure)
 
     # Fit on the entire dataset (X, y):
     final_model = pipeline.set_params(**best_params)
@@ -202,34 +203,49 @@ def stage_one_classification(multimodal_data, cutoff_quantile, inner_cv, outer_c
 
     # Get feature importances from the final model
     top20_features = _get_feature_importances_classifier(final_model)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
 
-    return final_model, conf_mat, learning_curves_plot, report
+    # Create report
+    report = Report(
+        cutoff_quantile=cutoff_quantile,
+        cutoff=cutoff,
+        class_counts=np.bincount(y_train_bin),
+        classifier="Logistic Regression with ElasticNet",
+        inner_cv=n_inner_cv,
+        outer_cv=n_outer_cv,
+        nested_scores=nested_scores,
+        parameters=best_params,
+        test_accuracy=eval_metrics["test_accuracy"],
+        test_roc_auc=eval_metrics["test_roc_auc"],
+        test_precision=eval_metrics["test_precision"],
+        test_recall=eval_metrics["test_recall"],
+        confusion_matrix=eval_metrics["confusion_matrix"],
+        confusion_matrix_figure=conf_mat_figure.figure_,
+        precision_recall_figure=precision_recall_figure.figure_,
+        roc_figure=roc_figure.figure_,
+        learning_curves_figure=learning_curves_figure,
+        top20_features=top20_features,
+    )
+    print("Report:", report)
+    return final_model, Report
 
 
-def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
+def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
     """
     Stage 2: Regress the magnitude among the non-zeros
     Args:
         multimodal_data (pd.DataFrame): DataFrame containing multimodal features and
         target variable (cluster prob).
         cutoff_quantile (float): Quantile to determine the cutoff for classification.
-        inner_cv (int): Number of folds for inner cross-validation.
-        outer_cv (int): Number of folds for outer cross-validation.
+        n_inner_cv (int): Number of folds for inner cross-validation.
+        n_outer_cv (int): Number of folds for outer cross-validation.
     Returns:
         model (Pipeline): Trained regression model.
     """
 
     # 1. Data Preparation
-    data = multimodal_data.copy()
-    data["sex"] = data["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
-    covariates = ["age", "bmi", "sex"]
-    target = ["prob_class_5"]
-    prs_features = [col for col in data.columns if col.endswith("PRS")]
-    lipid_features = [col for col in data.columns if col.startswith("gpeak")]
-    analysis_data = _prepare_data(
-        data, target, covariates, lipid_features, prs_features
+
+    analysis_data, covariates, target, lipid_features, prs_features = _prepare_data(
+        multimodal_data
     )
 
     # 2. Data Splitting
@@ -242,9 +258,6 @@ def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
     )
 
     cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  # TODO: very arbitrary
-    y_train_bin = (y_train["prob_class_5"] > cutoff).astype(int).values.ravel()
-    print("Using cutoff =", cutoff)
-    print("Class counts:", np.bincount(y_train_bin))
 
     # Filter out non-zero prob_class_5 for regression
     non_zero_mask = y_train["prob_class_5"] > cutoff
@@ -283,13 +296,17 @@ def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
 
     # 4. Nested cross-validation
 
-    inner_cv = KFold(n_splits=inner_cv, shuffle=True, random_state=42)
-    outer_cv = KFold(n_splits=outer_cv, shuffle=True, random_state=42)
+    inner_cv = KFold(n_splits=n_inner_cv, shuffle=True, random_state=42)
+    outer_cv = KFold(n_splits=n_outer_cv, shuffle=True, random_state=42)
 
+    # 5. Model Training
+
+    # transform target variable for regression
     ttr = TransformedTargetRegressor(
         regressor=pipeline_regression, func=np.log1p, inverse_func=np.expm1
     )
 
+    # Randomized Search CV for hyperparameter tuningwarp
     model = RandomizedSearchCV(
         ttr,
         param_distributions=param_distributions_regression,
@@ -350,21 +367,20 @@ def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
     # Final Model
 
     # Refit the final model on the entire non-zero training set with best params
-    final_pipeline = pipeline_regression.set_params(
-        **{
-            key.replace("regressor__", ""): val
-            for key, val in model.best_params_.items()
-        }
-    )
-    final_ttr = TransformedTargetRegressor(
-        regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
-    )
-    final_ttr.fit(X_train_reg, y_train_reg)
-
-    # Get feature importances from the final model
-    top20_features = _get_feature_importances_regression(final_ttr)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
+    ##final_pipeline = pipeline_regression.set_params(  # noqa: F821
+    #    **{
+    #        key.replace("regressor__", ""): val
+    #        for key, val in model.best_params_.items()
+    #    }
+    # )
+    # final_ttr = TransformedTargetRegressor(
+    #    regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
+    # )
+    # final_ttr.fit(X_train_reg, y_train_reg)
+    ## Get feature importances from the final model
+    # top20_features = _get_feature_importances_regression(final_ttr)
+    # print("Top 20 Features by Importance:")
+    # print(top20_features)
 
     # Back-project coefficients from PCA space
     # fitted_pipeline = final_ttr.regressor_
@@ -394,14 +410,42 @@ def stage_two_regression(multimodal_data, cutoff_quantile, inner_cv, outer_cv):
 ########################################################################################
 
 
-def _prepare_data(multimodal_data, target, covariates, lipid_features, prs_features):
+def _prepare_data(multimodal_data):
     data = multimodal_data.copy()
+
+    data["sex"] = data["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
+    covariates = ["age", "bmi", "sex"]
+    target = ["prob_class_5"]
+    prs_features = [col for col in data.columns if col.endswith("PRS")]
+    lipid_features = [col for col in data.columns if col.startswith("gpeak")]
     data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
     relevant_cols = covariates + lipid_features + prs_features + target
 
     analysis_data = data_with_lipids[relevant_cols].copy()
 
-    return analysis_data
+    return analysis_data, covariates, target, lipid_features, prs_features
+
+
+def _evaluate_classifier(model, X_test, y_test_bin):
+    y_pred_bin = model.predict(X_test)
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
+
+    precision = precision_score(y_test_bin, y_pred_bin)
+    recall = recall_score(y_test_bin, y_pred_bin)
+    f1 = f1_score(y_test_bin, y_pred_bin)
+    roc_auc = roc_auc_score(y_test_bin, y_pred_proba)
+    accuracy = accuracy_score(y_test_bin, y_pred_bin)
+    conf_matrix = confusion_matrix(y_test_bin, y_pred_bin)
+
+    eval_metrics = {
+        "test_precision": precision,
+        "test_recall": recall,
+        "test_f1_score": f1,
+        "test_roc_auc": roc_auc,
+        "test_accuracy": accuracy,
+        "confusion_matrix": conf_matrix,
+    }
+    return y_pred_bin, y_pred_proba, eval_metrics
 
 
 def _plot_learning_curve_classifier(best_model, X_train, y_train):
@@ -419,16 +463,16 @@ def _plot_learning_curve_classifier(best_model, X_train, y_train):
     train_scores_mean = np.mean(train_scores, axis=1)
     valid_scores_mean = np.mean(valid_scores, axis=1)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_sizes, train_scores_mean, label="Training Score", marker="o")
-    plt.plot(train_sizes, valid_scores_mean, label="Validation Score", marker="o")
-    plt.title("Learning Curve")
-    plt.xlabel("Training Size")
-    plt.ylabel("ROC AUC Score")
-    plt.legend()
-    plt.grid()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(train_sizes, train_scores_mean, label="Training Score", marker="o")
+    ax.plot(train_sizes, valid_scores_mean, label="Validation Score", marker="o")
+    ax.set_title("Learning Curve")
+    ax.set_xlabel("Training Size")
+    ax.set_ylabel("ROC AUC Score")
+    ax.legend()
+    ax.grid()
 
-    return plt
+    return fig
 
 
 def _get_feature_importances_classifier(final_model):
@@ -486,7 +530,7 @@ def _get_feature_importances_regression(final_ttr):
     return top20_features
 
 
-def get_feature_importances_from_pipeline(
+def _get_feature_importances_from_pipeline(
     pipeline, estimator_step="clf", top_n=20
 ):  # TODO: get the other two functions into this one
     """
@@ -530,6 +574,8 @@ def get_feature_importances_from_pipeline(
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    # stage_one_classification(multimodal_df, cutoff_quantile=0.05,
-    #  inner_cv=2, outer_cv=2)
-    stage_two_regression(multimodal_df, cutoff_quantile=0.05, inner_cv=2, outer_cv=2)
+    stage_one_classification(
+        multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
+    )
+    # stage_two_regression(multimodal_df, cutoff_quantile=0.05,
+    # n_inner_cv=2, n_outer_cv=2)
