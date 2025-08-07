@@ -39,28 +39,6 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
-@dataclass
-class Report:
-    cutoff_quantile: float
-    cutoff: float
-    class_counts: np.ndarray
-    classifier: str
-    inner_cv: int
-    outer_cv: int
-    nested_scores: np.ndarray
-    parameters: dict
-    test_accuracy: float
-    test_roc_auc: float
-    test_precision: float
-    test_recall: float
-    confusion_matrix: np.ndarray
-    confusion_matrix_figure: plt.Figure
-    precision_recall_figure: plt.Figure
-    roc_figure: plt.Figure
-    learning_curves_figure: plt.Figure
-    top20_features: pd.DataFrame
-
-
 def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
@@ -148,7 +126,7 @@ def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_out
         cv=inner_cv,
         scoring="roc_auc",
         verbose=1,
-        n_jobs=-2,
+        n_jobs=-3,
         error_score="raise",
     )
 
@@ -205,7 +183,7 @@ def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_out
     top20_features = _get_feature_importances_classifier(final_model)
 
     # Create report
-    report = Report(
+    report = ClassificationReport(
         cutoff_quantile=cutoff_quantile,
         cutoff=cutoff,
         class_counts=np.bincount(y_train_bin),
@@ -226,7 +204,7 @@ def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_out
         top20_features=top20_features,
     )
     print("Report:", report)
-    return final_model, Report
+    return final_model, report
 
 
 def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
@@ -314,7 +292,7 @@ def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_c
         cv=inner_cv,
         scoring="r2",
         verbose=1,
-        n_jobs=-2,
+        n_jobs=-3,
         error_score="raise",
     )
 
@@ -334,11 +312,9 @@ def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_c
     y_pred = model.predict(X_test_reg)
     r2_raw = r2_score(y_test_reg, y_pred)
     mse = mean_squared_error(y_test_reg, y_pred)
-    print(f"Test R² (raw): {r2_raw:.4f} Test MSE: {mse:.4f}")
 
     # Visualization
-    plt = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
-    plt.show()
+    learning_curve_fig = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
 
     ## Permutation Test to test significance of the model
     y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
@@ -353,56 +329,38 @@ def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_c
         random_state=42,
     )
 
-    metrics = {
-        "mean_nested_cv_r2": nested_scores.mean(),
-        "std_nested_cv_r2": nested_scores.std(),
-        "best_inner_cv_r2": model.best_score_,
-        "best_parameters": model.best_params_,
-        "test_regression_r2": r2_raw,
-        "test_regression_mse": mse,
-        "permutation_score": score,
-        "permutation_pvalue": pvalue,
-    }
-
     # Final Model
 
     # Refit the final model on the entire non-zero training set with best params
-    ##final_pipeline = pipeline_regression.set_params(  # noqa: F821
-    #    **{
-    #        key.replace("regressor__", ""): val
-    #        for key, val in model.best_params_.items()
-    #    }
-    # )
-    # final_ttr = TransformedTargetRegressor(
-    #    regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
-    # )
-    # final_ttr.fit(X_train_reg, y_train_reg)
-    ## Get feature importances from the final model
-    # top20_features = _get_feature_importances_regression(final_ttr)
-    # print("Top 20 Features by Importance:")
-    # print(top20_features)
+
+    final_model = _get_final_regression_model(
+        pipeline_regression, model.best_params_, X_train_reg, y_train_reg
+    )
+
+    # Get feature importances from the final model
 
     # Back-project coefficients from PCA space
-    # fitted_pipeline = final_ttr.regressor_
-    # enet_model = fitted_pipeline.named_steps["enet"]
-    # pca_model = fitted_pipeline.named_steps["pca"]
-    # preprocessor = fitted_pipeline.named_steps["preprocessing"]
-    ## Coefficients in PCA space
-    # coef_pca_space = enet_model.coef_
-    ## Back-projection to original feature space
-    # coef_original_space = coef_pca_space @ pca_model.components_
-    ## Absolute values as feature importances
-    # importances = np.abs(coef_original_space)
-    ## Get feature names after preprocessing
-    # feature_names = preprocessor.get_feature_names_out()
-    # feature_importance_df = pd.DataFrame(
-    #    {"feature": feature_names, "importance": importances}
-    # ).sort_values(by="importance", ascending=False)
-    # top20_features = feature_importance_df.head(20)
-    # print("Top 20 Features by Importance:")
-    # print(top20_features)
+    top20_features = _get_feature_importances_regression(final_model)
+    report = RegressionReport(
+        cutoff_quantile=cutoff_quantile,
+        cutoff=cutoff,
+        train_size=len(X_train_reg),
+        test_size=len(X_test_reg),
+        inner_cv=n_inner_cv,
+        outer_cv=n_outer_cv,
+        nested_scores=nested_scores,
+        best_parameters=model.best_params_,
+        best_inner_cv_r2=model.best_score_,
+        test_regression_r2=r2_raw,
+        test_regression_mse=mse,
+        permutation_score=score,
+        permutation_pvalue=pvalue,
+        learning_curves_figure=learning_curve_fig,
+        top20_features=top20_features,
+    )
+    print("Regression Report:", report)
 
-    print("Metrics:", metrics)
+    return final_model, report
 
 
 ########################################################################################
@@ -504,8 +462,8 @@ def _get_feature_importances_classifier(final_model):
     return top20_features
 
 
-def _get_feature_importances_regression(final_ttr):
-    fitted_pipeline = final_ttr.regressor_
+def _get_feature_importances_regression(final_model):
+    fitted_pipeline = final_model.regressor_
     enet_model = fitted_pipeline.named_steps["enet"]
     pca_model = fitted_pipeline.named_steps["pca"]
     preprocessor = fitted_pipeline.named_steps["preprocessing"]
@@ -530,52 +488,63 @@ def _get_feature_importances_regression(final_ttr):
     return top20_features
 
 
-def _get_feature_importances_from_pipeline(
-    pipeline, estimator_step="clf", top_n=20
-):  # TODO: get the other two functions into this one
-    """
-    Extracts feature importances by back-projecting PCA-transformed coefficients
-    to the original feature space, then returns top N features by absolute importance.
+def _get_final_regression_model(pipeline, best_params, X_train_reg, y_train_reg):
+    final_pipeline = pipeline.set_params(
+        **{key.replace("regressor__", ""): val for key, val in best_params.items()}
+    )
+    final_ttr = TransformedTargetRegressor(
+        regressor=final_pipeline, func=np.log1p, inverse_func=np.expm1
+    )
+    final_ttr.fit(X_train_reg, y_train_reg)
+    return final_ttr
 
-    Args:
-    pipeline: Fitted sklearn Pipeline with 'pca' and preprocessing steps.
-    estimator_step: Name of the estimator step (e.g., "clf", "enet").
-    top_n: Number of top features to return.
 
-    Returns:
-    DataFrame (pd.DataFrame) with top N features and their importances.
-    """
+@dataclass
+class ClassificationReport:
+    cutoff_quantile: float
+    cutoff: float
+    class_counts: np.ndarray
+    classifier: str
+    inner_cv: int
+    outer_cv: int
+    nested_scores: np.ndarray
+    parameters: dict
+    test_accuracy: float
+    test_roc_auc: float
+    test_precision: float
+    test_recall: float
+    confusion_matrix: np.ndarray
+    confusion_matrix_figure: plt.Figure
+    precision_recall_figure: plt.Figure
+    roc_figure: plt.Figure
+    learning_curves_figure: plt.Figure
+    top20_features: pd.DataFrame
 
-    estimator = pipeline.named_steps[estimator_step]
-    pca = pipeline.named_steps["pca"]
-    preprocessor = pipeline.named_steps["preprocessing"]
 
-    # Coefficients in PCA space
-    coef_pca_space = getattr(estimator, "coef_", None)
-    if coef_pca_space is None:
-        raise ValueError(f"Estimator '{estimator_step}' has no attribute 'coef_'")
-
-    # Back-project to original (pre-PCA) space
-    coef_original_space = coef_pca_space @ pca.components_
-
-    # Flatten and take absolute values
-    importances = np.abs(coef_original_space.ravel())
-
-    # Get feature names from preprocessor
-    feature_names = preprocessor.get_feature_names_out()
-
-    # Assemble importance DataFrame
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-
-    return feature_importance_df.head(top_n)
+@dataclass
+class RegressionReport:
+    cutoff_quantile: float
+    cutoff: float
+    train_size: int
+    test_size: int
+    inner_cv: int
+    outer_cv: int
+    nested_scores: np.ndarray
+    best_parameters: dict
+    best_inner_cv_r2: float
+    test_regression_r2: float
+    test_regression_mse: float
+    permutation_score: float
+    permutation_pvalue: float
+    learning_curves_figure: plt.Figure
+    top20_features: pd.DataFrame
 
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    stage_one_classification(
+    # stage_one_classification(
+    #    multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
+    # )
+    stage_two_regression(
         multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
     )
-    # stage_two_regression(multimodal_df, cutoff_quantile=0.05,
-    # n_inner_cv=2, n_outer_cv=2)
