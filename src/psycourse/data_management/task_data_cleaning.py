@@ -1,5 +1,3 @@
-"""Tasks for managing the data."""
-
 import pandas as pd
 
 from psycourse.config import BLD_DATA, DATA_DIR, SRC
