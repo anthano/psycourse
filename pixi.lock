@@ -3621,7 +3621,7 @@ packages:
   timestamp: 1740663381256
 - kind: pypi
   name: psycourse
-  version: 0.1.dev65+g5b9004d.d20250612
+  version: 0.1.dev92+g4ab9d74.d20250807
   path: .
   sha256: 260953bbb641ea8979c8355e9905429201db4fa2dab61ab03683135f4f8667b9
   requires_python: '>=3.11'
