@@ -39,6 +39,36 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
+def two_step_hurdle(multimodal_data):
+    """
+    Perform two-stage hurdle model on multimodal data to predict cluster 5 probability.
+    Args:
+    Returns:
+    """
+
+    cutoff_quantile = [0.05, 0.10, 0.25]
+    n_inner_cv = [2, 5, 10]
+    n_outer_cv = [2, 5, 10]
+
+    for cutoff in cutoff_quantile:
+        for inner_cv in n_inner_cv:
+            for outer_cv in n_outer_cv:
+                print(
+                    f"Running with cutoff={cutoff}",
+                    inner_cv={inner_cv},
+                    outer_cv={outer_cv},  # noqa: E501
+                )
+                model, report = stage_one_classification(
+                    multimodal_data, cutoff, inner_cv, outer_cv
+                )
+                print("Stage 1 Classification Report:", report)
+
+                model, report = stage_two_regression(
+                    multimodal_data, cutoff, inner_cv, outer_cv
+                )
+                print("Stage 2 Regression Report:", report)
+
+
 def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
@@ -545,6 +575,8 @@ if __name__ == "__main__":
     # stage_one_classification(
     #    multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
     # )
-    stage_two_regression(
-        multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
-    )
+    # stage_two_regression(
+    #    multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
+    # )
+
+    two_step_hurdle(multimodal_df)
