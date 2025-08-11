@@ -1,3 +1,4 @@
+import hashlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -39,37 +40,96 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
-def two_step_hurdle(multimodal_data):
+def two_step_hurdle(multimodal_data, n_repeats=2, base_seed=42):
     """
     Perform two-stage hurdle model on multimodal data to predict cluster 5 probability.
     Args:
     Returns:
     """
 
-    cutoff_quantile = [0.05, 0.10, 0.25]
-    n_inner_cv = [2, 5, 10]
-    n_outer_cv = [2, 5, 10]
+    # cutoff_quantile = [0.05, 0.10, 0.25]
+    # n_inner_cv = [2, 5, 10]
+    # n_outer_cv = [2, 5, 10]
+
+    cutoff_quantile = [0.05]
+    n_inner_cv = [2]
+    n_outer_cv = [2]
+
+    results = []
 
     for cutoff in cutoff_quantile:
         for inner_cv in n_inner_cv:
             for outer_cv in n_outer_cv:
-                print(
-                    f"Running with cutoff={cutoff}",
-                    inner_cv={inner_cv},
-                    outer_cv={outer_cv},  # noqa: E501
+                (
+                    test_accs,
+                    test_roc_aucs,
+                    test_precisions,
+                    test_recalls,
+                    top20_features_clf,
+                ) = [], [], [], [], []
+                test_r2s, test_mses, permutation_p_vals, top20_features_reg = (
+                    [],
+                    [],
+                    [],
+                    [],
                 )
-                model, report = stage_one_classification(
-                    multimodal_data, cutoff, inner_cv, outer_cv
+                combo_id = f"{cutoff}_{inner_cv}_{outer_cv}"
+                combo_hash = (
+                    int(hashlib.sha256(combo_id.encode()).hexdigest(), 16) % 1_000_000
                 )
-                print("Stage 1 Classification Report:", report)
+                print(combo_id)
+                for repeat in range(n_repeats):
+                    seed = base_seed + combo_hash + repeat
+                    clf_model, clf_report = stage_one_classification(
+                        multimodal_data, cutoff, inner_cv, outer_cv, seed
+                    )
+                    print("Stage 1 Classification Report:", clf_report)
 
-                model, report = stage_two_regression(
-                    multimodal_data, cutoff, inner_cv, outer_cv
-                )
-                print("Stage 2 Regression Report:", report)
+                    reg_model, reg_report = stage_two_regression(
+                        multimodal_data, cutoff, inner_cv, outer_cv, seed
+                    )
+                    print("Stage 2 Regression Report:", reg_report)
+
+                    test_accs.append(clf_report.test_accuracy)
+                    test_roc_aucs.append(clf_report.test_roc_auc)
+                    test_precisions.append(clf_report.test_precision)
+                    test_recalls.append(clf_report.test_recall)
+                    top20_features_clf.append(clf_report.top20_features)
+
+                    test_r2s.append(reg_report.test_regression_r2)
+                    test_mses.append(reg_report.test_regression_mse)
+                    permutation_p_vals.append(reg_report.permutation_pvalue)
+                    top20_features_reg.append(reg_report.top20_features)
+
+                    results.append(
+                        TwoStepHurdleReport(
+                            cutoff_quantile=cutoff,
+                            n_inner_cv=inner_cv,
+                            n_outer_cv=outer_cv,
+                            n_repeats=n_repeats,
+                            test_accs_mean=np.mean(test_accs),
+                            test_accs_std=np.std(test_accs),
+                            test_roc_aucs_mean=np.mean(test_roc_aucs),
+                            test_roc_aucs_std=np.std(test_roc_aucs),
+                            test_precisions_mean=np.mean(test_precisions),
+                            test_precisions_std=np.std(test_precisions),
+                            test_recalls_mean=np.mean(test_recalls),
+                            test_recalls_std=np.std(test_recalls),
+                            test_r2s_mean=np.mean(test_r2s),
+                            test_r2s_std=np.std(test_r2s),
+                            test_mses_mean=np.mean(test_mses),
+                            test_mses_std=np.std(test_mses),
+                            permutation_p_vals_mean=np.mean(permutation_p_vals),
+                            permutation_p_vals_std=np.std(permutation_p_vals),
+                        )
+                    )
+
+                    print(results)
 
 
-def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
+def stage_one_classification(
+    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed
+):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
     Args:
@@ -144,8 +204,8 @@ def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_out
 
     # 4. Nested cross-validation
 
-    inner_cv = StratifiedKFold(n_splits=n_inner_cv, shuffle=True, random_state=42)
-    outer_cv = StratifiedKFold(n_splits=n_outer_cv, shuffle=True, random_state=42)
+    inner_cv = StratifiedKFold(n_splits=n_inner_cv, shuffle=True, random_state=seed)
+    outer_cv = StratifiedKFold(n_splits=n_outer_cv, shuffle=True, random_state=seed)
 
     # 5. Model Training
 
@@ -237,9 +297,10 @@ def stage_one_classification(multimodal_data, cutoff_quantile, n_inner_cv, n_out
     return final_model, report
 
 
-def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv):
-    """
-    Stage 2: Regress the magnitude among the non-zeros
+def stage_two_regression(
+    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed
+):
+    """Stage 2: Regress the magnitude among the non-zeros
     Args:
         multimodal_data (pd.DataFrame): DataFrame containing multimodal features and
         target variable (cluster prob).
@@ -304,8 +365,8 @@ def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_c
 
     # 4. Nested cross-validation
 
-    inner_cv = KFold(n_splits=n_inner_cv, shuffle=True, random_state=42)
-    outer_cv = KFold(n_splits=n_outer_cv, shuffle=True, random_state=42)
+    inner_cv = KFold(n_splits=n_inner_cv, shuffle=True, random_state=seed)
+    outer_cv = KFold(n_splits=n_outer_cv, shuffle=True, random_state=seed)
 
     # 5. Model Training
 
@@ -345,6 +406,7 @@ def stage_two_regression(multimodal_data, cutoff_quantile, n_inner_cv, n_outer_c
 
     # Visualization
     learning_curve_fig = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
+    # plt.close(learning_curve_fig)
 
     ## Permutation Test to test significance of the model
     y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
@@ -568,6 +630,28 @@ class RegressionReport:
     permutation_pvalue: float
     learning_curves_figure: plt.Figure
     top20_features: pd.DataFrame
+
+
+@dataclass
+class TwoStepHurdleReport:
+    cutoff_quantile: float
+    n_inner_cv: int
+    n_outer_cv: int
+    n_repeats: int
+    test_accs_mean: float
+    test_accs_std: float
+    test_roc_aucs_mean: float
+    test_roc_aucs_std: float
+    test_precisions_mean: float
+    test_precisions_std: float
+    test_recalls_mean: float
+    test_recalls_std: float
+    test_r2s_mean: float
+    test_r2s_std: float
+    test_mses_mean: float
+    test_mses_std: float
+    permutation_p_vals_mean: float
+    permutation_p_vals_std: float
 
 
 if __name__ == "__main__":
