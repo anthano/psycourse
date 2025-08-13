@@ -61,7 +61,7 @@ allow-direct-references = true
 # ======================================================================================
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]
 python = "==3.12"
@@ -82,6 +82,7 @@ libgfortran = "*"
 libgfortran5 = ">=11"
 openblas = "*"
 scipy = ">=1.13.0"
+pytask-parallel = ">=0.5.1,<0.6"
 
 [tool.pixi.pypi-dependencies]
 pdbp = "*"
