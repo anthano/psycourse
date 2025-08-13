@@ -14,6 +14,7 @@ from sklearn.metrics import (
     PrecisionRecallDisplay,
     RocCurveDisplay,
     accuracy_score,
+    balanced_accuracy_score,
     confusion_matrix,
     f1_score,
     mean_squared_error,
@@ -40,22 +41,19 @@ from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
-def two_step_hurdle(multimodal_data, n_repeats=2, base_seed=42):
+def two_step_hurdle(multimodal_data, n_repeats=10, base_seed=42):
     """
     Perform two-stage hurdle model on multimodal data to predict cluster 5 probability.
     Args:
     Returns:
     """
 
-    # cutoff_quantile = [0.05, 0.10, 0.25]
-    # n_inner_cv = [2, 5, 10]
-    # n_outer_cv = [2, 5, 10]
+    cutoff_quantile = [0.05, 0.10, 0.25]
+    n_inner_cv = [2, 5, 10]
+    n_outer_cv = [2, 5, 10]
 
-    cutoff_quantile = [0.05]
-    n_inner_cv = [2]
-    n_outer_cv = [2]
-
-    results = []
+    summary_rows = []
+    per_repeat_rows = []
 
     for cutoff in cutoff_quantile:
         for inner_cv in n_inner_cv:
@@ -73,6 +71,7 @@ def two_step_hurdle(multimodal_data, n_repeats=2, base_seed=42):
                     [],
                     [],
                 )
+
                 combo_id = f"{cutoff}_{inner_cv}_{outer_cv}"
                 combo_hash = (
                     int(hashlib.sha256(combo_id.encode()).hexdigest(), 16) % 1_000_000
@@ -101,34 +100,61 @@ def two_step_hurdle(multimodal_data, n_repeats=2, base_seed=42):
                     permutation_p_vals.append(reg_report.permutation_pvalue)
                     top20_features_reg.append(reg_report.top20_features)
 
-                    results.append(
-                        TwoStepHurdleReport(
-                            cutoff_quantile=cutoff,
-                            n_inner_cv=inner_cv,
-                            n_outer_cv=outer_cv,
-                            n_repeats=n_repeats,
-                            test_accs_mean=np.mean(test_accs),
-                            test_accs_std=np.std(test_accs),
-                            test_roc_aucs_mean=np.mean(test_roc_aucs),
-                            test_roc_aucs_std=np.std(test_roc_aucs),
-                            test_precisions_mean=np.mean(test_precisions),
-                            test_precisions_std=np.std(test_precisions),
-                            test_recalls_mean=np.mean(test_recalls),
-                            test_recalls_std=np.std(test_recalls),
-                            test_r2s_mean=np.mean(test_r2s),
-                            test_r2s_std=np.std(test_r2s),
-                            test_mses_mean=np.mean(test_mses),
-                            test_mses_std=np.std(test_mses),
-                            permutation_p_vals_mean=np.mean(permutation_p_vals),
-                            permutation_p_vals_std=np.std(permutation_p_vals),
-                        )
+                    per_repeat_rows.append(
+                        {
+                            "combo_id": combo_id,
+                            "cutoff_quantile": cutoff,
+                            "n_inner_cv": inner_cv,
+                            "n_outer_cv": outer_cv,
+                            "repeat": repeat,
+                            "test_accuracy": clf_report.test_accuracy,
+                            "test_roc_auc": clf_report.test_roc_auc,
+                            "test_precision": clf_report.test_precision,
+                            "test_recall": clf_report.test_recall,
+                            "test_r2": reg_report.test_regression_r2,
+                            "test_mse": reg_report.test_regression_mse,
+                            "permutation_pvalue": reg_report.permutation_pvalue,
+                            "top20_features_clf": clf_report.top20_features,
+                            "top20_features_reg": reg_report.top20_features,
+                        }
                     )
 
-                    print(results)
+                # Summary statistics across repeats
+                summary_rows.append(
+                    {
+                        "combo_id": combo_id,
+                        "cutoff_quantile": cutoff,
+                        "n_inner_cv": inner_cv,
+                        "n_outer_cv": outer_cv,
+                        "test_accs_mean": np.mean(test_accs),
+                        "test_accs_std": np.std(test_accs),
+                        "test_roc_aucs_mean": np.mean(test_roc_aucs),
+                        "test_roc_aucs_std": np.std(test_roc_aucs),
+                        "test_precisions_mean": np.mean(test_precisions),
+                        "test_precisions_std": np.std(test_precisions),
+                        "test_recalls_mean": np.mean(test_recalls),
+                        "test_recalls_std": np.std(test_recalls),
+                        "test_r2s_mean": np.mean(test_r2s),
+                        "test_r2s_std": np.std(test_r2s),
+                        "test_mses_mean": np.mean(test_mses),
+                        "test_mses_std": np.std(test_mses),
+                        "permutation_p_vals_mean": np.mean(permutation_p_vals),
+                        "permutation_p_vals_std": np.std(permutation_p_vals),
+                    }
+                )
+
+            summary_results = pd.DataFrame(summary_rows).sort_values(
+                by=["cutoff_quantile", "n_inner_cv", "n_outer_cv"]
+            )
+            per_repeat_results = pd.DataFrame(per_repeat_rows).sort_values(
+                by=["cutoff_quantile", "n_inner_cv", "n_outer_cv", "repeat"]
+            )
+
+            return summary_results, per_repeat_results
 
 
 def stage_one_classification(
-    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed
+    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed, clf_n_jobs
 ):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
@@ -216,7 +242,7 @@ def stage_one_classification(
         cv=inner_cv,
         scoring="roc_auc",
         verbose=1,
-        n_jobs=-3,
+        n_jobs=clf_n_jobs,
         error_score="raise",
     )
 
@@ -283,6 +309,7 @@ def stage_one_classification(
         nested_scores=nested_scores,
         parameters=best_params,
         test_accuracy=eval_metrics["test_accuracy"],
+        test_balanced_accuracy=eval_metrics["test_balanced_accuracy"],
         test_roc_auc=eval_metrics["test_roc_auc"],
         test_precision=eval_metrics["test_precision"],
         test_recall=eval_metrics["test_recall"],
@@ -298,7 +325,7 @@ def stage_one_classification(
 
 
 def stage_two_regression(
-    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed
+    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed, reg_n_jobs
 ):
     """Stage 2: Regress the magnitude among the non-zeros
     Args:
@@ -337,7 +364,7 @@ def stage_two_regression(
     print(f"Training set size for regression: {len(X_train_reg)}")
     print(f"Test set size for regression: {len(X_test_reg)}")
 
-    # Pre-Processor #TODO: can I get this more elegantly from previous step?
+    # Pre-Processor
     preprocessor = ColumnTransformer(
         transformers=[("scaler", StandardScaler(), lipid_features + covariates)],
         remainder="passthrough",
@@ -383,7 +410,7 @@ def stage_two_regression(
         cv=inner_cv,
         scoring="r2",
         verbose=1,
-        n_jobs=-3,
+        n_jobs=reg_n_jobs,
         error_score="raise",
     )
 
@@ -405,8 +432,8 @@ def stage_two_regression(
     mse = mean_squared_error(y_test_reg, y_pred)
 
     # Visualization
-    learning_curve_fig = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
-    # plt.close(learning_curve_fig)
+    learning_curve_figure = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
+    plt.close(learning_curve_figure)
 
     ## Permutation Test to test significance of the model
     y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
@@ -447,7 +474,7 @@ def stage_two_regression(
         test_regression_mse=mse,
         permutation_score=score,
         permutation_pvalue=pvalue,
-        learning_curves_figure=learning_curve_fig,
+        learning_curves_figure=learning_curve_figure,
         top20_features=top20_features,
     )
     print("Regression Report:", report)
@@ -485,6 +512,7 @@ def _evaluate_classifier(model, X_test, y_test_bin):
     f1 = f1_score(y_test_bin, y_pred_bin)
     roc_auc = roc_auc_score(y_test_bin, y_pred_proba)
     accuracy = accuracy_score(y_test_bin, y_pred_bin)
+    balanced_accuracy = balanced_accuracy_score(y_test_bin, y_pred_bin)
     conf_matrix = confusion_matrix(y_test_bin, y_pred_bin)
 
     eval_metrics = {
@@ -493,6 +521,7 @@ def _evaluate_classifier(model, X_test, y_test_bin):
         "test_f1_score": f1,
         "test_roc_auc": roc_auc,
         "test_accuracy": accuracy,
+        "test_balanced_accuracy": balanced_accuracy,
         "confusion_matrix": conf_matrix,
     }
     return y_pred_bin, y_pred_proba, eval_metrics
@@ -591,6 +620,29 @@ def _get_final_regression_model(pipeline, best_params, X_train_reg, y_train_reg)
     return final_ttr
 
 
+def _plot_summary_auc_by_cutoff(df_summary, metric_mean, metric_std):
+    grouped_df = (
+        df_summary.groupby("cutoff_quantile")[metric_mean, metric_std]
+        .mean()
+        .reset_index()
+    )
+    plt.figure()
+    plt.errorbar(
+        grouped_df["cutoff_quantile"],
+        grouped_df[metric_mean],
+        yerr=grouped_df[metric_std],
+        fmt="o",
+        capsize=5,
+    )
+    plt.title("Summary AUC by Cutoff")
+    plt.xlabel("Cutoff Quantile")
+    plt.ylabel("AUC")
+    plt.grid()
+    plt.show()
+
+    return plt
+
+
 @dataclass
 class ClassificationReport:
     cutoff_quantile: float
@@ -602,6 +654,7 @@ class ClassificationReport:
     nested_scores: np.ndarray
     parameters: dict
     test_accuracy: float
+    test_balanced_accuracy: float
     test_roc_auc: float
     test_precision: float
     test_recall: float
@@ -657,10 +710,16 @@ class TwoStepHurdleReport:
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
     # stage_one_classification(
-    #    multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
+    #   multimodal_df, cutoff_quantile=0.25, n_inner_cv=5, n_outer_cv=5, seed=42,
+    # clf_n_jobs=-2
     # )
-    # stage_two_regression(
-    #    multimodal_df, cutoff_quantile=0.05, n_inner_cv=2, n_outer_cv=2
-    # )
+    stage_two_regression(
+        multimodal_df,
+        cutoff_quantile=0.25,
+        n_inner_cv=5,
+        n_outer_cv=5,
+        seed=42,
+        reg_n_jobs=-2,
+    )
 
-    two_step_hurdle(multimodal_df)
+    # two_step_hurdle(multimodal_df)

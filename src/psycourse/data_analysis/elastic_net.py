@@ -180,30 +180,29 @@ def _plot_learning_curve(best_model, X_train, y_train):
     valid_scores_std = np.std(valid_scores, axis=1)
 
     # Plot learning curves
-    plt.figure(figsize=(8, 6))
-    plt.fill_between(
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.fill_between(
         train_sizes,
         train_scores_mean - train_scores_std,
         train_scores_mean + train_scores_std,
         alpha=0.1,
         color="r",
     )
-    plt.fill_between(
+    ax.fill_between(
         train_sizes,
         valid_scores_mean - valid_scores_std,
         valid_scores_mean + valid_scores_std,
         alpha=0.1,
         color="g",
     )
-    plt.plot(train_sizes, train_scores_mean, "o-", color="r", label="Training score")
-    plt.plot(train_sizes, valid_scores_mean, "o-", color="g", label="Validation score")
-    plt.xlabel("Number of Training Examples")
-    plt.ylabel("R2")
-    plt.title("Learning Curve")
-    plt.legend(loc="best")
-    plt.show()
+    ax.plot(train_sizes, train_scores_mean, "o-", color="r", label="Training score")
+    ax.plot(train_sizes, valid_scores_mean, "o-", color="g", label="Validation score")
+    ax.set_xlabel("Number of Training Examples")
+    ax.set_ylabel("R2")
+    ax.set_title("Learning Curve")
+    ax.legend(loc="best")
 
-    return plt
+    return fig
 
 
 if __name__ == "__main__":
