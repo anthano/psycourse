@@ -1,4 +1,3 @@
-# src/psycourse/data_analysis/task_two_step_hurdle.py
 import json
 from itertools import product
 from pathlib import Path
@@ -10,16 +9,15 @@ from psycourse.config import BLD_DATA, BLD_RESULTS
 from psycourse.data_analysis.hurdle_wrappers import run_single_combo_repeat
 
 # TODO: UPDATE ALL THIS WITH BETTER VARIABLES, CLEANER PATHS ETC
-# TODO: right now error: no individual data files found, but summary is being created
 
 DATA = BLD_DATA / "multimodal_complete_df.pkl"
 HURDLE_OUTPUT_DIRECTORY = BLD_RESULTS / "multivariate" / "hurdle_runs"
 HURDLE_OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
-CUTOFFS = [0.05, 0.10]
-INNERS = [5, 10]
-OUTERS = [5, 10]
-N_REPEATS = 5
+CUTOFFS = [0.05, 0.10, 0.15, 0.25]
+INNERS = [5, 7, 10]
+OUTERS = [5, 7, 10]
+N_REPEATS = 10
 
 # ---------------- per-repeat tasks (new loops syntax) ----------------
 for cutoff, inner, outer, repeat in product(CUTOFFS, INNERS, OUTERS, range(N_REPEATS)):
@@ -28,7 +26,7 @@ for cutoff, inner, outer, repeat in product(CUTOFFS, INNERS, OUTERS, range(N_REP
     out_json = run_dir / f"repeat_{repeat}.json"
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    @pytask.task  # registers a task with bound defaults below
+    @pytask.task
     def task_hurdle_repeat(
         depends_on=DATA,
         produces=out_json,
@@ -84,7 +82,6 @@ for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS):
         mse_mean, mse_std = mean_std("test_mse")
         permutation_pvalue_mean, permutation_std = mean_std("permutation_pvalue")
         # permutation p value mean -> should that not be multiple testing corrected?
-
         summary = {
             "combo_id": f"{_cutoff}_{_inner}_{_outer}",
             "cutoff_quantile": float(_cutoff),
@@ -114,11 +111,11 @@ for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS):
 # ---------------- final collection across all combos ----------------
 @pytask.task
 def task_hurdle_collect(produces=HURDLE_OUTPUT_DIRECTORY / "summary_all.csv"):
-    combo_dirs = [p for p in HURDLE_OUTPUT_DIRECTORY.iterdir() if p.is_dir()]
+    combo_dirs = [path for path in HURDLE_OUTPUT_DIRECTORY.iterdir() if path.is_dir()]
     summaries = []
-    for d in combo_dirs:
-        sj = d / "summary.json"
-        if sj.exists():
-            summaries.append(json.loads(sj.read_text()))
+    for directory in combo_dirs:
+        summary_json = directory / "summary.json"
+        if summary_json.exists():
+            summaries.append(json.loads(summary_json.read_text()))
     pd.DataFrame(summaries).to_csv(produces, index=False)
     assert Path(produces).is_file()
