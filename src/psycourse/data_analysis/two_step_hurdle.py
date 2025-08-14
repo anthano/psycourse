@@ -311,14 +311,14 @@ def stage_one_classification(
         parameters=best_params,
         test_accuracy=eval_metrics["test_accuracy"],
         test_balanced_accuracy=eval_metrics["test_balanced_accuracy"],
+        test_avg_precision=eval_metrics["average_precision"],
         test_roc_auc=eval_metrics["test_roc_auc"],
         test_precision=eval_metrics["test_precision"],
         test_recall=eval_metrics["test_recall"],
         confusion_matrix=eval_metrics["confusion_matrix"],
-        specificity=eval_metrics["specificity"],
+        test_specificity=eval_metrics["specificity"],
         test_mcc=eval_metrics["matthews_corrcoef"],
-        prevalence=eval_metrics["prevalence"],
-        average_precision=eval_metrics["average_precision"],
+        test_prevalence=eval_metrics["prevalence"],
         confusion_matrix_figure=conf_mat_figure.figure_,
         precision_recall_figure=precision_recall_figure.figure_,
         roc_figure=roc_figure.figure_,
@@ -701,6 +701,8 @@ class RegressionReport:
     best_inner_cv_r2: float
     test_regression_r2: float
     test_regression_mse: float
+    test_regression_mae: float
+    test_regression_rmse: float
     permutation_score: float
     permutation_pvalue: float
     learning_curves_figure: plt.Figure

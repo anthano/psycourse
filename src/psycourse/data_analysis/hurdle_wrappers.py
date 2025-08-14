@@ -2,15 +2,55 @@ import hashlib
 
 import pandas as pd
 
+from psycourse.config import BLD_DATA
 from psycourse.data_analysis.two_step_hurdle import (
     stage_one_classification,
     stage_two_regression,
 )
 
 
-def run_single_combo_repeat(
-    df, cutoff, inner, outer, repeat, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
+def run_hurdle_analysis(
+    df, cutoff, inner, outer, n_repeats, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
 ):
+    metrics_data = {}
+    clf_top20_features = {}
+    reg_top20_features = {}
+
+    for repeat in range(n_repeats):
+        metrics_dict, clf_report, reg_report = run_single_combo(
+            df,
+            cutoff,
+            inner,
+            outer,
+            repeat,
+            base_seed=base_seed,
+            clf_n_jobs=clf_n_jobs,
+            reg_n_jobs=reg_n_jobs,
+        )
+        metrics_data[repeat] = metrics_dict
+        clf_top20_features[repeat] = clf_report.top20_features
+        reg_top20_features[repeat] = reg_report.top20_features
+
+    metrics_df = pd.DataFrame(
+        metrics_data
+    )  # index: RangeIndex corresponding to repeats
+    clf_top20_df = pd.concat(
+        clf_top20_features
+    )  # index: RangeIndex corresponding to repeats
+    reg_top20_df = pd.concat(
+        reg_top20_features
+    )  # index: RangeIndex corresponding to repeats
+
+    print(metrics_df.head())
+    print(clf_top20_df.head())
+    print(reg_top20_df.head())
+
+    return metrics_df, clf_top20_df, reg_top20_df
+
+
+def run_single_combo(
+    df, cutoff, inner, outer, repeat, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
+) -> dict[str, float]:
     """Run a single combination of parameters for the two-step hurdle model.
     Args:
         df(pd.DataFrame): The analysis data containing target and features.
@@ -33,7 +73,7 @@ def run_single_combo_repeat(
         df, cutoff, inner, outer, seed=seed, reg_n_jobs=reg_n_jobs
     )
 
-    return {
+    metrics_dict = {
         "combo_id": f"{cutoff}_{inner}_{outer}",
         "cutoff_quantile": float(cutoff),
         "n_inner_cv": int(inner),
@@ -46,12 +86,23 @@ def run_single_combo_repeat(
         "test_r2": float(reg_report.test_regression_r2),
         "test_mse": float(reg_report.test_regression_mse),
         "permutation_pvalue": float(reg_report.permutation_pvalue),
-        "top20_features_clf": pd.DataFrame(clf_report.top20_features),
-        "top20_features_reg": pd.DataFrame(reg_report.top20_features),
+        # "top20_features_clf": pd.DataFrame(clf_report.top20_features),
+        # "top20_features_reg": pd.DataFrame(reg_report.top20_features),
     }
+    return metrics_dict, clf_report, reg_report
 
 
 def _generate_seed(cutoff, n_inner_cv, n_outer_cv, repeat, base_seed=42):
     combo_id = f"{cutoff}_{n_inner_cv}_{n_outer_cv}"
     combo_hash = int(hashlib.sha256(combo_id.encode()).hexdigest(), 16) % 1_000_000
     return base_seed + combo_hash + int(repeat)
+
+
+if __name__ == "__main__":
+    # Example usage
+    multimodal_df = pd.read_pickle(
+        BLD_DATA / "multimodal_complete_df.pkl"
+    )  # Load your data here
+    metrics_df, clf_top20_df, reg_top20_df = run_hurdle_analysis(
+        multimodal_df, cutoff=0.5, inner=2, outer=2, n_repeats=2
+    )

@@ -1,54 +1,63 @@
+import itertools
 import json
 from itertools import product
 from pathlib import Path
 
 import pandas as pd
 import pytask
+from pytask import task
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
-from psycourse.data_analysis.hurdle_wrappers import run_single_combo_repeat
+from psycourse.data_analysis.hurdle_wrappers import (
+    run_hurdle_analysis,
+)
 
 # TODO: UPDATE ALL THIS WITH BETTER VARIABLES, CLEANER PATHS ETC
 
 DATA = BLD_DATA / "multimodal_complete_df.pkl"
 HURDLE_OUTPUT_DIRECTORY = BLD_RESULTS / "multivariate" / "hurdle_runs"
-HURDLE_OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
+BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs"
+
 
 CUTOFFS = [0.05, 0.10, 0.15, 0.25]
 INNERS = [5, 7, 10]
 OUTERS = [5, 7, 10]
 N_REPEATS = 10
 
-# ---------------- per-repeat tasks (new loops syntax) ----------------
-for cutoff, inner, outer, repeat in product(CUTOFFS, INNERS, OUTERS, range(N_REPEATS)):
-    combo_id = f"{cutoff}_{inner}_{outer}"
-    run_dir = HURDLE_OUTPUT_DIRECTORY / combo_id
-    out_json = run_dir / f"repeat_{repeat}.json"
-    run_dir.mkdir(parents=True, exist_ok=True)
 
-    @pytask.task
+for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
+    combination_id = f"{cutoff=}_{inner=}_{outer=}"
+
+    HURDLE_ANALYSIS_RESULTS_PATHS: dict[str, Path] = {
+        "metrics_df": BLD_HURDLE / f"metrics_df__{combination_id}.pkl",
+        "clf_top20_df": BLD_HURDLE / f"clf_top20_df__{combination_id}.pkl",
+        "reg_top20_df": BLD_HURDLE / f"reg_top20_df__{combination_id}.pkl",
+    }
+
+    @task(id=combination_id)
     def task_hurdle_repeat(
-        depends_on=DATA,
-        produces=out_json,
-        _cutoff=cutoff,
-        _inner=inner,
-        _outer=outer,
-        _repeat=repeat,
+        depends_on: Path = BLD_DATA / "multimodal_complete_df.pkl",
+        produces: dict[str, Path] = HURDLE_ANALYSIS_RESULTS_PATHS,
+        cutoff: float = cutoff,
+        inner: int = inner,
+        outer: int = outer,
     ):
-        df = pd.read_pickle(depends_on)
-        metrics = run_single_combo_repeat(
-            df,
-            _cutoff,
-            _inner,
-            _outer,
-            _repeat,
+        multimodal_complete_df = pd.read_pickle(depends_on)
+
+        metrics_df, clf_top20_df, reg_top20_df = run_hurdle_analysis(
+            multimodal_complete_df,
+            cutoff=cutoff,
+            inner=inner,
+            outer=outer,
+            n_repeats=N_REPEATS,
             base_seed=42,
             clf_n_jobs=1,
             reg_n_jobs=1,
         )
-        Path(produces).parent.mkdir(parents=True, exist_ok=True)
-        Path(produces).write_text(json.dumps(metrics, indent=2))
-        assert Path(produces).is_file()
+
+        metrics_df.to_pickle(produces["metrics_df"])
+        clf_top20_df.to_pickle(produces["clf_top20_df"])
+        reg_top20_df.to_pickle(produces["reg_top20_df"])
 
 
 # ---------------- aggregation per combo ----------------
@@ -81,7 +90,6 @@ for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS):
         r2_mean, r2_std = mean_std("test_r2")
         mse_mean, mse_std = mean_std("test_mse")
         permutation_pvalue_mean, permutation_std = mean_std("permutation_pvalue")
-        # permutation p value mean -> should that not be multiple testing corrected?
         summary = {
             "combo_id": f"{_cutoff}_{_inner}_{_outer}",
             "cutoff_quantile": float(_cutoff),
