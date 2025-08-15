@@ -12,6 +12,24 @@ from psycourse.data_analysis.two_step_hurdle import (
 def run_hurdle_analysis(
     df, cutoff, inner, outer, n_repeats, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
 ):
+    """Run two-step hurdle with specified parameters for n repeats.
+    Args:
+        df(pd.DataFrame): The analysis data containing target and features.
+        cutoff(float): The quantile cutoff for the first stage classification.
+        inner(int): The number of inner cross-validation folds.
+        outer(int): The number of outer cross-validation folds.
+        n_repeats(int): How many times to repeat the run for this combination.
+        base_seed(int): The base seed for reproducibility.
+        clf_n_jobs(int): Number of jobs to run in parallel for classification.
+        reg_n_jobs(int): Number of jobs to run in parallel for regression.
+    Returns:
+        tuple: A tuple containing three DataFrames:
+            - metrics_df: DataFrame with metrics for each repeat.
+            - clf_top20_df: DataFrame with top 20 features from classification
+              for each repeat.
+            - reg_top20_df: DataFrame with top 20 features from regression
+              for each repeat.
+    """
     metrics_data = {}
     clf_top20_features = {}
     reg_top20_features = {}
@@ -80,14 +98,18 @@ def run_single_combo(
         "n_outer_cv": int(outer),
         "repeat": float(repeat),
         "test_accuracy": float(clf_report.test_accuracy),
+        "test_balanced_accuracy": float(clf_report.test_balanced_accuracy),
+        "test_avg_precision": float(clf_report.test_avg_precision),
+        "test_mcc": float(clf_report.test_mcc),
+        "test_prevalence": float(clf_report.test_prevalence),
         "test_roc_auc": float(clf_report.test_roc_auc),
         "test_precision": float(clf_report.test_precision),
         "test_recall": float(clf_report.test_recall),
         "test_r2": float(reg_report.test_regression_r2),
         "test_mse": float(reg_report.test_regression_mse),
         "permutation_pvalue": float(reg_report.permutation_pvalue),
-        # "top20_features_clf": pd.DataFrame(clf_report.top20_features),
-        # "top20_features_reg": pd.DataFrame(reg_report.top20_features),
+        "test_regression_mae": float(reg_report.test_regression_mae),
+        "test_regression_rmse": float(reg_report.test_regression_rmse),
     }
     return metrics_dict, clf_report, reg_report
 
