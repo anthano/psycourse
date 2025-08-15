@@ -1,10 +1,8 @@
 import itertools
-import json
 from itertools import product
 from pathlib import Path
 
 import pandas as pd
-import pytask
 from pytask import task
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
@@ -19,11 +17,15 @@ HURDLE_OUTPUT_DIRECTORY = BLD_RESULTS / "multivariate" / "hurdle_runs"
 BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs"
 
 
-CUTOFFS = [0.05, 0.10, 0.15, 0.25]
-INNERS = [5, 7, 10]
-OUTERS = [5, 7, 10]
-N_REPEATS = 10
+# CUTOFFS = [0.05, 0.10, 0.15, 0.25]
+# INNERS = [5, 7, 10]
+# OUTERS = [5, 7, 10]
+# N_REPEATS = 10
 
+CUTOFFS = [0.05, 0.10]
+INNERS = [2]
+OUTERS = [2]
+N_REPEATS = 2
 
 for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
     combination_id = f"{cutoff=}_{inner=}_{outer=}"
@@ -60,70 +62,65 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
         reg_top20_df.to_pickle(produces["reg_top20_df"])
 
 
-# ---------------- aggregation per combo ----------------
+# ---------------- aggregation per combination (putting all repeats together) ----------
 for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS):
-    combo_id = f"{cutoff}_{inner}_{outer}"
-    run_dir = HURDLE_OUTPUT_DIRECTORY / combo_id
-    repeat_files = [run_dir / f"repeat_{r}.json" for r in range(N_REPEATS)]
-    summary_json = run_dir / "summary.json"
-    per_repeat_csv = run_dir / "per_repeat.csv"
+    combination_id = f"{cutoff=}_{inner=}_{outer=}"
+    metrics_df_path = BLD_HURDLE / f"metrics_df__{combination_id}.pkl"
+    summary_metrics_path = BLD_HURDLE / f"summary__{combination_id}.pkl"
 
-    @pytask.task
+    @task(id=combination_id + "_aggregate")
     def task_hurdle_aggregate(
-        depends_on=repeat_files,
-        produces=(summary_json, per_repeat_csv),
-        _cutoff=cutoff,
-        _inner=inner,
-        _outer=outer,
+        depends_on: Path = metrics_df_path,
+        produces: Path = summary_metrics_path,
+        cutoff: float = cutoff,
+        inner: int = inner,
+        outer: int = outer,
     ):
-        rows = [json.loads(Path(p).read_text()) for p in depends_on if Path(p).exists()]
-        per_repeat = pd.DataFrame(rows)
-        per_repeat.to_csv(produces[1], index=False)
+        metrics_df = pd.read_pickle(depends_on).T
 
         def mean_std(col):
-            return float(per_repeat[col].mean()), float(per_repeat[col].std(ddof=1))
+            return float(metrics_df[col].mean()), float(metrics_df[col].std(ddof=1))
 
-        auc_mean, auc_std = mean_std("test_roc_auc")
-        accuracy_mean, accuracy_std = mean_std("test_accuracy")
-        precision_mean, precision_std = mean_std("test_precision")
-        recall_mean, recall_std = mean_std("test_recall")
-        r2_mean, r2_std = mean_std("test_r2")
-        mse_mean, mse_std = mean_std("test_mse")
-        permutation_pvalue_mean, permutation_std = mean_std("permutation_pvalue")
         summary = {
-            "combo_id": f"{_cutoff}_{_inner}_{_outer}",
-            "cutoff_quantile": float(_cutoff),
-            "n_inner_cv": int(_inner),
-            "n_outer_cv": int(_outer),
-            "n_repeats": int(len(per_repeat)),
-            "AUC_test_mean": auc_mean,
-            "AUC_test_std": auc_std,
-            "ACC_test_mean": accuracy_mean,
-            "ACC_test_std": accuracy_std,
-            "PREC_test_mean": precision_mean,
-            "PREC_test_std": precision_std,
-            "REC_test_mean": recall_mean,
-            "REC_test_std": recall_std,
-            "R2_test_mean": r2_mean,
-            "R2_test_std": r2_std,
-            "MSE_test_mean": mse_mean,
-            "MSE_test_std": mse_std,
-            "perm_p_mean": permutation_pvalue_mean,
-            "perm_p_std": permutation_std,
+            "combo_id": f"{cutoff}_{inner}_{outer}",
+            "cutoff_quantile": float(cutoff),
+            "n_inner_cv": int(inner),
+            "n_outer_cv": int(outer),
+            "n_repeats": int(len(metrics_df)),
         }
-        Path(produces[0]).write_text(json.dumps(summary, indent=2))
-        assert Path(produces[0]).is_file()
-        assert Path(produces[1]).is_file()
+
+        for col in [
+            "test_accuracy",
+            "test_balanced_accuracy",
+            "test_avg_precision",
+            "test_mcc",
+            "test_prevalence",
+            "test_roc_auc",
+            "test_precision",
+            "test_recall",
+            "test_r2",
+            "test_mse",
+            "permutation_pvalue",
+            "test_regression_mae",
+            "test_regression_rmse",
+        ]:
+            summary[f"{col}_mean"], summary[f"{col}_std"] = mean_std(col)
+
+        pd.DataFrame([summary]).to_pickle(produces)
+
+## ---------------- final collection across all combinations ----------------
+
+FINAL_SUMMARY_DEPENDS_ON = [
+    BLD_HURDLE / f"summary__{cutoff=}_{inner=}_{outer=}.pkl"
+    for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS)
+]
 
 
-# ---------------- final collection across all combos ----------------
-@pytask.task
-def task_hurdle_collect(produces=HURDLE_OUTPUT_DIRECTORY / "summary_all.csv"):
-    combo_dirs = [path for path in HURDLE_OUTPUT_DIRECTORY.iterdir() if path.is_dir()]
-    summaries = []
-    for directory in combo_dirs:
-        summary_json = directory / "summary.json"
-        if summary_json.exists():
-            summaries.append(json.loads(summary_json.read_text()))
-    pd.DataFrame(summaries).to_csv(produces, index=False)
-    assert Path(produces).is_file()
+@task(id="final_collection")
+def task_final_collection(
+    depends_on: list[Path] = FINAL_SUMMARY_DEPENDS_ON,
+    produces: Path = BLD_HURDLE / "final_summary.pkl",
+):
+    summary_dfs = [pd.read_pickle(path) for path in depends_on]
+    final_summary_df = pd.concat(summary_dfs, ignore_index=True)
+    final_summary_df.to_pickle(produces)
