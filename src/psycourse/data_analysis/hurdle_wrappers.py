@@ -49,15 +49,19 @@ def run_hurdle_analysis(
         clf_top20_features[repeat] = clf_report.top20_features
         reg_top20_features[repeat] = reg_report.top20_features
 
-    metrics_df = pd.DataFrame(
-        metrics_data
+    metrics_df = pd.DataFrame.from_dict(
+        metrics_data, orient="index"
     )  # index: RangeIndex corresponding to repeats
     clf_top20_df = pd.concat(
         clf_top20_features
     )  # index: RangeIndex corresponding to repeats
+    clf_top20_df["feature"] = clf_top20_df["feature"].str.replace("scaler__", "")
+    clf_top20_df["feature"] = clf_top20_df["feature"].str.replace("remainder__", "")
     reg_top20_df = pd.concat(
         reg_top20_features
     )  # index: RangeIndex corresponding to repeats
+    reg_top20_df["feature"] = reg_top20_df["feature"].str.replace("scaler__", "")
+    reg_top20_df["feature"] = reg_top20_df["feature"].str.replace("remainder__", "")
 
     print(metrics_df.head())
     print(clf_top20_df.head())
