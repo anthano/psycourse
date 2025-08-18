@@ -111,7 +111,7 @@ def run_single_combo(
         "test_recall": float(clf_report.test_recall),
         "test_r2": float(reg_report.test_regression_r2),
         "test_mse": float(reg_report.test_regression_mse),
-        "permutation_pvalue": float(reg_report.permutation_pvalue),
+        #"permutation_pvalue": float(reg_report.permutation_pvalue),
         "test_regression_mae": float(reg_report.test_regression_mae),
         "test_regression_rmse": float(reg_report.test_regression_rmse),
     }

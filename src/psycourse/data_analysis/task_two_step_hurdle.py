@@ -18,7 +18,7 @@ BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs"
 CUTOFFS = [0.05, 0.10, 0.15, 0.25]
 INNERS = [5, 7, 10]
 OUTERS = [5, 7, 10]
-N_REPEATS = 10
+N_REPEATS = 5
 
 for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
     combination_id = f"{cutoff=}_{inner=}_{outer=}"
@@ -90,7 +90,7 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
             "test_recall",
             "test_r2",
             "test_mse",
-            "permutation_pvalue",
+            #"permutation_pvalue",
             "test_regression_mae",
             "test_regression_rmse",
         ]:
