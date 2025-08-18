@@ -41,118 +41,6 @@ from psycourse.data_analysis.elastic_net import _plot_learning_curve
 from psycourse.ml_pipeline.impute import KNNMedianImputer
 from psycourse.ml_pipeline.train_model import DataFrameImputer
 
-# Note: Was moved into a modular pytask structure, because computationally heavy!
-# def two_step_hurdle(multimodal_data, n_repeats=10, base_seed=42):
-#    """
-#    Perform two-stage hurdle model on multimodal data to predict cluster 5 probability.
-#    Args:
-#    Returns:
-#    """
-#
-#    cutoff_quantile = [0.05, 0.10, 0.25]
-#    n_inner_cv = [2, 5, 10]
-#    n_outer_cv = [2, 5, 10]
-#
-#    summary_rows = []
-#    per_repeat_rows = []
-#
-#    for cutoff in cutoff_quantile:
-#        for inner_cv in n_inner_cv:
-#            for outer_cv in n_outer_cv:
-#                (
-#                    test_accs,
-#                    test_roc_aucs,
-#                    test_precisions,
-#                    test_recalls,
-#                    top20_features_clf,
-#                ) = [], [], [], [], []
-#                test_r2s, test_mses, permutation_p_vals, top20_features_reg = (
-#                    [],
-#                    [],
-#                    [],
-#                    [],
-#                )
-#
-#                combo_id = f"{cutoff}_{inner_cv}_{outer_cv}"
-#                combo_hash = (
-#                    int(hashlib.sha256(combo_id.encode()).hexdigest(), 16) % 1_000_000
-#                )
-#                print(combo_id)
-#                for repeat in range(n_repeats):
-#                    seed = base_seed + combo_hash + repeat
-#                    clf_model, clf_report = stage_one_classification(
-#                        multimodal_data, cutoff, inner_cv, outer_cv, seed
-#                    )
-#                    print("Stage 1 Classification Report:", clf_report)
-#
-#                    reg_model, reg_report = stage_two_regression(
-#                        multimodal_data, cutoff, inner_cv, outer_cv, seed
-#                    )
-#                    print("Stage 2 Regression Report:", reg_report)
-#
-#                    test_accs.append(clf_report.test_accuracy)
-#                    test_roc_aucs.append(clf_report.test_roc_auc)
-#                    test_precisions.append(clf_report.test_precision)
-#                    test_recalls.append(clf_report.test_recall)
-#                    top20_features_clf.append(clf_report.top20_features)
-#
-#                    test_r2s.append(reg_report.test_regression_r2)
-#                    test_mses.append(reg_report.test_regression_mse)
-#                    permutation_p_vals.append(reg_report.permutation_pvalue)
-#                    top20_features_reg.append(reg_report.top20_features)
-#
-#                    per_repeat_rows.append(
-#                        {
-#                            "combo_id": combo_id,
-#                            "cutoff_quantile": cutoff,
-#                            "n_inner_cv": inner_cv,
-#                            "n_outer_cv": outer_cv,
-#                            "repeat": repeat,
-#                            "test_accuracy": clf_report.test_accuracy,
-#                            "test_roc_auc": clf_report.test_roc_auc,
-#                            "test_precision": clf_report.test_precision,
-#                            "test_recall": clf_report.test_recall,
-#                            "test_r2": reg_report.test_regression_r2,
-#                            "test_mse": reg_report.test_regression_mse,
-#                            "permutation_pvalue": reg_report.permutation_pvalue,
-#                            "top20_features_clf": clf_report.top20_features,
-#                            "top20_features_reg": reg_report.top20_features,
-#                        }
-#                    )
-#
-#                # Summary statistics across repeats
-#                summary_rows.append(
-#                    {
-#                        "combo_id": combo_id,
-#                        "cutoff_quantile": cutoff,
-#                        "n_inner_cv": inner_cv,
-#                        "n_outer_cv": outer_cv,
-#                        "test_accs_mean": np.mean(test_accs),
-#                        "test_accs_std": np.std(test_accs),
-#                        "test_roc_aucs_mean": np.mean(test_roc_aucs),
-#                        "test_roc_aucs_std": np.std(test_roc_aucs),
-#                        "test_precisions_mean": np.mean(test_precisions),
-#                        "test_precisions_std": np.std(test_precisions),
-#                        "test_recalls_mean": np.mean(test_recalls),
-#                        "test_recalls_std": np.std(test_recalls),
-#                        "test_r2s_mean": np.mean(test_r2s),
-#                        "test_r2s_std": np.std(test_r2s),
-#                        "test_mses_mean": np.mean(test_mses),
-#                        "test_mses_std": np.std(test_mses),
-#                        "permutation_p_vals_mean": np.mean(permutation_p_vals),
-#                        "permutation_p_vals_std": np.std(permutation_p_vals),
-#                    }
-#                )
-#
-#            summary_results = pd.DataFrame(summary_rows).sort_values(
-#                by=["cutoff_quantile", "n_inner_cv", "n_outer_cv"]
-#            )
-#            per_repeat_results = pd.DataFrame(per_repeat_rows).sort_values(
-#                by=["cutoff_quantile", "n_inner_cv", "n_outer_cv", "repeat"]
-#            )
-#
-#            return summary_results, per_repeat_results
-
 
 def stage_one_classification(
     multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed, clf_n_jobs
@@ -186,7 +74,7 @@ def stage_one_classification(
         X, y, test_size=0.2, stratify=y_binary, random_state=42
     )
 
-    cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  # TODO: very arbitrary
+    cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)  
     y_train_bin = (y_train["prob_class_5"] > cutoff).astype(int).values.ravel()
     y_test_bin = (y_test["prob_class_5"] > cutoff).astype(int).values.ravel()
     print("Using cutoff =", cutoff, cutoff_quantile)  # print-statements for now
@@ -443,17 +331,17 @@ def stage_two_regression(
     plt.close(learning_curve_figure)
 
     ## Permutation Test to test significance of the model
-    y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
-    score, permutation_scores, pvalue = permutation_test_score(
-        estimator=best_model,
-        X=X_train_reg,
-        y=y_train_array,
-        cv=outer_cv,
-        n_permutations=1000,
-        scoring="r2",
-        n_jobs=reg_n_jobs,
-        random_state=seed,
-    )
+    #y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
+    #score, permutation_scores, pvalue = permutation_test_score(
+    #    estimator=best_model,
+    #    X=X_train_reg,
+    #    y=y_train_array,
+    #    cv=outer_cv,
+    #    n_permutations=1000,
+    #    scoring="r2",
+    #    n_jobs=reg_n_jobs,
+    #    random_state=seed,
+    #)
 
     # Final Model
 
@@ -481,8 +369,8 @@ def stage_two_regression(
         test_regression_mse=mse,
         test_regression_mae=mae,
         test_regression_rmse=rmse,
-        permutation_score=score,
-        permutation_pvalue=pvalue,
+        #permutation_score=score,
+        #permutation_pvalue=pvalue,
         learning_curves_figure=learning_curve_figure,
         top20_features=top20_features,
     )
@@ -703,8 +591,8 @@ class RegressionReport:
     test_regression_mse: float
     test_regression_mae: float
     test_regression_rmse: float
-    permutation_score: float
-    permutation_pvalue: float
+    #permutation_score: float
+    #permutation_pvalue: float
     learning_curves_figure: plt.Figure
     top20_features: pd.DataFrame
 
@@ -727,8 +615,8 @@ class TwoStepHurdleReport:
     test_r2s_std: float
     test_mses_mean: float
     test_mses_std: float
-    permutation_p_vals_mean: float
-    permutation_p_vals_std: float
+    #permutation_p_vals_mean: float
+    #permutation_p_vals_std: float
 
 
 if __name__ == "__main__":
