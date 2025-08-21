@@ -7,11 +7,8 @@ from sklearn.decomposition import PCA
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.linear_model import ElasticNet, LogisticRegression
 from sklearn.metrics import (
-    PrecisionRecallDisplay,
-    RocCurveDisplay,
     accuracy_score,
     classification_report,
-    confusion_matrix,
     mean_squared_error,
     precision_score,
     r2_score,
@@ -139,37 +136,7 @@ def stage_one_classification_prs(multimodal_data):
 
     model.fit(X_train, y_train_bin)
     best_model = model.best_estimator_
-    best_params = model.best_params_
-
-    ## Get best parameters (back-project PCA)
-
-    # Extract components
-    logreg = best_model.named_steps["clf"]
-    pca = best_model.named_steps["pca"]
-
-    # Coefficients in PCA space
-    coef_pca_space = logreg.coef_
-
-    # Back-project to original (pre-PCA) space
-    coef_original_space = coef_pca_space @ pca.components_
-
-    # Get absolute values as importance
-    importances = np.abs(coef_original_space.ravel())
-
-    # Feature names before PCA (after preprocessing)
-    feature_names = best_model.named_steps["preprocessing"].get_feature_names_out()
-
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-
-    top20_features = feature_importance_df.head(20)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
-
-    # Fit on the entire dataset (X, y):
-    final_model = pipeline.set_params(**best_params)
-    final_model.fit(X, (y["prob_class_5"] > cutoff).astype(int).values.ravel())
+    # best_params = model.best_params_
 
     # Model Evaluation on Test Set
 
@@ -181,25 +148,6 @@ def stage_one_classification_prs(multimodal_data):
     test_auc = roc_auc_score(y_test_bin, y_pred_proba)
     test_precision = precision_score(y_test_bin, y_pred_bin)
     test_recall = recall_score(y_test_bin, y_pred_bin)
-
-    conf_mat = confusion_matrix(y_test_bin, y_pred_bin)
-    # conf_mat.show()
-
-    PrecisionRecallDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    RocCurveDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    ## Plot
-    base_pipeline = model.estimator
-
-    pipeline_with_best_params = base_pipeline.set_params(**best_params)
-
-    learning_curves_plot = _plot_learning_curve_classifier(
-        pipeline_with_best_params, X_train, y_train_bin
-    )
-    learning_curves_plot.show()
 
     # Print Classification Report
     print("Classification Report:")
@@ -220,8 +168,6 @@ def stage_one_classification_prs(multimodal_data):
     }
 
     print("Report:", report)
-
-    return final_model, conf_mat, learning_curves_plot, report
 
 
 def stage_two_regression_prs(multimodal_data):
@@ -507,37 +453,7 @@ def stage_one_classification_lipids(multimodal_data):
 
     model.fit(X_train, y_train_bin)
     best_model = model.best_estimator_
-    best_params = model.best_params_
-
-    ## Get best parameters (back-project PCA)
-
-    # Extract components
-    logreg = best_model.named_steps["clf"]
-    pca = best_model.named_steps["pca"]
-
-    # Coefficients in PCA space
-    coef_pca_space = logreg.coef_
-
-    # Back-project to original (pre-PCA) space
-    coef_original_space = coef_pca_space @ pca.components_
-
-    # Get absolute values as importance
-    importances = np.abs(coef_original_space.ravel())
-
-    # Feature names before PCA (after preprocessing)
-    feature_names = best_model.named_steps["preprocessing"].get_feature_names_out()
-
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-
-    top20_features = feature_importance_df.head(20)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
-
-    # Fit on the entire dataset (X, y):
-    final_model = pipeline.set_params(**best_params)
-    final_model.fit(X, (y["prob_class_5"] > cutoff).astype(int).values.ravel())
+    # best_params = model.best_params_
 
     # Model Evaluation on Test Set
 
@@ -549,25 +465,6 @@ def stage_one_classification_lipids(multimodal_data):
     test_auc = roc_auc_score(y_test_bin, y_pred_proba)
     test_precision = precision_score(y_test_bin, y_pred_bin)
     test_recall = recall_score(y_test_bin, y_pred_bin)
-
-    conf_mat = confusion_matrix(y_test_bin, y_pred_bin)
-    # conf_mat.show()
-
-    PrecisionRecallDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    RocCurveDisplay.from_predictions(y_test_bin, y_pred_proba)
-    # plt.show()
-
-    ## Plot
-    base_pipeline = model.estimator
-
-    pipeline_with_best_params = base_pipeline.set_params(**best_params)
-
-    learning_curves_plot = _plot_learning_curve_classifier(
-        pipeline_with_best_params, X_train, y_train_bin
-    )
-    learning_curves_plot.show()
 
     # Print Classification Report
     print("Classification Report:")
@@ -589,7 +486,7 @@ def stage_one_classification_lipids(multimodal_data):
 
     print("Report:", report)
 
-    return final_model, conf_mat, learning_curves_plot, report
+    return report
 
 
 def stage_two_regression_lipids(multimodal_data):
@@ -609,8 +506,11 @@ def stage_two_regression_lipids(multimodal_data):
     target = ["prob_class_5"]
     lipid_features = [col for col in data.columns if col.startswith("gpeak")]
     relevant_cols = covariates + lipid_features + target
+    data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
 
-    analysis_data = data[relevant_cols].copy()
+    analysis_data = data_with_lipids[relevant_cols].dropna().copy()
+
+    print(len(data_with_lipids), "rows with lipid features")
 
     # 2. Data Splitting
     X = analysis_data.drop(columns=target).copy()
@@ -664,7 +564,7 @@ def stage_two_regression_lipids(multimodal_data):
     # 4. Nested cross-validation
 
     inner_cv = KFold(n_splits=5, shuffle=True, random_state=42)
-    outer_cv = KFold(n_splits=10, shuffle=True, random_state=42)
+    outer_cv = KFold(n_splits=5, shuffle=True, random_state=42)
 
     ttr = TransformedTargetRegressor(
         regressor=pipeline_regression, func=np.log1p, inverse_func=np.expm1
@@ -689,7 +589,7 @@ def stage_two_regression_lipids(multimodal_data):
     print("Standard Deviation of Nested CV Scores: {:.4f}".format(nested_scores.std()))
 
     model.fit(X_train_reg, y_train_reg)
-    best_model = model.best_estimator_
+    # best_model = model.best_estimator_
     print("Best inner CV R²: {:.4f}".format(model.best_score_))
     print("Best parameters found: ", model.best_params_)
 
@@ -714,46 +614,24 @@ def stage_two_regression_lipids(multimodal_data):
     final_ttr.fit(X_train_reg, y_train_reg)
 
     # Back-project coefficients from PCA space
-    fitted_pipeline = final_ttr.regressor_
-    enet_model = fitted_pipeline.named_steps["enet"]
-    pca_model = fitted_pipeline.named_steps["pca"]
-    preprocessor = fitted_pipeline.named_steps["preprocessing"]
-
-    # Coefficients in PCA space
-    coef_pca_space = enet_model.coef_
-
-    # Back-projection to original feature space
-    coef_original_space = coef_pca_space @ pca_model.components_
-
-    # Absolute values as feature importances
-    importances = np.abs(coef_original_space)
-
-    # Get feature names after preprocessing
-    feature_names = preprocessor.get_feature_names_out()
-
-    feature_importance_df = pd.DataFrame(
-        {"feature": feature_names, "importance": importances}
-    ).sort_values(by="importance", ascending=False)
-    top20_features = feature_importance_df.head(20)
-    print("Top 20 Features by Importance:")
-    print(top20_features)
-
-    # Visualization
-    plt = _plot_learning_curve(best_model, X_train_reg, y_train_reg)
-    plt.show()
-
-    ## Permutation Test to test significance of the model
-    y_train_array = y_train_reg.values.ravel()  # Ensure y_train is a 1D array
-    score, permutation_scores, pvalue = permutation_test_score(
-        estimator=best_model,
-        X=X_train_reg,
-        y=y_train_array,
-        cv=outer_cv,
-        n_permutations=1000,
-        scoring="r2",
-        n_jobs=-2,
-        random_state=42,
-    )
+    # fitted_pipeline = final_ttr.regressor_
+    # enet_model = fitted_pipeline.named_steps["enet"]
+    # pca_model = fitted_pipeline.named_steps["pca"]
+    # preprocessor = fitted_pipeline.named_steps["preprocessing"]
+    ## Coefficients in PCA space
+    # coef_pca_space = enet_model.coef_
+    ## Back-projection to original feature space
+    # coef_original_space = coef_pca_space @ pca_model.components_
+    ## Absolute values as feature importances
+    # importances = np.abs(coef_original_space)
+    ## Get feature names after preprocessing
+    # feature_names = preprocessor.get_feature_names_out()
+    # feature_importance_df = pd.DataFrame(
+    #    {"feature": feature_names, "importance": importances}
+    # ).sort_values(by="importance", ascending=False)
+    # top20_features = feature_importance_df.head(20)
+    # print("Top 20 Features by Importance:")
+    # print(top20_features)
 
     metrics = {
         "mean_nested_cv_r2": nested_scores.mean(),
@@ -762,8 +640,6 @@ def stage_two_regression_lipids(multimodal_data):
         "best_parameters": model.best_params_,
         "test_regression_r2": r2_raw,
         "test_regression_mse": mse,
-        "permutation_score": score,
-        "permutation_pvalue": pvalue,
     }
 
     print("Metrics:", metrics)
@@ -813,5 +689,6 @@ def _plot_learning_curve_classifier(best_model, X_train, y_train):
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    stage_one_classification_lipids(multimodal_df)
-    # stage_two_regression_lipids(multimodal_df)
+    # stage_one_classification_prs(multimodal_df)
+    # stage_one_classification_lipids(multimodal_df)
+    stage_two_regression_lipids(multimodal_df)

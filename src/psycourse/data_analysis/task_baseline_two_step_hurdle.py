@@ -11,7 +11,7 @@ from psycourse.data_analysis.explorative_hurdle_wrappers import (
 )
 
 DATA = BLD_DATA / "multimodal_complete_df.pkl"
-EXPLORATIVE_BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs" / "explorative"
+BASELINE_BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs" / "baseline"
 
 
 CUTOFFS = [0.25]
@@ -19,18 +19,20 @@ INNERS = [2]
 OUTERS = [2]
 N_REPEATS = 1
 
+VIEWS = ["lipids_only", "prs_only"]
 
-for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
-    combination_id = f"{cutoff=}_{inner=}_{outer=}"
+for view in VIEWS:
+    for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
+        combination_id = f"{cutoff=}_{inner=}_{outer=}"
 
-    HURDLE_ANALYSIS_RESULTS_PATHS: dict[str, Path] = {
-        "metrics_df": EXPLORATIVE_BLD_HURDLE / f"metrics_df__{combination_id}.pkl"
+    BASELINE_HURDLE_ANALYSIS_RESULTS_PATHS: dict[str, Path] = {
+        "metrics_df": BASELINE_BLD_HURDLE / f"metrics_df__{view}_{combination_id}.pkl"
     }
 
-    @task(id=combination_id)
+    @task(f"{combination_id}_{view}")
     def task_hurdle_repeat(
         depends_on: Path = BLD_DATA / "multimodal_complete_df.pkl",
-        produces: dict[str, Path] = HURDLE_ANALYSIS_RESULTS_PATHS,
+        produces: dict[str, Path] = BASELINE_HURDLE_ANALYSIS_RESULTS_PATHS,
         view="multimodal",
         cutoff: float = cutoff,
         inner: int = inner,
@@ -54,13 +56,15 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
 
     # ---------------- aggregation per combination (putting all repeats together) ------
     summary_metrics_path: dict[str, Path] = {
-        "metrics_summary_df": EXPLORATIVE_BLD_HURDLE / f"summary__{combination_id}.pkl",
+        "metrics_summary_df": BASELINE_BLD_HURDLE
+        / f"summary__{view}_{combination_id}.pkl",
     }
 
-    @task(id=combination_id)
+    @task(f"{combination_id}_{view}")
     def task_hurdle_aggregate(
-        depends_on: dict[str, Path] = HURDLE_ANALYSIS_RESULTS_PATHS,
+        depends_on: dict[str, Path] = BASELINE_HURDLE_ANALYSIS_RESULTS_PATHS,
         produces: dict[str, Path] = summary_metrics_path,
+        view: str = view,
         cutoff: float = cutoff,
         inner: int = inner,
         outer: int = outer,
@@ -69,6 +73,7 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
 
         summary = {
             "combo_id": f"{cutoff}_{inner}_{outer}",
+            "view": view,
             "cutoff_quantile": float(cutoff),
             "n_inner_cv": int(inner),
             "n_outer_cv": int(outer),
@@ -96,16 +101,17 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
 
 ## ---------------- final collection across all combinations ----------------
 
-FINAL_SUMMARY_DEPENDS_ON = [
-    EXPLORATIVE_BLD_HURDLE / f"summary__{cutoff=}_{inner=}_{outer=}.pkl"
-    for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS)
-]
+for view in VIEWS:
+    FINAL_SUMMARY_DEPENDS_ON = [
+        BASELINE_BLD_HURDLE / f"summary__{view}_{cutoff=}_{inner=}_{outer=}.pkl"
+        for cutoff, inner, outer in product(CUTOFFS, INNERS, OUTERS)
+    ]
 
-
-def task_final_collection(
-    depends_on: list[Path] = FINAL_SUMMARY_DEPENDS_ON,
-    produces: Path = EXPLORATIVE_BLD_HURDLE / "explorative_summary.pkl",
-):
-    summary_dfs = [pd.read_pickle(path) for path in depends_on]
-    final_summary_df = pd.concat(summary_dfs, ignore_index=True)
-    final_summary_df.to_pickle(produces)
+    @task(f"final_summary_{view}")
+    def task_final_collection(
+        depends_on: list[Path] = FINAL_SUMMARY_DEPENDS_ON,
+        produces: Path = BASELINE_BLD_HURDLE / f"{view}_baseline_summary.pkl",
+    ):
+        summary_dfs = [pd.read_pickle(path) for path in depends_on]
+        final_summary_df = pd.concat(summary_dfs, ignore_index=True)
+        final_summary_df.to_pickle(produces)
