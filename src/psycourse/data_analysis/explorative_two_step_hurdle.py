@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -38,7 +39,7 @@ from psycourse.ml_pipeline.train_model import DataFrameImputer
 
 
 def explorative_stage_one_classification(
-    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed, clf_n_jobs
+    multimodal_data, view, cutoff_quantile, n_inner_cv, n_outer_cv, seed, clf_n_jobs
 ):
     """
     Stage 1: Classify zero vs. non-zero prob_class_5
@@ -57,16 +58,17 @@ def explorative_stage_one_classification(
     # 1. Data Preparation
 
     analysis_data, covariates, target, lipid_features, prs_features = _prepare_data(
-        multimodal_data
+        multimodal_data, view
     )
 
+    print(len(analysis_data))
     # 2. Data Splitting
     X = analysis_data.drop(columns=target).copy()
     y = analysis_data[target].copy()
 
     y_binary = (y > 0).astype(int)  # binary as helper for stratification
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y_binary, random_state=42
+        X, y, test_size=0.2, stratify=y_binary, random_state=seed
     )
 
     cutoff = y_train["prob_class_5"].quantile(cutoff_quantile)
@@ -78,8 +80,14 @@ def explorative_stage_one_classification(
     # 3. Pre-processing
 
     # Pre-Processor: only need to standardize lipid features and covariates
+    to_scale = []
+
+    if lipid_features:
+        to_scale += lipid_features
+        to_scale += covariates
+
     preprocessor = ColumnTransformer(
-        transformers=[("scaler", StandardScaler(), lipid_features + covariates)],
+        transformers=[("scaler", StandardScaler(), to_scale)] if to_scale else [],
         remainder="passthrough",
     )
 
@@ -97,18 +105,18 @@ def explorative_stage_one_classification(
 
     pipeline = Pipeline(
         [
-            ("imputer", DataFrameImputer(KNNMedianImputer(n_neighbors=3))),
+            ("imputer", DataFrameImputer(KNNMedianImputer(n_neighbors=5))),
             ("preprocessing", preprocessor),
             ("variance_threshold", VarianceThreshold(threshold=0.0)),
-            # ("pca", PCA()),
+            ("pca", PCA()),
             ("clf", classifier),
         ]
     )
 
     # Search space for hyperparameters
     param_distributions = {
-        # "pca__n_components": [None, 0.99, 0.95],
-        "clf__C": (1e-3, 1e-2, 1e-1, 1, 10),
+        "pca__n_components": [None, 0.99, 0.95],
+        "clf__C": loguniform(1e-4, 1e2),
         "clf__l1_ratio": uniform(0, 1),
     }
 
@@ -122,11 +130,11 @@ def explorative_stage_one_classification(
     model = RandomizedSearchCV(
         pipeline,
         param_distributions=param_distributions,
-        n_iter=20,
+        n_iter=50,
         cv=inner_cv,
         scoring="roc_auc",
         verbose=1,
-        n_jobs=clf_n_jobs,
+        n_jobs=-2,
         error_score="raise",
     )
 
@@ -188,7 +196,7 @@ def explorative_stage_one_classification(
 
 
 def explorative_stage_two_regression(
-    multimodal_data, cutoff_quantile, n_inner_cv, n_outer_cv, seed, reg_n_jobs
+    multimodal_data, view, cutoff_quantile, n_inner_cv, n_outer_cv, seed, reg_n_jobs
 ):
     """Stage 2: Regress the magnitude among the non-zeros
     Args:
@@ -204,7 +212,7 @@ def explorative_stage_two_regression(
     # 1. Data Preparation
 
     analysis_data, covariates, target, lipid_features, prs_features = _prepare_data(
-        multimodal_data
+        multimodal_data, view
     )
 
     # 2. Data Splitting
@@ -227,15 +235,19 @@ def explorative_stage_two_regression(
     print(f"Training set size for regression: {len(X_train_reg)}")
     print(f"Test set size for regression: {len(X_test_reg)}")
 
-    # Pre-Processor
+    to_scale = []
+    if lipid_features:
+        to_scale += lipid_features
+        to_scale += covariates
+
     preprocessor = ColumnTransformer(
-        transformers=[("scaler", StandardScaler(), lipid_features + covariates)],
+        transformers=[("scaler", StandardScaler(), to_scale)] if to_scale else [],
         remainder="passthrough",
     )
 
     # Define regression model
 
-    elastic_net = ElasticNet(max_iter=10000, random_state=42)
+    elastic_net = ElasticNet(max_iter=5000, random_state=42)
 
     pipeline_regression = Pipeline(
         [
@@ -273,7 +285,7 @@ def explorative_stage_two_regression(
         cv=inner_cv,
         scoring="r2",
         verbose=1,
-        n_jobs=reg_n_jobs,
+        n_jobs=-2,
         error_score="raise",
     )
 
@@ -329,19 +341,58 @@ def explorative_stage_two_regression(
 ########################################################################################
 
 
-def _prepare_data(multimodal_data):
+class DataView(str, Enum):
+    MULTIMODAL = "multimodal"
+    PRS_ONLY = "prs_only"
+    LIPIDS_ONLY = "lipids_only"
+
+
+def _prepare_data(multimodal_data, view):
+    view = str(view)
+
     data = multimodal_data.copy()
 
-    data["sex"] = data["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
+    # robust mapping; keeps NA if unexpected code present
+    if "sex" in data.columns:
+        data["sex"] = data["sex"].map({"F": 0, "M": 1}).astype(pd.Int8Dtype())
+
     covariates = ["age", "bmi", "sex"]
     target = ["prob_class_5"]
-    prs_features = [col for col in data.columns if col.endswith("PRS")]
-    lipid_features = [col for col in data.columns if col.startswith("gpeak")]
-    data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
-    relevant_cols = covariates + lipid_features + prs_features + target
 
-    analysis_data = data_with_lipids[relevant_cols].copy()
+    all_prs = [col for col in data.columns if col.endswith("PRS")]
+    all_lipids = [col for col in data.columns if col.startswith("gpeak")]
 
+    # start with no row filtering
+    data_sel = data
+
+    if view == "prs_only":
+        prs_features = all_prs
+        lipid_features = []
+        selected_cols = covariates + prs_features + target
+
+    elif view == "lipids_only":
+        prs_features = []
+        lipid_features = all_lipids
+        selected_cols = covariates + lipid_features + target
+        if lipid_features:
+            # filter ROWS here, keep selected_cols as list of column names
+            mask_any_lipid = ~data[lipid_features].isna().all(axis=1)
+            data_sel = data.loc[mask_any_lipid]
+
+    elif view == "multimodal":
+        prs_features = all_prs
+        lipid_features = all_lipids
+        selected_cols = covariates + prs_features + lipid_features + target
+        if lipid_features:
+            mask_any_lipid = ~data[lipid_features].isna().all(axis=1)
+            data_sel = data.loc[mask_any_lipid]
+    else:
+        raise ValueError(f"Unknown view: {view!r}")
+
+    # guard against missing columns after filtering
+    selected_cols = [col for col in selected_cols if col in data_sel.columns]
+
+    analysis_data = data_sel[selected_cols].copy()
     return analysis_data, covariates, target, lipid_features, prs_features
 
 
@@ -566,19 +617,21 @@ class TwoStepHurdleReport:
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    explorative_stage_one_classification(
-        multimodal_df,
-        cutoff_quantile=0.05,
-        n_inner_cv=5,
-        n_outer_cv=5,
-        seed=42,
-        clf_n_jobs=-2,
-    )
-    # stage_two_regression(
-    #   multimodal_df,
-    #   cutoff_quantile=0.25,
-    #   n_inner_cv=5,
-    #   n_outer_cv=5,
-    #   seed=42,
-    #   reg_n_jobs=-2,
+    # explorative_stage_one_classification(
+    #    multimodal_df,
+    #    view="lipids_only",
+    #    cutoff_quantile=0.25,
+    #    n_inner_cv=2,
+    #    n_outer_cv=2,
+    #    seed=42,
+    #    clf_n_jobs=-2,
     # )
+    explorative_stage_two_regression(
+        multimodal_df,
+        view="prs_only",
+        cutoff_quantile=0.25,
+        n_inner_cv=2,
+        n_outer_cv=2,
+        seed=42,
+        reg_n_jobs=-2,
+    )
