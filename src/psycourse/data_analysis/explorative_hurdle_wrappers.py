@@ -9,11 +9,12 @@ from psycourse.data_analysis.explorative_two_step_hurdle import (
 
 
 def explorative_run_hurdle_analysis(
-    df, cutoff, inner, outer, n_repeats, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
+    df, view, cutoff, inner, outer, n_repeats, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
 ):
     """Run two-step hurdle with specified parameters for n repeats.
     Args:
         df(pd.DataFrame): The analysis data containing target and features.
+        view (class): The view class to use for the analysis.
         cutoff(float): The quantile cutoff for the first stage classification.
         inner(int): The number of inner cross-validation folds.
         outer(int): The number of outer cross-validation folds.
@@ -34,6 +35,7 @@ def explorative_run_hurdle_analysis(
     for repeat in range(n_repeats):
         metrics_dict, clf_report, reg_report = run_single_combo(
             df,
+            view,
             cutoff,
             inner,
             outer,
@@ -52,11 +54,12 @@ def explorative_run_hurdle_analysis(
 
 
 def run_single_combo(
-    df, cutoff, inner, outer, repeat, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
+    df, view, cutoff, inner, outer, repeat, base_seed=42, clf_n_jobs=1, reg_n_jobs=1
 ) -> dict[str, float]:
     """Run a single combination of parameters for the two-step hurdle model.
     Args:
         df(pd.DataFrame): The analysis data containing target and features.
+        view (class): The view class to use for the analysis.
         cutoff(float): The quantile cutoff for the first stage classification.
         inner(int): The number of inner cross-validation folds.
         outer(int): The number of outer cross-validation folds.
@@ -70,14 +73,15 @@ def run_single_combo(
     seed = _generate_seed(cutoff, inner, outer, repeat, base_seed)
 
     clf_model, clf_report = explorative_stage_one_classification(
-        df, cutoff, inner, outer, seed=seed, clf_n_jobs=clf_n_jobs
+        df, view, cutoff, inner, outer, seed=seed, clf_n_jobs=clf_n_jobs
     )
     reg_model, reg_report = explorative_stage_two_regression(
-        df, cutoff, inner, outer, seed=seed, reg_n_jobs=reg_n_jobs
+        df, view, cutoff, inner, outer, seed=seed, reg_n_jobs=reg_n_jobs
     )
 
     metrics_dict = {
         "combo_id": f"{cutoff}_{inner}_{outer}",
+        "view": view,
         "cutoff_quantile": float(cutoff),
         "n_inner_cv": int(inner),
         "n_outer_cv": int(outer),
