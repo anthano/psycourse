@@ -51,7 +51,8 @@ def task_plot_univariate_lipid_class_regression(
 def task_plot_univariate_lipid_extremes(
     script_path=SRC / "plots" / "univariate_plots.py",
     top20_lipids_path=BLD_RESULTS
-    / "univariate_lipids_extremes_ancova_results_top20.pkl",
+    / "lipids"
+    / "lipids_extremes_ancova_results_50_top20.pkl",
     produces=BLD_RESULTS / "plots" / "univariate_lipid_extremes_plot.png",
 ):
     """Plot the top 20 lipids associated with cluster 5 probability
@@ -68,17 +69,16 @@ def task_plot_univariate_lipid_extremes(
 def task_plot_univariate_prs_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     prs_results_path=BLD_RESULTS / "univariate_prs_results.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_prs_regression_plot.png",
+    produces=BLD_RESULTS / "plots" / "univariate_prs_regression_plot.svg",
 ):
     """Plot the prs associated with cluster 5 probability
     using regression coefficients and FDR values."""
 
     prs_results = pd.read_pickle(prs_results_path)
-    plot_univariate_prs_regression(prs_results)
+    fig, ax = plot_univariate_prs_regression(prs_results)
 
     # Save the plot
-    plt.savefig(produces)
-    plt.close()
+    plt.savefig(produces, bbox_inches="tight")
 
 
 def task_plot_univariate_prs_extremes(

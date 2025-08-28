@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import seaborn as sns
 
@@ -188,34 +189,81 @@ def plot_corr_matrix_lipid_classes(multimodal_df):
 
 
 def plot_univariate_prs_regression(prs_results):
-    # Sort PRS by FDR to fix order
-    prs_sorted = prs_results.sort_values("FDR")
+    """
+    Plot PRS GLM coefficients with 95% CIs.
+    Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
+    """
+    prs_sorted = prs_results.sort_values("FDR").copy()
+    y = np.arange(len(prs_sorted))
 
-    plt.figure(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
-    # Draw lines
-    for i, row in prs_sorted.iterrows():
-        plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
-
-    # Draw points
-    sc = plt.scatter(
+    # error bars (95% CI)
+    xerr = np.vstack(
+        [
+            prs_sorted["coef"] - prs_sorted["ci_low"],
+            prs_sorted["ci_high"] - prs_sorted["coef"],
+        ]
+    )
+    ax.errorbar(
         prs_sorted["coef"],
-        prs_sorted.index,
-        c=-np.log10(prs_sorted["FDR"]),
-        cmap="plasma",
-        s=80,
-        edgecolor="k",
+        y,
+        xerr=xerr,
+        fmt="o",
+        ms=6,
+        mec="k",
+        mfc="white",
+        ecolor="k",
+        elinewidth=1,
+        capsize=3,
+        capthick=1,
+        zorder=2,
     )
 
-    plt.axvline(0, color="gray", linestyle="--")
-    plt.xlabel("Regression Coefficient")
-    plt.ylabel("PRS")
-    plt.title("PRS Associations with Cluster 5 Probability (covariates: age, sex, bmi)")
+    # scatter colored by -log10(FDR), but show FDR ticks on the colorbar
+    neglogq = -np.log10(prs_sorted["FDR"].clip(lower=np.finfo(float).tiny))
+    sc = ax.scatter(
+        prs_sorted["coef"], y, c=neglogq, cmap="plasma", s=90, edgecolor="k", zorder=3
+    )
+
+    # zero (null) line
+    ax.axvline(0, color="gray", linestyle="--", linewidth=1)
+
+    # y labels, most significant at the TOP
+    ax.set_yticks(y, prs_sorted.index)
+    ax.invert_yaxis()
+
+    # symmetric x limits for balance
+    lim = np.nanmax(np.abs(prs_sorted[["ci_low", "ci_high", "coef"]].to_numpy()))
+    if np.isfinite(lim) and lim > 0:
+        ax.set_xlim(-1.1 * lim, 1.1 * lim)
+
+    # cleaner grid
+    ax.grid(True, axis="x", color="0.9")  # turn x-grid on
+    ax.grid(False, axis="y")  # turn y-grid off
+    ax.set_axisbelow(True)
+    sns.despine(left=True)
+
+    ax.set_xlabel("Regression Coefficient")
+    ax.set_ylabel("PRS")
+    ax.set_title("PRS Associations with Severe Psychosis Cluster Probability")
+
+    # Colorbar showing FDR (rather than -log10(FDR)) ticks
     cbar = plt.colorbar(sc)
-    cbar.set_label("-log10(FDR)")
+    cbar.set_label("FDR (q)")
+
+    def _fmt(t, _pos):
+        q = 10 ** (-t)
+        # nice compact formatting
+        return f"{q:.2g}" if q >= 0.01 else f"{q:.1e}"
+
+    cbar.ax.yaxis.set_major_formatter(mtick.FuncFormatter(_fmt))
+    cbar.set_ticks([0, 1, 1.30103, 2])  # q=1, 0.1, 0.05, 0.01
+
     plt.tight_layout()
-    # plt.show()
+
+    return fig, ax
 
 
 def plot_univariate_prs_extremes(prs_results):

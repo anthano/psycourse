@@ -8,36 +8,66 @@ from statsmodels.stats.multitest import multipletests
 
 def univariate_prs_regression(multimodal_df):
     """
-    Perform univariate regression analysis for PRS (Polygenic Risk Scores) against
-    the probability of class 5. This function iterates through all PRS columns in the
-    provided multimodal DataFrame, fits a GLM model for each, and returns a DataFrame
-    with coefficients, p-values, and FDR-corrected p-values.
-
-    Args:
-        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
-    Returns:
-        pd.DataFrame: DataFrame with PRS names as index, coefficients, p-values,
-        and FDR-corrected p-values.
+    Univariate GLMs of prob_class_5 on each PRS, adjusted for covariates.
+    Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
+    Uses HC3 robust covariance (with a safe fallback for older statsmodels).
     """
-
     prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
-    print(prs_columns)
+    rows = []
 
-    prs_records = []
     for prs in prs_columns:
-        subset = multimodal_df[[prs, "prob_class_5", "age", "sex", "bmi"]].dropna()
+        cols = [
+            prs,
+            "prob_class_5",
+            "age",
+            "sex",
+            "bmi",
+            "diagnosis",
+            "pc1",
+            "pc2",
+            "pc3",
+            "pc4",
+            "pc5",
+            "pc6",
+            "pc7",
+            "pc8",
+            "pc9",
+            "pc10",
+        ]
+        subset = multimodal_df[cols].dropna()
 
-        formula = f"prob_class_5 ~ {prs} + age + C(sex) + bmi "
-        model = smf.glm(formula, data=subset).fit()
-        coef = model.params.get(prs, np.nan)
-        pval = model.pvalues.get(prs, np.nan)
-        prs_records.append({"prs": prs, "coef": coef, "pval": pval})
+        formula = (
+            f"prob_class_5 ~ {prs} + age + C(sex) + bmi  + "
+            "pc1 + pc2 + pc3 + pc4 + pc5 + pc6 + pc7 + pc8 + pc9 + pc10"
+        )
 
-    results_df = pd.DataFrame(prs_records).set_index("prs")
-    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
-    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+        model = smf.glm(formula=formula, data=subset)
 
-    return results_df
+        result = model.fit(cov_type="HC3")  # correct for heteroscedasticity
+
+        coef = result.params.get(prs, np.nan)
+        se = result.bse.get(prs, np.nan)
+        pval = result.pvalues.get(prs, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_lower, ci_upper = result.conf_int().loc[prs].tolist()
+
+        rows.append(
+            {
+                "prs": prs,
+                "coef": coef,
+                "se": se,
+                "ci_low": ci_lower,
+                "ci_high": ci_upper,
+                "pval": pval,
+            }
+        )
+
+    df = pd.DataFrame(rows).set_index("prs")
+    df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
+    df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
+    df = df.sort_values(by="FDR")
+    return df
 
 
 def univariate_prs_regression_cov_diag(multimodal_df):
