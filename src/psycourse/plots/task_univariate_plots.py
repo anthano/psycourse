@@ -6,6 +6,7 @@ from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_classes,
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
+    plot_prs_cv_delta_mse,
     plot_univariate_lipid_class_regression,
     plot_univariate_lipid_extremes,
     plot_univariate_lipid_regression,
@@ -66,6 +67,9 @@ def task_plot_univariate_lipid_extremes(
     plt.close()
 
 
+########################################################################################
+# PRS
+########################################################################################
 def task_plot_univariate_prs_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     prs_results_path=BLD_RESULTS / "univariate_prs_results.pkl",
@@ -143,3 +147,17 @@ def task_plot_corr_matrix_prs(
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")
     plt.close()
+
+
+def task_plot_prs_cv_delta_mse(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    delta_df_path=BLD_RESULTS / "prs_cv_delta_mse_results.pkl",
+    produces=BLD_RESULTS / "plots" / "prs_cv_delta_mse_plot.svg",
+):
+    """Plot the PRS cross-validated delta MSE results."""
+
+    delta_df = pd.read_pickle(delta_df_path)
+    fig, ax = plot_prs_cv_delta_mse(delta_df)
+
+    # Save the plot
+    plt.savefig(produces, bbox_inches="tight")

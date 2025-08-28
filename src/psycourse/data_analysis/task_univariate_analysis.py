@@ -2,6 +2,7 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
+    prs_cv_delta_mse,
     univariate_lipid_class_regression,
     univariate_lipid_regression,
     univariate_lipid_regression_cov_diag,
@@ -69,6 +70,18 @@ def task_univariate_prs_ancova(
     univariate_prs_ancova_results[120].to_pickle(
         produces["prs_extremes_ancova_results[120]"]
     )
+
+
+def task_prs_cv_delta_mse(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=BLD_RESULTS / "prs_cv_delta_mse_results.pkl",
+):
+    """Perform cross-validated delta MSE analysis on PRS data."""
+
+    data = pd.read_pickle(multimodal_df_path)
+    prs_cv_delta_mse_results = prs_cv_delta_mse(data)
+    prs_cv_delta_mse_results.to_pickle(produces)
 
 
 ##### LIPID DATA UNIVARIATE REGRESSION TASKS #####

@@ -323,3 +323,87 @@ def plot_corr_matrix_prs(multimodal_df):
     plt.title("Correlation Matrix of PRS")
     plt.tight_layout()
     # plt.show()
+
+
+def plot_prs_cv_delta_mse(delta_df, title="Out-of-sample error reduction by PRS"):
+    """
+    Horizontal bar plot of ΔMSE% with plasma-edge colors.
+    Yellow (#f0f921) = improvement (>0), Purple (#0d0887) = worse (<=0).
+    Error bars match bar colors. Numeric labels are nudged to avoid overlap.
+
+    mpl.rcParams.update({
+        "font.family": "DejaVu Sans",
+        "axes.titlesize": 14,
+        "axes.labelsize": 12,
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
+    })
+
+    """
+    dd = delta_df.sort_values("delta_mse_pct_mean", ascending=True).copy()
+    vals = dd["delta_mse_pct_mean"].to_numpy()
+    errs = dd["delta_mse_pct_std"].to_numpy()
+
+    # Plasma edge colors
+    col_pos = "#fde725"  # warm yellow (high end of plasma)
+    col_neg = "#41049d"  # deep purple (low end of plasma)
+    bar_colors = [col_pos if v > 0 else col_neg for v in vals]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.set_theme(style="whitegrid")
+
+    # Draw bars first (no errorbars here so we can color them per-bar next)
+    bars = ax.barh(dd.index, vals, color=bar_colors, edgecolor="black", linewidth=0.6)  # noqa: F841
+
+    # Error bars, semi-transparent version of bar color
+    y_pos = np.arange(len(dd))  # noqa: F841
+    for i, (v, e) in enumerate(zip(vals, errs, strict=False)):
+        if np.isnan(e):
+            continue
+        ax.errorbar(
+            x=v,
+            y=i,
+            xerr=e,
+            fmt="none",
+            ecolor="black",
+            elinewidth=1.2,
+            capsize=3,
+            capthick=1.2,
+            zorder=2,
+            alpha=0.5,  # <--- transparency
+        )
+
+    # Zero reference
+    ax.axvline(0, color="0.5", linestyle="--", linewidth=1)
+
+    # Grid aesthetics
+    ax.grid(True, axis="x", color="0.9")
+    ax.grid(False, axis="y")
+    ax.set_axisbelow(True)
+    sns.despine(left=True)
+
+    # Labels / title
+    ax.set_xlabel("Δ MSE (%) vs covariates-only (5-fold CV)")
+    ax.set_ylabel("PRS")
+    ax.set_title(title)
+
+    # Nice symmetric x-lims with padding
+    span = max(0.01, np.nanmax(np.abs(vals) + np.nan_to_num(errs, nan=0)))
+    pad = 0.15 * span
+    ax.set_xlim(-span - pad, span + pad)
+
+    safe_errs = np.nan_to_num(errs, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Numeric labels placed outside the furthest edge of bar + error bar
+    for i, (v, e) in enumerate(zip(vals, safe_errs, strict=False)):
+        txt = f"{abs(v):.2f}%"
+        if v >= 0:
+            xpos = v + e + 0.02 * span
+            ax.text(xpos, i, txt, va="center", ha="left", fontsize=10)
+        else:
+            xpos = v - e - 0.02 * span
+            ax.text(xpos, i, txt, va="center", ha="right", fontsize=10)
+
+    plt.tight_layout()
+    return fig, ax
