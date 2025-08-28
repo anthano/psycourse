@@ -2,7 +2,12 @@ import pandas as pd
 
 
 def merge_multimodal_complete_df(
-    lipid_data, lipid_class, phenotypic_data, cluster_probabilities_full, prs_data
+    lipid_data,
+    lipid_class,
+    phenotypic_data,
+    cluster_probabilities_full,
+    prs_data,
+    pc_components,
 ):
     """
     Merges lipid data, phenotypic data, prs and cluster probabilites into a single
@@ -14,6 +19,8 @@ def merge_multimodal_complete_df(
         cluster_probabilites (pd.DataFrame): Dataframe containing cluster probabilities,
         incl. the newly obtained (full).
         prs (pd.DataFrame): Dataframe containing polygenic risk scores.
+        pc_components (pd.DataFrame): Dataframe containing
+        ancestry principal component scores.
     Returns:
         pd.DataFrame: Merged dataframe containing lipid data, phenotypic data, prs
         and cluster probabilites.
@@ -34,6 +41,10 @@ def merge_multimodal_complete_df(
     multimodal_df = multimodal_df.reset_index()
     multimodal_df = multimodal_df.set_index("gsa_id")
     multimodal_df = multimodal_df.join(prs_data, how="left")
+
+    for pc in range(1, 11):
+        multimodal_df[f"pc{pc}"] = pc_components[f"PC{pc}"]
+
     multimodal_df = multimodal_df.set_index("id")
 
     class_means_df = compute_lipid_class_means(lipid_data, lipid_class)

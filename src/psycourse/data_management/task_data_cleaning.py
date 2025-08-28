@@ -5,6 +5,7 @@ from psycourse.data_management.data_cleaning import (
     clean_cluster_labels,
     clean_lipidomic_class_label,
     clean_lipidomic_data,
+    clean_pc_data,
     clean_phenotypic_data,
     clean_prs_data,
     clean_prscope_data,
@@ -78,6 +79,18 @@ def task_clean_prs_data(
     bpd_data = pd.read_csv(prs_data_paths["bpd_data"], sep="\t")
     cleaned_prs_data = clean_prs_data(prs_data, bpd_data)
     cleaned_prs_data.to_pickle(produces)
+
+
+def task_clean_pc_data(
+    script_path=SRC / "data_management" / "data_cleaning.py",
+    pc_data_path=DATA_DIR / "prs" / "prs_pca" / "pca_results.eigenvec",
+    produces=BLD_DATA / "cleaned_pc_data.pkl",
+):
+    """Clean the principal components (PC) data."""
+
+    pc_data = pd.read_csv(pc_data_path, sep="\t")
+    cleaned_pc_data = clean_pc_data(pc_data)
+    cleaned_pc_data.to_pickle(produces)
 
 
 def task_clean_prsscope_predictions(

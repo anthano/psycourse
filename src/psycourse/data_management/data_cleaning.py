@@ -926,6 +926,31 @@ def clean_prs_data(prs_data, bpd_data):
     return clean_prs_df
 
 
+def clean_pc_data(pc_data):
+    """Cleans the ancestry principal components data."""
+    pc_data["id_clean"] = (
+        pc_data["#IID"]
+        .astype(str)
+        .str.strip()
+        .str.replace(r"^\d+_", "", regex=True)
+        .str.replace(r"^(.*?)(?:_\1)+$", r"\1", regex=True)
+        .str.replace(r"(_[A-Z]+)?_T\d+(?:_\d+)?$", r"\1", regex=True)
+    )
+
+    id_dict = {
+        "SCZ_SP_080": "SCZ_SP_080_SE_T1",
+        "SCZ_SP_071": "SCZ_SP_071_re_T1",
+        "SCZ_SP_073": "SCZ_SP_073_PR_T1",
+    }
+    for key, value in id_dict.items():
+        if key in pc_data["id_clean"].values:
+            pc_data["id_clean"] = pc_data["id_clean"].replace({key: value})
+
+    pc_data = pc_data.set_index("id_clean")
+
+    return pc_data
+
+
 ########################################################################################
 # PRSCOPE DATA
 ########################################################################################
