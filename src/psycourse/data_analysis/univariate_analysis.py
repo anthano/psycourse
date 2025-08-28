@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold
 from statsmodels.stats.multitest import multipletests
 
 ############## PRS ################
@@ -106,6 +109,94 @@ def univariate_prs_regression_cov_diag(multimodal_df):
     results_df_cov_diag["log10_FDR"] = -np.log10(results_df_cov_diag["FDR"])
 
     return results_df_cov_diag
+
+
+def prs_cv_delta_mse(multimodal_df, n_splits=5, random_state=42):
+    """
+    For each PRS, compute the % reduction in MSE on held-out folds when adding the PRS
+    to a covariates-only linear model predicting prob_class_5.
+
+    Returns a DataFrame with mean and SD across folds.
+    """
+    prs_cols = [c for c in multimodal_df.columns if c.endswith("PRS")]
+    covars = [
+        "age",
+        "sex",
+        "bmi",
+        "pc1",
+        "pc2",
+        "pc3",
+        "pc4",
+        "pc5",
+        "pc6",
+        "pc7",
+        "pc8",
+        "pc9",
+        "pc10",
+    ]
+    outcome = "prob_class_5"
+
+    # keep only needed cols and drop rows with any NA
+    cols_needed = [outcome] + covars + prs_cols
+    df = multimodal_df[cols_needed].dropna().copy()
+
+    # one-hot encode sex (drop_first to avoid collinearity)
+    df_enc = pd.get_dummies(df, columns=["sex"], drop_first=True)
+
+    y = df_enc[outcome].to_numpy()
+    covar_cols_enc = [c for c in df_enc.columns if c not in prs_cols + [outcome]]
+    Xc = df_enc[covar_cols_enc].to_numpy()
+
+    # CV splitter
+    k = min(max(2, n_splits), len(df_enc))  # at least 2 folds, at most n samples
+    cv = KFold(n_splits=k, shuffle=True, random_state=random_state)
+
+    results = []
+    for prs in prs_cols:
+        Xi = np.column_stack([Xc, df_enc[[prs]].to_numpy()])
+
+        mse_base_folds, mse_full_folds, deltas_pct = [], [], []
+        for tr, te in cv.split(Xc):
+            # baseline
+            base = LinearRegression().fit(Xc[tr], y[tr])
+            yb = base.predict(Xc[te])
+            # full
+            full = LinearRegression().fit(Xi[tr], y[tr])
+            yf = full.predict(Xi[te])
+
+            # (optional) clip predictions to [0,1] since y is a probability
+            yb = np.clip(yb, 0, 1)
+            yf = np.clip(yf, 0, 1)
+
+            mse_b = mean_squared_error(y[te], yb)
+            mse_f = mean_squared_error(y[te], yf)
+
+            mse_base_folds.append(mse_b)
+            mse_full_folds.append(mse_f)
+
+            # % reduction; negative means worse with PRS
+            deltas_pct.append(100.0 * (mse_b - mse_f) / mse_b if mse_b > 0 else 0.0)
+
+        results.append(
+            {
+                "PRS": prs,
+                "delta_mse_pct_mean": float(np.mean(deltas_pct)),
+                "delta_mse_pct_std": float(np.std(deltas_pct, ddof=1))
+                if k > 1
+                else np.nan,
+                "mse_base_mean": float(np.mean(mse_base_folds)),
+                "mse_full_mean": float(np.mean(mse_full_folds)),
+                "n": len(df_enc),
+                "kfolds": k,
+            }
+        )
+
+    out = (
+        pd.DataFrame(results)
+        .set_index("PRS")
+        .sort_values("delta_mse_pct_mean", ascending=False)
+    )
+    return out
 
 
 def univariate_prs_ancova(multimodal_df):
