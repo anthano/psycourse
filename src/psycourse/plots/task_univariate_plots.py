@@ -6,6 +6,7 @@ from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_classes,
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
+    plot_perm_enrichment,
     plot_prs_cv_delta_mse,
     plot_univariate_lipid_class_regression,
     plot_univariate_lipid_extremes,
@@ -20,17 +21,14 @@ from psycourse.plots.univariate_plots import (
 def task_plot_univariate_lipid_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     top20_lipids_path=BLD_RESULTS / "univariate_lipid_results_top20.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_lipid_regression_plot.png",
+    produces=BLD_RESULTS / "plots" / "univariate_lipid_regression_plot.svg",
 ):
     """Plot the top 20 lipids associated with cluster 5 probability
     using regression coefficients and FDR values."""
 
     lipid_top20 = pd.read_pickle(top20_lipids_path)
-    plot_univariate_lipid_regression(lipid_top20)
-
-    # Save the plot
+    fig, ax = plot_univariate_lipid_regression(lipid_top20)
     plt.savefig(produces, bbox_inches="tight")
-    plt.close()
 
 
 def task_plot_univariate_lipid_class_regression(
@@ -158,6 +156,20 @@ def task_plot_prs_cv_delta_mse(
 
     delta_df = pd.read_pickle(delta_df_path)
     fig, ax = plot_prs_cv_delta_mse(delta_df)
+
+    # Save the plot
+    plt.savefig(produces, bbox_inches="tight")
+
+
+def task_plot_perm_enrichment(
+    script_path=SRC / "plots" / "univariate_plots.py",
+    enrich_df_path=BLD_RESULTS / "lipid_class_enrichment_perm_results.pkl",
+    produces=BLD_RESULTS / "plots" / "lipid_class_enrichment_perm_plot.svg",
+):
+    """Plot the lipid class enrichment results with permutation testing."""
+
+    enrich_df = pd.read_pickle(enrich_df_path)
+    fig, ax = plot_perm_enrichment(enrich_df)
 
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")
