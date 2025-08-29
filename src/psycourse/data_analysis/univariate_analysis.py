@@ -269,21 +269,41 @@ def univariate_lipid_regression(multimodal_df):
     lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
     records = []
     for lipid in lipid_columns:
-        subset = multimodal_df[[lipid, "prob_class_5", "age", "sex", "bmi"]].dropna()
+        subset = multimodal_df[
+            [lipid, "prob_class_5", "age", "sex", "bmi", "duration_illness", "smoker"]
+        ].dropna()
 
-        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi"
-        model = smf.glm(formula, data=subset).fit()
-        coef = model.params.get(lipid, np.nan)
-        pval = model.pvalues.get(lipid, np.nan)
+        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + duration_illness +"
+        "C(smoker)"
 
-        records.append({"lipid": lipid, "coef": coef, "pval": pval})
+        model = smf.glm(formula, data=subset)
+        result = model.fit(cov_type="HC3")  # adjust for heteroscedasticity
+        coef = result.params.get(lipid, np.nan)
+        se = result.bse.get(lipid, np.nan)
+        pval = result.pvalues.get(lipid, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_low, ci_high = result.conf_int().loc[lipid].tolist()
+
+        records.append(
+            {
+                "lipid": lipid,
+                "coef": coef,
+                "pval": pval,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+            }
+        )
 
     results_df = pd.DataFrame(records).set_index("lipid")
     results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
     results_df["log10_FDR"] = -np.log10(results_df["FDR"])
 
     top20 = results_df.nsmallest(20, "FDR")
-    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+    results_df["log10_FDR"] = -np.log10(
+        np.clip(results_df["FDR"], np.finfo(float).tiny, None)
+    )
 
     return top20, results_df
 
@@ -424,3 +444,75 @@ def univariate_lipids_ancova(multimodal_df):
         top20_dfs[threshold] = top20
 
     return results_dfs, top20_dfs
+
+
+def lipid_class_enrichment_perm(
+    results_df,
+    annot_df,
+    score_col="pval",
+    n_perms=5000,
+    random_state=42,
+    min_in_class=5,
+):
+    """
+    Permutation-based enrichment test for lipid classes (GSEA-style).
+
+    results_df: DataFrame with regression results (index=lipid, must have `score_col`)
+    annot_df:   DataFrame with lipid -> class mapping (index=lipid, col='class')
+    score_col:  Which column to rank by (default: 'pval')
+    n_perms:    Number of permutations
+    """
+    rng = np.random.default_rng(random_state)
+
+    # merge results + annotations
+    merged = results_df[[score_col]].join(annot_df[["class"]], how="inner").dropna()
+    if merged.empty:
+        return pd.DataFrame()
+
+    # rank lipids: smaller p = stronger -> higher score
+    scores = -np.log10(merged[score_col].clip(lower=np.finfo(float).tiny))
+    merged["rank"] = scores.rank(ascending=False, method="average").to_numpy()
+
+    all_ranks = merged["rank"].to_numpy()
+    all_classes = merged["class"].to_numpy()
+    # lipids = merged.index.to_numpy()
+
+    rows = []
+    for cl in np.unique(all_classes):
+        mask = all_classes == cl
+        n = mask.sum()
+        if n < min_in_class:
+            continue
+
+        # observed enrichment score (mean rank difference)
+        obs_es = merged.loc[mask, "rank"].mean() - merged.loc[~mask, "rank"].mean()
+
+        # permutation null distribution
+        null_es = []
+        for _ in range(n_perms):
+            perm_mask = rng.choice(len(all_ranks), size=n, replace=False)
+            null_es.append(
+                all_ranks[perm_mask].mean()
+                - all_ranks[~np.isin(np.arange(len(all_ranks)), perm_mask)].mean()
+            )
+        null_es = np.array(null_es)
+
+        # one-sided p-value: is observed > expected?
+        pval = (np.sum(null_es >= obs_es) + 1) / (n_perms + 1)
+
+        rows.append(
+            {
+                "class": cl,
+                "n_in_class": n,
+                "ES": obs_es,
+                "pval": pval,
+            }
+        )
+
+    out = pd.DataFrame(rows).set_index("class")
+    if out.empty:
+        return out
+
+    out["FDR"] = multipletests(out["pval"], method="fdr_bh")[1]
+    out["-log10(FDR)"] = -np.log10(np.clip(out["FDR"], np.finfo(float).tiny, None))
+    return out.sort_values("FDR")

@@ -2,6 +2,7 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
+    lipid_class_enrichment_perm,
     prs_cv_delta_mse,
     univariate_lipid_class_regression,
     univariate_lipid_regression,
@@ -189,3 +190,19 @@ def task_univariate_lipid_regression_cov_diag(
     top20_lipids, univariate_lipid_results = univariate_lipid_regression_cov_diag(data)
     top20_lipids.to_pickle(produces["top20_lipids_cov_diag"])
     univariate_lipid_results.to_pickle(produces["univariate_lipid_results_cov_diag"])
+
+
+def task_lipid_class_enrichment_perm(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    lipid_results=BLD_RESULTS / "univariate_lipid_results.pkl",
+    lipid_class_df=BLD_DATA / "cleaned_lipid_class_data.pkl",
+    produces=BLD_RESULTS / "lipid_class_enrichment_perm_results.pkl",
+):
+    """Perform lipid class enrichment analysis with permutation testing."""
+
+    lipid_results = pd.read_pickle(lipid_results)
+    lipid_class_df = pd.read_pickle(lipid_class_df)
+    lipid_class_enrichment_results = lipid_class_enrichment_perm(
+        lipid_results, lipid_class_df
+    )
+    lipid_class_enrichment_results.to_pickle(produces)

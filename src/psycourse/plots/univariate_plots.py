@@ -2,50 +2,96 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
 import seaborn as sns
+from matplotlib.colors import LinearSegmentedColormap
 
 ############# Lipids ###################
 
 
-def plot_univariate_lipid_regression(top20):
-    """Plot the top 20 lipids associated with cluster 5 probability using regression
-    coefficients and FDR values.
-    Args:
-        top20 (pd.DataFrame): DataFrame containing the top 20 lipids with columns
-        'coef' and 'FDR'.
-    Returns:
-        None: Displays a plot of the regression coefficients with FDR as color.
+def plot_univariate_lipid_regression(lipid_results_top20):
     """
-    # Sort top 20 by FDR again to fix order
-    top20_sorted = top20.sort_values("FDR")
+    Plot lipid GLM coefficients with 95% CIs.
+    Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
+    """
+    lipid_sorted = lipid_results_top20.sort_values("FDR").copy()
+    y = np.arange(len(lipid_sorted))
 
-    plt.figure(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
-    # Draw lines
-    for i, row in top20_sorted.iterrows():
-        plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
+    # error bars (95% CI)
+    xerr = np.vstack(
+        [
+            lipid_sorted["coef"] - lipid_sorted["ci_low"],
+            lipid_sorted["ci_high"] - lipid_sorted["coef"],
+        ]
+    )
+    ax.errorbar(
+        lipid_sorted["coef"],
+        y,
+        xerr=xerr,
+        fmt="o",
+        ms=6,
+        mec="k",
+        mfc="white",
+        ecolor="k",
+        elinewidth=1,
+        capsize=3,
+        capthick=1,
+        zorder=2,
+    )
 
-    # Draw points
-    sc = plt.scatter(
-        top20_sorted["coef"],
-        top20_sorted.index,
-        c=-np.log10(top20_sorted["FDR"]),
+    # scatter colored by -log10(FDR), but show FDR ticks on the colorbar
+    neglogq = -np.log10(lipid_sorted["FDR"].clip(lower=np.finfo(float).tiny))
+    vmin = 1.0
+    vmax = float(np.nanmax(neglogq))
+    sc = ax.scatter(
+        lipid_sorted["coef"],
+        y,
+        c=neglogq,
         cmap="plasma",
-        s=80,
+        vmin=vmin,
+        vmax=vmax,
+        s=90,
         edgecolor="k",
+        zorder=3,
     )
 
-    plt.axvline(0, color="gray", linestyle="--")
-    plt.xlabel("Regression Coefficient")
-    plt.ylabel("Lipid")
-    plt.title(
-        "Top 20 Lipid Associations with Cluster 5 Probability "
-        "(covariates: age, sex, bmi)"
-    )
+    # zero (null) line
+    ax.axvline(0, color="gray", linestyle="--", linewidth=1)
+
+    # y labels, most significant at the TOP
+    ax.set_yticks(y, lipid_sorted.index)
+    ax.invert_yaxis()
+
+    # symmetric x limits for balance
+    lim = np.nanmax(np.abs(lipid_sorted[["ci_low", "ci_high", "coef"]].to_numpy()))
+    if np.isfinite(lim) and lim > 0:
+        ax.set_xlim(-1.1 * lim, 1.1 * lim)
+
+    # cleaner grid
+    ax.grid(True, axis="x", color="0.9")  # turn x-grid on
+    ax.grid(False, axis="y")  # turn y-grid off
+    ax.set_axisbelow(True)
+    sns.despine(left=True)
+
+    ax.set_xlabel("Regression Coefficient")
+    ax.set_ylabel("Lipids")
+    ax.set_title("Lipid Associations with Severe Psychosis Cluster Probability")
+
+    # Colorbar showing FDR ticks
     cbar = plt.colorbar(sc)
-    cbar.set_label("-log10(FDR)")
+    cbar.set_label("FDR (q)")
+    ticks_all = np.array([1, 1.30103, 2, 3])
+    ticks = ticks_all[ticks_all <= vmax]
+    cbar.set_ticks(ticks)  # q= 0.1, 0.05, 0.01
+    cbar.ax.yaxis.set_major_formatter(
+        mtick.FuncFormatter(
+            lambda t, _: f"{10**(-t):.2g}" if 10 ** (-t) >= 0.01 else f"{10**(-t):.1e }"
+        )
+    )
     plt.tight_layout()
-    # plt.show()
+
+    return fig, ax
 
 
 def plot_univariate_lipid_class_regression(lipid_class_results):
@@ -185,6 +231,83 @@ def plot_corr_matrix_lipid_classes(multimodal_df):
     # plt.show()
 
 
+def plot_perm_enrichment(
+    enrich_df,
+    top_n=12,
+    title="Lipid class enrichment (permutation-based)",
+    font_family=None,
+):
+    """
+    Dot plot of class enrichment:
+      x = ES (mean-rank difference; >0 = enriched toward top of ranking)
+      y = lipid class (top_n by FDR)
+      color = -log10(FDR)  (colorbar shows FDR ticks)
+      size = n_in_class
+    """
+    if enrich_df.empty:
+        raise ValueError("enrich_df is empty.")
+
+    df = enrich_df.sort_values("FDR").head(top_n).iloc[::-1].copy()  # most sig at top
+
+    # Optional font consistency
+    if font_family:
+        plt.rcParams.update({"font.family": font_family})
+
+    # Slightly truncate plasma to avoid very bright top end
+    plasma_trunc = LinearSegmentedColormap.from_list(
+        "plasma_trunc", plt.cm.plasma(np.linspace(0.0, 0.92, 256))
+    )
+
+    sns.set_theme(style="whitegrid")
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    # Scatter
+    sc = ax.scatter(
+        df["ES"],
+        df.index,
+        s=20 + 6 * df["n_in_class"],  # size by class size
+        c=df["-log10(FDR)"],
+        cmap=plasma_trunc,
+        edgecolor="k",
+        linewidth=0.6,
+        zorder=3,
+    )
+
+    # Zero line = no enrichment
+    ax.axvline(0, color="gray", linestyle="--", linewidth=1)
+
+    # Labels / grid
+    ax.set_xlabel("Enrichment score (Δ mean rank; >0 = enriched)")
+    ax.set_ylabel("Lipid class")
+    ax.set_title(title)
+    ax.grid(True, axis="x", color="0.9")
+    ax.grid(False, axis="y")
+    ax.set_axisbelow(True)
+    sns.despine(left=True)
+
+    # Nice symmetric x-lims with padding
+    span = np.nanmax(np.abs(df["ES"]))
+    pad = 0.15 * max(0.01, span)
+    ax.set_xlim(-span - pad, span + pad)
+
+    # Colorbar formatted in FDR (q)
+    cbar = plt.colorbar(sc)
+    cbar.set_label("FDR (q)")
+
+    def _fmt(t, _pos):
+        q = 10 ** (-t)
+        return f"{q:.2g}" if q >= 0.01 else f"{q:.1e}"
+
+    vmax = float(df["-log10(FDR)"].max())
+    ticks_all = np.array([0, 1, 1.30103, 2, 3])  # q=1, 0.1, 0.05, 0.01, 0.001
+    ticks = ticks_all[ticks_all <= vmax]
+    cbar.set_ticks(ticks)
+    cbar.ax.yaxis.set_major_formatter(mtick.FuncFormatter(_fmt))
+
+    plt.tight_layout()
+    return fig, ax
+
+
 #################### PRS ###################
 
 
@@ -223,8 +346,18 @@ def plot_univariate_prs_regression(prs_results):
 
     # scatter colored by -log10(FDR), but show FDR ticks on the colorbar
     neglogq = -np.log10(prs_sorted["FDR"].clip(lower=np.finfo(float).tiny))
+    vmin = 1.0
+    vmax = float(np.nanmax(neglogq))
     sc = ax.scatter(
-        prs_sorted["coef"], y, c=neglogq, cmap="plasma", s=90, edgecolor="k", zorder=3
+        prs_sorted["coef"],
+        y,
+        c=neglogq,
+        vmin=vmin,
+        vmax=vmax,
+        cmap="plasma",
+        s=90,
+        edgecolor="k",
+        zorder=3,
     )
 
     # zero (null) line
@@ -249,17 +382,17 @@ def plot_univariate_prs_regression(prs_results):
     ax.set_ylabel("PRS")
     ax.set_title("PRS Associations with Severe Psychosis Cluster Probability")
 
-    # Colorbar showing FDR (rather than -log10(FDR)) ticks
+    # colorbar showing FDR
     cbar = plt.colorbar(sc)
     cbar.set_label("FDR (q)")
-
-    def _fmt(t, _pos):
-        q = 10 ** (-t)
-        # nice compact formatting
-        return f"{q:.2g}" if q >= 0.01 else f"{q:.1e}"
-
-    cbar.ax.yaxis.set_major_formatter(mtick.FuncFormatter(_fmt))
-    cbar.set_ticks([0, 1, 1.30103, 2])  # q=1, 0.1, 0.05, 0.01
+    ticks_all = np.array([1, 1.30103, 2])
+    ticks = ticks_all[ticks_all <= vmax]
+    cbar.set_ticks(ticks)  # q= 0.1, 0.05, 0.01
+    cbar.ax.yaxis.set_major_formatter(
+        mtick.FuncFormatter(
+            lambda t, _: f"{10**(-t):.2g}" if 10 ** (-t) >= 0.01 else f"{10**(-t):.1e }"
+        )
+    )
 
     plt.tight_layout()
 
