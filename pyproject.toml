@@ -20,6 +20,7 @@ classifiers = [
 authors = [
     { name = "JANE DOE", email = "janedoe@example-university.com" },
 ]
+dependencies = ["snakeviz>=2.2.2,<3"]
 
 [project.readme]
 file = "README.md"

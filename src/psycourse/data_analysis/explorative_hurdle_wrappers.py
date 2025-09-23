@@ -94,10 +94,14 @@ def run_single_combo(
         "test_roc_auc": float(clf_report.test_roc_auc),
         "test_precision": float(clf_report.test_precision),
         "test_recall": float(clf_report.test_recall),
+        "brier_score": float(clf_report.brier_score),
         "test_r2": float(reg_report.test_regression_r2),
         "test_mse": float(reg_report.test_regression_mse),
         "test_regression_mae": float(reg_report.test_regression_mae),
         "test_regression_rmse": float(reg_report.test_regression_rmse),
+        "test_regression_median_absolute_error": float(
+            reg_report.test_regression_median_absolute_error
+        ),
     }
     return metrics_dict, clf_report, reg_report
 

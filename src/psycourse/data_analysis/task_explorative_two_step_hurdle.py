@@ -3,6 +3,7 @@ from itertools import product
 from pathlib import Path
 
 import pandas as pd
+import pytask
 from pytask import task
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
@@ -14,10 +15,10 @@ DATA = BLD_DATA / "multimodal_complete_df.pkl"
 EXPLORATIVE_BLD_HURDLE = BLD_RESULTS / "multivariate" / "hurdle_runs" / "explorative"
 
 
-CUTOFFS = [0.25]
-INNERS = [2]
-OUTERS = [2]
-N_REPEATS = 1
+CUTOFFS = [0.05, 0.10, 0.25]
+INNERS = [5]
+OUTERS = [5]
+N_REPEATS = 5
 
 
 for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
@@ -27,6 +28,7 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
         "metrics_df": EXPLORATIVE_BLD_HURDLE / f"metrics_df__{combination_id}.pkl"
     }
 
+    @pytask.mark.skip
     @task(id=combination_id)
     def task_hurdle_repeat(
         depends_on: Path = BLD_DATA / "multimodal_complete_df.pkl",
@@ -84,10 +86,12 @@ for cutoff, inner, outer in itertools.product(CUTOFFS, INNERS, OUTERS):
             "test_roc_auc",
             "test_precision",
             "test_recall",
+            "brier_score",
             "test_r2",
             "test_mse",
             "test_regression_mae",
             "test_regression_rmse",
+            "test_regression_median_absolute_error",
         ]:
             summary[f"{col}_mean"] = metrics_df[col].mean()
             summary[f"{col}_std"] = metrics_df[col].std()
