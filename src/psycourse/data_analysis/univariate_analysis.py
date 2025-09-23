@@ -273,7 +273,7 @@ def univariate_lipid_regression(multimodal_df):
             [lipid, "prob_class_5", "age", "sex", "bmi", "duration_illness", "smoker"]
         ].dropna()
 
-        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + duration_illness +"
+        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + duration_illness + "
         "C(smoker)"
 
         model = smf.glm(formula, data=subset)

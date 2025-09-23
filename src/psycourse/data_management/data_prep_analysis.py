@@ -30,6 +30,8 @@ def merge_multimodal_complete_df(
     multimodal_df["sex"] = phenotypic_data["sex"]
     multimodal_df["age"] = phenotypic_data["age"]
     multimodal_df["bmi"] = phenotypic_data["bmi"]
+    multimodal_df["smoker"] = phenotypic_data["smoker"]
+    multimodal_df["duration_illness"] = phenotypic_data["duration_illness"]
     multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
     multimodal_df["diagnosis"] = phenotypic_data["diagnosis"]
 

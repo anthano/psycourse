@@ -34,7 +34,7 @@ def task_plot_univariate_lipid_regression(
 def task_plot_univariate_lipid_class_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     lipid_class_results=BLD_RESULTS / "univariate_lipid_class_results.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_lipid_class_regression_plot.png",
+    produces=BLD_RESULTS / "plots" / "univariate_lipid_class_regression_plot.svg",
 ):
     """Plot the top 20 lipids associated with cluster 5 probability
     using regression coefficients and FDR values."""
@@ -52,7 +52,7 @@ def task_plot_univariate_lipid_extremes(
     top20_lipids_path=BLD_RESULTS
     / "lipids"
     / "lipids_extremes_ancova_results_50_top20.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_lipid_extremes_plot.png",
+    produces=BLD_RESULTS / "plots" / "univariate_lipid_extremes_plot.svg",
 ):
     """Plot the top 20 lipids associated with cluster 5 probability
     using regression coefficients and FDR values."""
@@ -86,7 +86,7 @@ def task_plot_univariate_prs_regression(
 def task_plot_univariate_prs_extremes(
     script_path=SRC / "plots" / "univariate_plots.py",
     prs_results_path=BLD_RESULTS / "univariate_prs_extremes_ancova_results.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_prs_extremes.png",
+    produces=BLD_RESULTS / "plots" / "univariate_prs_extremes.svg",
 ):
     """Plot the prs associated with cluster 5 probability
     using regression coefficients and FDR values for the top50 vs. bottom 50."""
@@ -103,7 +103,7 @@ def task_plot_corr_matrix_lipid_top20(
     script_path=SRC / "plots" / "univariate_plots.py",
     multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
     top20_lipids_path=BLD_RESULTS / "univariate_lipid_results_top20.pkl",
-    produces=BLD_RESULTS / "plots" / "lipid_corr_matrix_top20.png",
+    produces=BLD_RESULTS / "plots" / "lipid_corr_matrix_top20.svg",
 ):
     """Plot the correlation matrix of the top 20 lipids."""
 
@@ -120,7 +120,7 @@ def task_plot_corr_matrix_lipid_class(
     script_path=SRC / "plots" / "univariate_plots.py",
     multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
     lipid_class_results_path=BLD_RESULTS / "univariate_lipid_class_results.pkl",
-    produces=BLD_RESULTS / "plots" / "lipid_class_corr_matrix.png",
+    produces=BLD_RESULTS / "plots" / "lipid_class_corr_matrix.svg",
 ):
     """Plot the correlation matrix of the lipid classes."""
 
@@ -135,7 +135,7 @@ def task_plot_corr_matrix_lipid_class(
 def task_plot_corr_matrix_prs(
     script_path=SRC / "plots" / "univariate_plots.py",
     multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
-    produces=BLD_RESULTS / "plots" / "prs_corr_matrix.png",
+    produces=BLD_RESULTS / "plots" / "prs_corr_matrix.svg",
 ):
     """Plot the correlation matrix of the top 20 lipids."""
 

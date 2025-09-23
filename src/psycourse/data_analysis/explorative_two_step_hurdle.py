@@ -13,10 +13,12 @@ from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
     balanced_accuracy_score,
+    brier_score_loss,
     confusion_matrix,
     f1_score,
     matthews_corrcoef,
     mean_squared_error,
+    median_absolute_error,
     precision_score,
     r2_score,
     recall_score,
@@ -115,7 +117,7 @@ def explorative_stage_one_classification(
 
     # Search space for hyperparameters
     param_distributions = {
-        "pca__n_components": [None, 0.99, 0.95],
+        # "pca__n_components": [None, 0.99, 0.95],
         "clf__C": loguniform(1e-4, 1e2),
         "clf__l1_ratio": uniform(0, 1),
     }
@@ -190,6 +192,7 @@ def explorative_stage_one_classification(
         test_specificity=eval_metrics["specificity"],
         test_mcc=eval_metrics["matthews_corrcoef"],
         test_prevalence=eval_metrics["prevalence"],
+        brier_score=eval_metrics["brier_score"],
     )
     print("Report:", report)
     return final_model, report
@@ -260,7 +263,7 @@ def explorative_stage_two_regression(
     )
 
     param_distributions_regression = {
-        "regressor__pca__n_components": [None, 0.99, 0.95],
+        # "regressor__pca__n_components": [None, 0.99, 0.95],
         "regressor__enet__alpha": loguniform(1e-4, 1e2),
         "regressor__enet__l1_ratio": uniform(0, 1),
     }
@@ -307,6 +310,7 @@ def explorative_stage_two_regression(
     mse = mean_squared_error(y_test_reg, y_pred)
     mae = np.mean(np.abs(y_test_reg - y_pred))
     rmse = np.sqrt(mse)
+    med_absolute_error = median_absolute_error(y_test_reg, y_pred)
 
     # Final Model
 
@@ -330,6 +334,7 @@ def explorative_stage_two_regression(
         test_regression_mse=mse,
         test_regression_mae=mae,
         test_regression_rmse=rmse,
+        test_regression_median_absolute_error=med_absolute_error,
     )
     print("Regression Report:", report)
 
@@ -345,6 +350,7 @@ class DataView(str, Enum):
     MULTIMODAL = "multimodal"
     PRS_ONLY = "prs_only"
     LIPIDS_ONLY = "lipids_only"
+    COVARIATES_ONLY = "covariates_only"
 
 
 def _prepare_data(multimodal_data, view):
@@ -369,7 +375,10 @@ def _prepare_data(multimodal_data, view):
         prs_features = all_prs
         lipid_features = []
         selected_cols = covariates + prs_features + target
-
+    elif view == "covariates_only":
+        prs_features = []
+        lipid_features = []
+        selected_cols = covariates + target
     elif view == "lipids_only":
         prs_features = []
         lipid_features = all_lipids
@@ -412,6 +421,7 @@ def _evaluate_classifier(model, X_test, y_test_bin):
     specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
     matthews_corr = matthews_corrcoef(y_test_bin, y_pred_bin)
     prevalence = np.mean(y_test_bin)
+    brier_score = brier_score_loss(y_test_bin, y_pred_proba)
 
     eval_metrics = {
         "test_precision": precision,
@@ -425,6 +435,7 @@ def _evaluate_classifier(model, X_test, y_test_bin):
         "specificity": specificity,
         "matthews_corrcoef": matthews_corr,
         "prevalence": prevalence,
+        "brier_score": brier_score,
     }
     return y_pred_bin, y_pred_proba, eval_metrics
 
@@ -565,6 +576,7 @@ class ClassificationReport:
     test_precision: float
     test_recall: float
     confusion_matrix: np.ndarray
+    brier_score: float
     # confusion_matrix_figure: plt.Figure
     # precision_recall_figure: plt.Figure
     # roc_figure: plt.Figure
@@ -587,6 +599,7 @@ class RegressionReport:
     test_regression_mse: float
     test_regression_mae: float
     test_regression_rmse: float
+    test_regression_median_absolute_error: float
     # permutation_score: float
     # permutation_pvalue: float
     # learning_curves_figure: plt.Figure
@@ -617,21 +630,21 @@ class TwoStepHurdleReport:
 
 if __name__ == "__main__":
     multimodal_df = pd.read_pickle(BLD_DATA / "multimodal_complete_df.pkl")
-    # explorative_stage_one_classification(
-    #    multimodal_df,
-    #    view="lipids_only",
-    #    cutoff_quantile=0.25,
-    #    n_inner_cv=2,
-    #    n_outer_cv=2,
-    #    seed=42,
-    #    clf_n_jobs=-2,
-    # )
-    explorative_stage_two_regression(
+    explorative_stage_one_classification(
         multimodal_df,
-        view="prs_only",
+        view="lipids_only",
         cutoff_quantile=0.25,
         n_inner_cv=2,
         n_outer_cv=2,
         seed=42,
-        reg_n_jobs=-2,
+        clf_n_jobs=-2,
     )
+    # explorative_stage_two_regression(
+    #    multimodal_df,
+    #    view="prs_only",
+    #    cutoff_quantile=0.25,
+    #    n_inner_cv=2,
+    #    n_outer_cv=2,
+    #    seed=42,
+    #    reg_n_jobs=-2,
+    # )

@@ -233,9 +233,8 @@ def plot_corr_matrix_lipid_classes(multimodal_df):
 
 def plot_perm_enrichment(
     enrich_df,
-    top_n=12,
+    top_n=16,
     title="Lipid class enrichment (permutation-based)",
-    font_family=None,
 ):
     """
     Dot plot of class enrichment:
@@ -249,16 +248,22 @@ def plot_perm_enrichment(
 
     df = enrich_df.sort_values("FDR").head(top_n).iloc[::-1].copy()  # most sig at top
 
-    # Optional font consistency
-    if font_family:
-        plt.rcParams.update({"font.family": font_family})
-
     # Slightly truncate plasma to avoid very bright top end
     plasma_trunc = LinearSegmentedColormap.from_list(
         "plasma_trunc", plt.cm.plasma(np.linspace(0.0, 0.92, 256))
     )
 
-    sns.set_theme(style="whitegrid")
+    sns.set_theme(
+        style="whitegrid",
+        rc={
+            "font.family": "DejaVu Sans",
+            "axes.titlesize": 16,
+            "axes.labelsize": 14,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+        },
+    )
     fig, ax = plt.subplots(figsize=(8, 5))
 
     # Scatter
@@ -316,6 +321,16 @@ def plot_univariate_prs_regression(prs_results):
     Plot PRS GLM coefficients with 95% CIs.
     Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
     """
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "axes.titlesize": 16,
+            "axes.labelsize": 14,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+        }
+    )
     prs_sorted = prs_results.sort_values("FDR").copy()
     y = np.arange(len(prs_sorted))
 
@@ -462,18 +477,19 @@ def plot_prs_cv_delta_mse(delta_df, title="Out-of-sample error reduction by PRS"
     """
     Horizontal bar plot of ΔMSE% with plasma-edge colors.
     Yellow (#f0f921) = improvement (>0), Purple (#0d0887) = worse (<=0).
-    Error bars match bar colors. Numeric labels are nudged to avoid overlap.
+    Error bars match bar colors. Numeric labels are nudged to avoid overlap."""
 
-    mpl.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "axes.titlesize": 14,
-        "axes.labelsize": 12,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "legend.fontsize": 11,
-    })
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "axes.titlesize": 16,
+            "axes.labelsize": 14,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+        }
+    )
 
-    """
     dd = delta_df.sort_values("delta_mse_pct_mean", ascending=True).copy()
     vals = dd["delta_mse_pct_mean"].to_numpy()
     errs = dd["delta_mse_pct_std"].to_numpy()
