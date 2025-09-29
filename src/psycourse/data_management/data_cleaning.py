@@ -919,7 +919,7 @@ def clean_prs_data(prs_data, bpd_data):
             print(f"Warning: {key} not found in prs_data columns.")
 
     bpd_data = bpd_data.set_index(bpd_data["FID"])
-    clean_prs_df["BPD_PRS"] = bpd_data[
+    clean_prs_df["BD_PRS"] = bpd_data[
         "BIP_OConnell2025_no_psycourse_pst_eff_a1_b0.5_phiauto"
     ].astype(pd.Float64Dtype())
 
