@@ -7,11 +7,13 @@ from matplotlib.colors import LinearSegmentedColormap
 ############# Lipids ###################
 
 
-def plot_univariate_lipid_regression(lipid_results_top20):
+def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df):
     """
     Plot lipid GLM coefficients with 95% CIs.
     Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
     """
+    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    lipid_results_top20 = lipid_results_top20.rename(index=mapping)
     lipid_sorted = lipid_results_top20.sort_values("FDR").copy()
     y = np.arange(len(lipid_sorted))
 
@@ -94,15 +96,22 @@ def plot_univariate_lipid_regression(lipid_results_top20):
     return fig, ax
 
 
-def plot_univariate_lipid_class_regression(lipid_class_results):
+def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotation_df):
     """Plot the lipid classes associated with cluster 5 probability using regression
     coefficients and FDR values.
     Args:
         lipid_class_results (pd.DataFrame): DataFrame containing the associations
          between lipid class with columns 'coef' and 'FDR'.
+        cleaned_annotation_df (pd.DataFrame): DataFrame containing the cleaned
+         lipid annotation data with 'lipid species' column.
     Returns:
         None: Displays a plot of the regression coefficients with FDR as color.
     """
+
+    # Map lipid species to lipid class names for y-axis labels
+    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    lipid_class_results = lipid_class_results.rename(index=mapping)
+
     # Sort by FDR again to fix order
     lipid_class_results_sorted = lipid_class_results.sort_values("FDR")
 
@@ -178,7 +187,9 @@ def plot_univariate_lipid_extremes(top20):
     # plt.show()
 
 
-def plot_corr_matrix_lipid_top20(multimodal_df, top20_results_df):
+def plot_corr_matrix_lipid_top20(
+    multimodal_df, top20_results_df, cleaned_annotation_df
+):
     """Plot a correlation matrix for the top 20 lipids.
 
     Args:
@@ -190,6 +201,8 @@ def plot_corr_matrix_lipid_top20(multimodal_df, top20_results_df):
         None: Displays a correlation matrix plot.
     """
     top20_df = multimodal_df[multimodal_df.columns.intersection(top20_results_df.index)]
+    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    top20_df = top20_df.rename(columns=mapping)
     top20_df_corr_matrix = top20_df.corr()
     plt.figure(figsize=(12, 10))
     sns.heatmap(
@@ -201,32 +214,6 @@ def plot_corr_matrix_lipid_top20(multimodal_df, top20_results_df):
         cbar_kws={"shrink": 0.8},
     )
     plt.title("Correlation Matrix of Top 20 Lipids")
-    plt.tight_layout()
-    # plt.show()
-
-
-def plot_corr_matrix_lipid_classes(multimodal_df):
-    """Plot a correlation matrix for the top 20 lipids.
-
-    Args:
-        multimodal_df (pd.DataFrame): DataFrame containing prs (and more).
-
-    Returns:
-        None: Displays a correlation matrix plot.
-    """
-    lipid_class_columns = [col for col in multimodal_df.columns if col.endswith("mean")]
-    lipid_class_df = multimodal_df[lipid_class_columns]
-    lipid_class_df_corr_matrix = lipid_class_df.corr()
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(
-        lipid_class_df_corr_matrix,
-        annot=True,
-        fmt=".2f",
-        cmap="coolwarm",
-        square=True,
-        cbar_kws={"shrink": 0.8},
-    )
-    plt.title("Correlation Matrix of Lipid Classes")
     plt.tight_layout()
     # plt.show()
 
