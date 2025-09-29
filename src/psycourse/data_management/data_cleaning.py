@@ -870,6 +870,7 @@ def clean_lipidomic_class_label(annotation_data):
     clean_annotation_data["class"] = annotation_data["Lipid class"].astype(
         pd.CategoricalDtype()
     )
+    clean_annotation_data["lipid_species"] = annotation_data["Lipid species"]
 
     return clean_annotation_data
 

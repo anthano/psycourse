@@ -3,12 +3,10 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.plots.univariate_plots import (
-    plot_corr_matrix_lipid_classes,
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
     plot_perm_enrichment,
     plot_prs_cv_delta_mse,
-    plot_univariate_lipid_class_regression,
     plot_univariate_lipid_extremes,
     plot_univariate_lipid_regression,
     plot_univariate_prs_extremes,
@@ -21,30 +19,16 @@ from psycourse.plots.univariate_plots import (
 def task_plot_univariate_lipid_regression(
     script_path=SRC / "plots" / "univariate_plots.py",
     top20_lipids_path=BLD_RESULTS / "univariate_lipid_results_top20.pkl",
+    annotation_df_path=BLD_DATA / "cleaned_lipid_class_data.pkl",
     produces=BLD_RESULTS / "plots" / "univariate_lipid_regression_plot.svg",
 ):
     """Plot the top 20 lipids associated with cluster 5 probability
     using regression coefficients and FDR values."""
 
     lipid_top20 = pd.read_pickle(top20_lipids_path)
-    fig, ax = plot_univariate_lipid_regression(lipid_top20)
+    cleaned_annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_top20, cleaned_annotation_df)
     plt.savefig(produces, bbox_inches="tight")
-
-
-def task_plot_univariate_lipid_class_regression(
-    script_path=SRC / "plots" / "univariate_plots.py",
-    lipid_class_results=BLD_RESULTS / "univariate_lipid_class_results.pkl",
-    produces=BLD_RESULTS / "plots" / "univariate_lipid_class_regression_plot.svg",
-):
-    """Plot the top 20 lipids associated with cluster 5 probability
-    using regression coefficients and FDR values."""
-
-    lipid_class_results = pd.read_pickle(lipid_class_results)
-    plot_univariate_lipid_class_regression(lipid_class_results)
-
-    # Save the plot
-    plt.savefig(produces, bbox_inches="tight")
-    plt.close()
 
 
 def task_plot_univariate_lipid_extremes(
@@ -103,30 +87,15 @@ def task_plot_corr_matrix_lipid_top20(
     script_path=SRC / "plots" / "univariate_plots.py",
     multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
     top20_lipids_path=BLD_RESULTS / "univariate_lipid_results_top20.pkl",
+    annotation_df=BLD_DATA / "cleaned_lipid_class_data.pkl",
     produces=BLD_RESULTS / "plots" / "lipid_corr_matrix_top20.svg",
 ):
     """Plot the correlation matrix of the top 20 lipids."""
 
     multimodal_df = pd.read_pickle(multimodal_data_path)
     lipid_top20 = pd.read_pickle(top20_lipids_path)
-    plot_corr_matrix_lipid_top20(multimodal_df, lipid_top20)
-
-    # Save the plot
-    plt.savefig(produces, bbox_inches="tight")
-    plt.close()
-
-
-def task_plot_corr_matrix_lipid_class(
-    script_path=SRC / "plots" / "univariate_plots.py",
-    multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
-    lipid_class_results_path=BLD_RESULTS / "univariate_lipid_class_results.pkl",
-    produces=BLD_RESULTS / "plots" / "lipid_class_corr_matrix.svg",
-):
-    """Plot the correlation matrix of the lipid classes."""
-
-    multimodal_df = pd.read_pickle(multimodal_data_path)
-    plot_corr_matrix_lipid_classes(multimodal_df)
-
+    annotation_df = pd.read_pickle(annotation_df)
+    plot_corr_matrix_lipid_top20(multimodal_df, lipid_top20, annotation_df)
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")
     plt.close()
