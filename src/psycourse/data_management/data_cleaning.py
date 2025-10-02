@@ -910,8 +910,8 @@ def clean_prs_data(prs_data, bpd_data):
         "mdd_adams2025_pst_eff_a1_b0.5_phiauto": "MDD_PRS",
         "neuroticism_Gupta2024_pst_eff_a1_b0.5_phiauto": "Neuroticism_PRS",
         "openness_Gupta2024_pst_eff_a1_b0.5_phiauto": "Openness_PRS",
-        "sleep_disturbance_long_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDisturbanceLong_PRS",  # noqa: E501
-        "sleep_disturbance_short_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDisturbanceShort_PRS",  # noqa: E501
+        "sleep_disturbance_long_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDurationLong_PRS",  # noqa: E501
+        "sleep_disturbance_short_austinzimmerman2023_pst_eff_a1_b0.5_phiauto": "SleepDurationShort_PRS",  # noqa: E501
     }
     for key, value in prs_renaming_dict.items():
         if key in prs_data.columns:
