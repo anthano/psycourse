@@ -267,6 +267,9 @@ def svm_model(clean_dataset_for_classifier):
     )
     full_df["true_label"] = y
     full_df["predicted_label"] = preds_full
+    full_df["predicted_label"] = full_df["predicted_label"].astype(
+        pd.CategoricalDtype()
+    )
     print(full_df.head())
 
     return final_model, full_df

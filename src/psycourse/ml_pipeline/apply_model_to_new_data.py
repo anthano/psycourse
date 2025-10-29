@@ -30,6 +30,8 @@ def apply_model_to_new_data(model, new_data):
 
     # Add the predicted labels to the DataFrame
     prob_df["predicted_label"] = labels
-    print(prob_df)
+    prob_df["predicted_label"] = prob_df["predicted_label"].astype(
+        pd.CategoricalDtype()
+    )
 
     return prob_df
