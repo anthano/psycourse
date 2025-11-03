@@ -77,3 +77,68 @@ def univariate_prs_ancova(multimodal_df):
     out["log10_FDR"] = -np.log10(np.clip(out["FDR"], np.finfo(float).tiny, None))
     out = out.sort_values("FDR")
     return out
+
+
+# ======================================================================================
+# LIPIDS
+# ======================================================================================
+
+
+def univariate_lipids_ancova(multimodal_df):
+    """
+    Univariate Lipids ANCOVA with binarized predicted labels (G5 vs. others).
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing lipid measures,
+        predicted labels, and covariates.
+
+    Returns:
+        pd.DataFrame: ANCOVA results for each lipid measure with coefficients,
+        standard errors, confidence intervals, p-values, and FDR-corrected p-values.
+    """
+    df = multimodal_df.copy()
+    df["binarized_label"] = (multimodal_df["predicted_label"] == 5).astype(int)
+    lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
+    covars = [
+        "age",
+        "sex",
+        "bmi",
+        "duration_illness",
+        "smoker",
+    ]
+
+    rows = []
+    for lipid in lipid_columns:
+        subset_cols = [lipid, "binarized_label"] + covars
+        sub = df[subset_cols].dropna()
+        # lipid ~ G5 + covariates
+        formula = (
+            f"{lipid} ~ binarized_label + age + C(sex) + bmi + "
+            "duration_illness + C(smoker)"
+        )
+        # OLS with HC3 robust covariance (matches your previous workflow)
+        fit = smf.ols(formula=formula, data=sub).fit(cov_type="HC3")
+        beta = fit.params.get("binarized_label", np.nan)
+        se = fit.bse.get("binarized_label", np.nan)
+        pval = fit.pvalues.get("binarized_label", np.nan)
+        ci_l, ci_u = fit.conf_int().loc["binarized_label"].tolist()
+        rows.append(
+            {
+                "lipid": lipid,
+                "N": len(sub),
+                "coef": beta,
+                "se": se,
+                "ci_low": ci_l,
+                "ci_high": ci_u,
+                "pval": pval,
+            }
+        )
+    out = pd.DataFrame(rows).set_index("lipid")
+    out["FDR"] = multipletests(out["pval"].fillna(1.0), method="fdr_bh")[1]
+    out["log10_FDR"] = -np.log10(np.clip(out["FDR"], np.finfo(float).tiny, None))
+    out = out.sort_values("FDR")
+
+    top20 = out.nsmallest(20, "FDR")
+    top20["log10_FDR"] = -np.log10(np.clip(top20["FDR"], np.finfo(float).tiny, None))
+
+    return out, top20
