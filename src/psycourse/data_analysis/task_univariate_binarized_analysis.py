@@ -6,9 +6,7 @@ from psycourse.data_analysis.univariate_binarized_analysis import (
     univariate_prs_ancova,
 )
 
-UNIVARIATE_BINARIZED_ANALYSIS_DIR = (
-    BLD_RESULTS / "results" / "univariate" / "binarized_analysis"
-)
+UNIVARIATE_BINARIZED_ANALYSIS_DIR = BLD_RESULTS / "univariate" / "binarized_analysis"
 
 # ======================================================================================
 # PRS
