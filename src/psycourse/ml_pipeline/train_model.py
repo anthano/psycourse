@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -149,34 +148,35 @@ def svm_model(clean_dataset_for_classifier):
     )
 
     # Compute mean and standard deviation for training and validation scores
-    train_scores_mean = np.mean(train_scores, axis=1)
-    train_scores_std = np.std(train_scores, axis=1)
-    valid_scores_mean = np.mean(valid_scores, axis=1)
-    valid_scores_std = np.std(valid_scores, axis=1)
+    # train_scores_mean = np.mean(train_scores, axis=1)
+    # train_scores_std = np.std(train_scores, axis=1)
+    # valid_scores_mean = np.mean(valid_scores, axis=1)
+    # valid_scores_std = np.std(valid_scores, axis=1)
 
     # Plot learning curves
-    plt.figure(figsize=(8, 6))
-    plt.fill_between(
-        train_sizes,
-        train_scores_mean - train_scores_std,
-        train_scores_mean + train_scores_std,
-        alpha=0.1,
-        color="r",
-    )
-    plt.fill_between(
-        train_sizes,
-        valid_scores_mean - valid_scores_std,
-        valid_scores_mean + valid_scores_std,
-        alpha=0.1,
-        color="g",
-    )
-    plt.plot(train_sizes, train_scores_mean, "o-", color="r", label="Training score")
-    plt.plot(train_sizes, valid_scores_mean, "o-", color="g", label="Validation score")
-    plt.xlabel("Number of Training Examples")
-    plt.ylabel("Balanced Accuracy")
-    plt.title("Learning Curve")
-    plt.legend(loc="best")
-    # plt.show()
+    # plt.figure(figsize=(8, 6))
+    # plt.fill_between(
+    #    train_sizes,
+    #    train_scores_mean - train_scores_std,
+    #    train_scores_mean + train_scores_std,
+    #    alpha=0.1,
+    #    color="r",
+    # )
+    # plt.fill_between(
+    #    train_sizes,
+    #    valid_scores_mean - valid_scores_std,
+    #    valid_scores_mean + valid_scores_std,
+    #    alpha=0.1,
+    #    color="g",
+    # )
+    # plt.plot(train_sizes, train_scores_mean, "o-", color="r", label="Training score")
+    # plt.plot(train_sizes, valid_scores_mean, "o-", color="g", label="Validationscore")
+    # plt.xlabel("Number of Training Examples")
+    # plt.ylabel("Balanced Accuracy")
+    # plt.title("Learning Curve")
+    # plt.legend(loc="best")
+    ## plt.show()
+    # plt.close()
 
     # Obtain predicted probabilities for each class
     y_score = best_model.predict_proba(X_test)
@@ -198,25 +198,25 @@ def svm_model(clean_dataset_for_classifier):
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Plot ROC curves for each class
-    plt.figure(figsize=(8, 6))
-    colors = ["blue", "red", "green", "orange", "purple"]
-    for i in range(n_classes):
-        plt.plot(
-            fpr[i],
-            tpr[i],
-            color=colors[i],
-            lw=2,
-            label="Class {0} (AUC = {1:0.2f})".format(classes[i], roc_auc[i]),
-        )
-
-    plt.plot([0, 1], [0, 1], "k--", lw=2)
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curves for Each Class")
-    plt.legend(loc="lower right")
-    plt.show()
+    # plt.figure(figsize=(8, 6))
+    # colors = ["blue", "red", "green", "orange", "purple"]
+    # for i in range(n_classes):
+    #    plt.plot(
+    #        fpr[i],
+    #        tpr[i],
+    #        color=colors[i],
+    #        lw=2,
+    #        label="Class {0} (AUC = {1:0.2f})".format(classes[i], roc_auc[i]),
+    #    )
+    # plt.plot([0, 1], [0, 1], "k--", lw=2)
+    # plt.xlim([0.0, 1.0])
+    # plt.ylim([0.0, 1.05])
+    # plt.xlabel("False Positive Rate")
+    # plt.ylabel("True Positive Rate")
+    # plt.title("ROC Curves for Each Class")
+    # plt.legend(loc="lower right")
+    # plt.show()
+    # plt.close()
 
     # Compute and display the confusion matrix
     y_pred = best_model.predict(X_test)
