@@ -487,7 +487,7 @@ def lipid_class_enrichment_perm(
             continue
 
         # observed enrichment score (mean rank difference)
-        obs_es = merged.loc[mask, "rank"].mean() - merged.loc[~mask, "rank"].mean()
+        obs_es = merged.loc[~mask, "rank"].mean() - merged.loc[mask, "rank"].mean()
 
         # permutation null distribution
         null_es = []
