@@ -2,11 +2,9 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
-    lipid_class_enrichment_perm,
     prs_cv_delta_mse,
     univariate_lipid_regression,
     univariate_lipid_regression_cov_diag,
-    univariate_lipids_ancova,
     univariate_prs_ancova,
     univariate_prs_regression,
     univariate_prs_regression_cov_diag,
@@ -114,69 +112,6 @@ def task_univariate_lipid_regression(
     top20_lipids, univariate_lipid_results = univariate_lipid_regression(data)
     top20_lipids.to_pickle(produces["top20_lipids"])
     univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
-
-
-def task_lipid_class_enrichment_perm(
-    script_path=SRC / "data_analysis" / "univariate_analysis.py",
-    lipid_results=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "univariate_lipid_results.pkl",
-    lipid_class_df=BLD_DATA / "cleaned_lipid_class_data.pkl",
-    produces=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipid_class_enrichment_perm_results.pkl",
-):
-    """Perform lipid class enrichment analysis with permutation testing."""
-
-    lipid_results = pd.read_pickle(lipid_results)
-    lipid_class_df = pd.read_pickle(lipid_class_df)
-    lipid_class_enrichment_results = lipid_class_enrichment_perm(
-        lipid_results, lipid_class_df
-    )
-    lipid_class_enrichment_results.to_pickle(produces)
-
-
-task_univariate_lipid_ancova_produces = {
-    "lipids_ancova_results[50]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_50.pkl",
-    "lipids_ancova_results[100]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_100.pkl",
-    "lipids_ancova_results[120]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_120.pkl",
-    "lipids_ancova_results_top20[50]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_50_top20.pkl",
-    "lipids_ancova_results_top20[100]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_100_top20.pkl",
-    "lipids_ancova_results_top20[120]": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipids_extremes_ancova_results_120_top20.pkl",
-}
-
-
-def task_univariate_lipid_ancova(
-    script_path=SRC / "data_analysis" / "univariate_analysis.py",
-    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
-    produces=task_univariate_lipid_ancova_produces,
-):
-    """Perform ANCOVA on PRS data focussing on extreme cases."""
-
-    data = pd.read_pickle(multimodal_df_path)
-    lipids_extremes_ancova_results, lipids_extremes_ancova_results_top20 = (
-        univariate_lipids_ancova(data)
-    )
-    lipids_extremes_ancova_results[50].to_pickle(produces["lipids_ancova_results[50]"])
-    lipids_extremes_ancova_results[100].to_pickle(
-        produces["lipids_ancova_results[100]"]
-    )
-    lipids_extremes_ancova_results[120].to_pickle(
-        produces["lipids_ancova_results[120]"]
-    )
-    lipids_extremes_ancova_results_top20[50].to_pickle(
-        produces["lipids_ancova_results_top20[50]"]
-    )
-    lipids_extremes_ancova_results_top20[100].to_pickle(
-        produces["lipids_ancova_results_top20[100]"]
-    )
-    lipids_extremes_ancova_results_top20[120].to_pickle(
-        produces["lipids_ancova_results_top20[120]"]
-    )
 
 
 ### Covariate Diagnosis added to Univariate Lipid Regression ###
