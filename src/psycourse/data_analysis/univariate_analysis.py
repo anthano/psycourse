@@ -278,7 +278,7 @@ def univariate_lipid_regression(multimodal_df):
             "duration_illness + C(smoker)"
         )
 
-        model = smf.glm(formula, data=subset)
+        model = smf.ols(formula, data=subset)
         result = model.fit(cov_type="HC3")  # adjust for heteroscedasticity
         coef = result.params.get(lipid, np.nan)
         se = result.bse.get(lipid, np.nan)
@@ -313,7 +313,8 @@ def univariate_lipid_regression(multimodal_df):
 def univariate_lipid_regression_cov_diag(multimodal_df):
     """
     Perform univariate regression analysis for lipid intensity values against
-    the probability of class 5. This function iterates through all lipid columns in the
+    the probability of class 5 with an added covariate diagnoses.
+    This function iterates through all lipid columns in the
     provided multimodal DataFrame, fits a GLM model for each, and returns a DataFrame
     with coefficients, p-values, and FDR-corrected p-values.
 
@@ -329,21 +330,51 @@ def univariate_lipid_regression_cov_diag(multimodal_df):
     lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
     records = []
     for lipid in lipid_columns:
-        subset = multimodal_df[[lipid, "prob_class_5", "age", "sex", "bmi"]].dropna()
+        subset = multimodal_df[
+            [
+                lipid,
+                "prob_class_5",
+                "age",
+                "sex",
+                "bmi",
+                "duration_illness",
+                "smoker",
+                "diagnosis_sum",
+            ]
+        ].dropna()
 
-        formula = f"prob_class_5 ~ {lipid} + age + C(sex) + bmi"
-        model = smf.glm(formula, data=subset).fit()
-        coef = model.params.get(lipid, np.nan)
-        pval = model.pvalues.get(lipid, np.nan)
+        formula = (
+            f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + "
+            "duration_illness + C(smoker) + C(diagnosis_sum)"
+        )
 
-        records.append({"lipid": lipid, "coef": coef, "pval": pval})
+        model = smf.ols(formula, data=subset)
+        result = model.fit(cov_type="HC3")  # adjust for heteroscedasticity
+        coef = result.params.get(lipid, np.nan)
+        se = result.bse.get(lipid, np.nan)
+        pval = result.pvalues.get(lipid, np.nan)
 
-    results_df_cov_diag = pd.DataFrame(records).set_index("lipid")
-    results_df_cov_diag["FDR"] = multipletests(
-        results_df_cov_diag["pval"], method="fdr_bh"
-    )[1]
-    results_df_cov_diag["log10_FDR"] = -np.log10(results_df_cov_diag["FDR"])
+        # 95% CI (respects robust covariance)
+        ci_low, ci_high = result.conf_int().loc[lipid].tolist()
 
-    top20_cov_diag = results_df_cov_diag.nsmallest(20, "FDR")
+        records.append(
+            {
+                "lipid": lipid,
+                "coef": coef,
+                "pval": pval,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+            }
+        )
 
-    return top20_cov_diag, results_df_cov_diag
+    results_df = pd.DataFrame(records).set_index("lipid")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+
+    top20 = results_df.nsmallest(20, "FDR")
+    results_df["log10_FDR"] = -np.log10(
+        np.clip(results_df["FDR"], np.finfo(float).tiny, None)
+    )
+
+    return top20, results_df

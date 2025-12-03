@@ -5,7 +5,6 @@ from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
-    plot_perm_enrichment,
     plot_prs_cv_delta_mse,
     plot_univariate_lipid_regression,
     plot_univariate_prs_regression,
@@ -102,21 +101,6 @@ def task_plot_prs_cv_delta_mse(
 
     delta_df = pd.read_pickle(delta_df_path)
     fig, ax = plot_prs_cv_delta_mse(delta_df)
-
-    # Save the plot
-    plt.savefig(produces, bbox_inches="tight")
-
-
-def task_plot_perm_enrichment(
-    script_path=SRC / "plots" / "univariate_plots.py",
-    enrich_df_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "lipid_class_enrichment_perm_results.pkl",
-    produces=BLD_PLOTS_DIR / "lipid_class_enrichment_perm_plot.svg",
-):
-    """Plot the lipid class enrichment results with permutation testing."""
-
-    enrich_df = pd.read_pickle(enrich_df_path)
-    fig, ax = plot_perm_enrichment(enrich_df)
 
     # Save the plot
     plt.savefig(produces, bbox_inches="tight")
