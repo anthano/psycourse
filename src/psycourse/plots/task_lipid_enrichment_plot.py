@@ -3,12 +3,13 @@ from typing import Annotated
 
 import pandas as pd
 import pytask
-from pytask import task
 
 from psycourse.config import BLD_RESULTS
-from psycourse.plots.lipid_enrichment_plot import enrichment_strength_plot
+from psycourse.plots.lipid_enrichment_plot import (
+    enrichment_strength_plot,
+)
 
-LIPID_ENRICHMENT_INPUTS = {
+LIPID_ENRICHMENT_PATHS = {
     "default": {
         "enrichment_results": BLD_RESULTS
         / "univariate"
@@ -28,14 +29,21 @@ LIPID_ENRICHMENT_INPUTS = {
 }
 
 
-for variant, paths in LIPID_ENRICHMENT_INPUTS.items():
+for variant, paths in LIPID_ENRICHMENT_PATHS.items():
 
-    @task(id=f"lipid_enrichment_{variant}")
+    @pytask.task(
+        id=variant,
+        kwargs={
+            "variant": variant,
+            "enrichment_results_df_path": paths["enrichment_results"],
+            "produces": paths["produces"],
+        },
+    )
     def task_lipid_enrichment_strength_plot(
-        enrichment_results_df_path=paths["enrichment_results"],
-        produces: Annotated[Path, pytask.Product] = paths["produces"],
+        enrichment_results_df_path: Path,
+        produces: Annotated[Path, pytask.Product],
+        variant: str,
     ):
         results_df = pd.read_pickle(enrichment_results_df_path)
-
-        plot_fig, plot_ax = enrichment_strength_plot(results_df, variant=variant)  # noqa:B023
+        plot_fig, _ = enrichment_strength_plot(results_df, variant=variant)
         plot_fig.savefig(produces)
