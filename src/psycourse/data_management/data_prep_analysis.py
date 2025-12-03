@@ -34,6 +34,7 @@ def merge_multimodal_complete_df(
     multimodal_df["duration_illness"] = phenotypic_data["duration_illness"]
     multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
     multimodal_df["diagnosis"] = phenotypic_data["diagnosis"]
+    multimodal_df["diagnosis_sum"] = phenotypic_data["diagnosis_sum"]
 
     multimodal_df = multimodal_df.join(cluster_probabilities_full, how="left")
 
