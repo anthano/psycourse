@@ -896,7 +896,7 @@ def clean_cluster_labels(labels_df):
 ########################################################################################
 
 
-def clean_prs_data(prs_data, bpd_data):
+def clean_prs_data(prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd_data):
     prs_data = prs_data.set_index(prs_data["FID"])
     clean_prs_df = pd.DataFrame(index=(prs_data["FID"]).rename("gsa_id"))
     prs_renaming_dict = {
@@ -924,6 +924,21 @@ def clean_prs_data(prs_data, bpd_data):
     clean_prs_df["BD_PRS"] = bpd_data[
         "BIP_OConnell2025_no_psycourse_pst_eff_a1_b0.5_phiauto"
     ].astype(pd.Float64Dtype())
+
+    lipid_bpd_data = lipid_bpd_data.set_index(lipid_bpd_data["FID"])
+    clean_prs_df["Lipid_BD_PRS"] = lipid_bpd_data[
+        "BIP_OConnell2025_no_psycourse_pst_eff_a1_b0.5_phiauto"
+    ].astype(pd.Float64Dtype())
+
+    lipid_scz_data = lipid_scz_data.set_index(lipid_scz_data["FID"])
+    clean_prs_df["Lipid_SCZ_PRS"] = lipid_scz_data[
+        "SCZ_core_Trubetskoy2022_pst_eff_a1_b0.5_phiauto"
+    ].astype(pd.Float64Dtype())
+
+    lipid_mdd_data = lipid_mdd_data.set_index(lipid_mdd_data["FID"])
+    clean_prs_df["Lipid_MDD_PRS"] = lipid_mdd_data[
+        "mdd_adams2025_pst_eff_a1_b0.5_phiauto"
+    ]
 
     return clean_prs_df
 
