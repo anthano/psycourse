@@ -65,6 +65,15 @@ def task_clean_cluster_labels_data(
 prs_data_paths = {
     "prs_data": DATA_DIR / "prs" / "final_diagnosed_only_2025-06-12_prs_collection.tsv",
     "bpd_data": DATA_DIR / "prs" / "final_bpd_2025-07-02_prs_collection.tsv",
+    "lipid_bpd_data": DATA_DIR
+    / "lipid_prs"
+    / "lipids_bpd_prs_2025-12-15_prs_collection.tsv",
+    "lipid_scz_data": DATA_DIR
+    / "lipid_prs"
+    / "lipids_scz_prs_2025-12-15_prs_collection.tsv",
+    "lipid_mdd_data": DATA_DIR
+    / "lipid_prs"
+    / "lipids_mdd_prs_2025-12-16_prs_collection.tsv",
 }
 
 
@@ -77,7 +86,12 @@ def task_clean_prs_data(
 
     prs_data = pd.read_csv(prs_data_paths["prs_data"], sep="\t")
     bpd_data = pd.read_csv(prs_data_paths["bpd_data"], sep="\t")
-    cleaned_prs_data = clean_prs_data(prs_data, bpd_data)
+    lipid_bpd_data = pd.read_csv(prs_data_paths["lipid_bpd_data"], sep="\t")
+    lipid_scz_data = pd.read_csv(prs_data_paths["lipid_scz_data"], sep="\t")
+    lipid_mdd_data = pd.read_csv(prs_data_paths["lipid_mdd_data"], sep="\t")
+    cleaned_prs_data = clean_prs_data(
+        prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd_data
+    )
     cleaned_prs_data.to_pickle(produces)
 
 
