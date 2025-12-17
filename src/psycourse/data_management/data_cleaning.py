@@ -216,6 +216,13 @@ def clean_phenotypic_data(df):
     clean_df["med_compliance_6_months"] = df["v1_med_pst_sx_mths"].astype(
         pd.Float32Dtype()
     )
+    clean_df["antidepressants_count"] = df["v1_Antidepressants"].astype(pd.Int8Dtype())
+    clean_df["antipsychotics_count"] = df["v1_Antipsychotics"].astype(pd.Int8Dtype())
+    clean_df["mood_stabilizers_count"] = df["v1_Mood_stabilizers"].astype(
+        pd.Int8Dtype()
+    )
+    clean_df["tranquilizers_count"] = df["v1_Tranquilizers"].astype(pd.Int8Dtype())
+    clean_df["other_psy_med_count"] = df["v1_Other_psychiatric"].astype(pd.Int8Dtype())
 
     for i in (1, 15):
         clean_df[f"whoqol_{i}"] = df[f"v1_whoqol_itm{i}"].astype(pd.Float32Dtype())
