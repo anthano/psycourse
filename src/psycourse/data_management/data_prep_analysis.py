@@ -35,6 +35,11 @@ def merge_multimodal_complete_df(
     multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
     multimodal_df["diagnosis"] = phenotypic_data["diagnosis"]
     multimodal_df["diagnosis_sum"] = phenotypic_data["diagnosis_sum"]
+    multimodal_df["antidepressants_count"] = phenotypic_data["antidepressants_count"]
+    multimodal_df["antipsychotics_count"] = phenotypic_data["antipsychotics_count"]
+    multimodal_df["mood_stabilizers_count"] = phenotypic_data["mood_stabilizers_count"]
+    multimodal_df["tranquilizers_count"] = phenotypic_data["tranquilizers_count"]
+    multimodal_df["other_psy_med_count"] = phenotypic_data["other_psy_med_count"]
 
     multimodal_df = multimodal_df.join(cluster_probabilities_full, how="left")
 
