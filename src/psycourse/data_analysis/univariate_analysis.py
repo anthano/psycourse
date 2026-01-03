@@ -6,7 +6,12 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 from statsmodels.stats.multitest import multipletests
 
-############## PRS ################
+########################################################################################
+# PRS
+########################################################################################
+
+# PRS standard covs = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+# PRS sensitivity = ["bmi"], ["diagnosis"]
 
 
 def univariate_prs_regression(multimodal_df):
@@ -14,9 +19,15 @@ def univariate_prs_regression(multimodal_df):
     Univariate GLMs of prob_class_5 on each PRS, adjusted for covariates.
     Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
     Uses HC3 robust covariance (with a safe fallback for older statsmodels).
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
+    Returns:
+        df (pd.DataFrame): pd.DataFrame with results for every PRS.
+        n_subset_dict (dict): contains the n numbers per PRS.
     """
     prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
     rows = []
+    n_subset_dict = {}
 
     for prs in prs_columns:
         cols = [
@@ -24,24 +35,18 @@ def univariate_prs_regression(multimodal_df):
             "prob_class_5",
             "age",
             "sex",
-            "bmi",
-            "diagnosis",
             "pc1",
             "pc2",
             "pc3",
             "pc4",
             "pc5",
-            "pc6",
-            "pc7",
-            "pc8",
-            "pc9",
-            "pc10",
         ]
         subset = multimodal_df[cols].dropna()
+        n_subset = len(subset)
+        n_subset_dict[prs] = n_subset
 
         formula = (
-            f"prob_class_5 ~ {prs} + age + C(sex) + bmi  + "
-            "pc1 + pc2 + pc3 + pc4 + pc5 + pc6 + pc7 + pc8 + pc9 + pc10"
+            f"prob_class_5 ~ {prs} + age + C(sex)  + " "pc1 + pc2 + pc3 + pc4 + pc5"
         )
 
         model = smf.glm(formula=formula, data=subset)
@@ -70,45 +75,141 @@ def univariate_prs_regression(multimodal_df):
     df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
     df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
     df = df.sort_values(by="FDR")
-    return df
+    return df, n_subset_dict
 
 
-def univariate_prs_regression_cov_diag(multimodal_df):
+def univariate_prs_regression_cov_bmi(multimodal_df):
     """
-    Perform univariate regression analysis for PRS (Polygenic Risk Scores) against
-    the probability of class 5 WITH diagnosis as an added covariate.
-    This function iterates through all PRS columns in the provided multimodal DataFrame,
-    fits a GLM model for each, and returns a DataFrame with coefficients, p-values,
-    and FDR-corrected p-values.
-
+    Univariate GLMs of prob_class_5 on each PRS, adjusted for covariates
+    - added bmi for sensitivity.
+    Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
+    Uses HC3 robust covariance (with a safe fallback for older statsmodels).
     Args:
-        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+        multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
     Returns:
-        pd.DataFrame: DataFrame with PRS names as index, coefficients, p-values,
-        and FDR-corrected p-values.
+        df (pd.DataFrame): pd.DataFrame with results for every PRS.
+        n_subset_dict (dict): contains the n numbers per PRS.
     """
-
     prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    rows = []
+    n_subset_dict = {}
 
-    prs_records = []
     for prs in prs_columns:
-        subset = multimodal_df[
-            [prs, "prob_class_5", "age", "sex", "bmi", "diagnosis"]
-        ].dropna()
+        cols = [
+            prs,
+            "prob_class_5",
+            "age",
+            "sex",
+            "bmi",
+            "pc1",
+            "pc2",
+            "pc3",
+            "pc4",
+            "pc5",
+        ]
+        subset = multimodal_df[cols].dropna()
+        n_subset = len(subset)
+        n_subset_dict[prs] = n_subset
 
-        formula = f"prob_class_5 ~ {prs} + age + C(sex) + bmi + C(diagnosis)"
-        model = smf.glm(formula, data=subset).fit()
-        coef = model.params.get(prs, np.nan)
-        pval = model.pvalues.get(prs, np.nan)
-        prs_records.append({"prs": prs, "coef": coef, "pval": pval})
+        formula = (
+            f"prob_class_5 ~ {prs} + age + C(sex) + bmi  + "
+            "pc1 + pc2 + pc3 + pc4 + pc5"
+        )
 
-    results_df_cov_diag = pd.DataFrame(prs_records).set_index("prs")
-    results_df_cov_diag["FDR"] = multipletests(
-        results_df_cov_diag["pval"], method="fdr_bh"
-    )[1]
-    results_df_cov_diag["log10_FDR"] = -np.log10(results_df_cov_diag["FDR"])
+        model = smf.glm(formula=formula, data=subset)
 
-    return results_df_cov_diag
+        result = model.fit(cov_type="HC3")  # correct for heteroscedasticity
+
+        coef = result.params.get(prs, np.nan)
+        se = result.bse.get(prs, np.nan)
+        pval = result.pvalues.get(prs, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_lower, ci_upper = result.conf_int().loc[prs].tolist()
+
+        rows.append(
+            {
+                "prs": prs,
+                "coef": coef,
+                "se": se,
+                "ci_low": ci_lower,
+                "ci_high": ci_upper,
+                "pval": pval,
+            }
+        )
+
+    df = pd.DataFrame(rows).set_index("prs")
+    df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
+    df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
+    df = df.sort_values(by="FDR")
+    return df, n_subset_dict
+
+
+def univariate_prs_regression_cov_diagnosis(multimodal_df):
+    """
+    Univariate GLMs of prob_class_5 on each PRS, adjusted for covariates
+    - added bmi for sensitivity.
+    Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
+    Uses HC3 robust covariance (with a safe fallback for older statsmodels).
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
+    Returns:
+        df (pd.DataFrame): pd.DataFrame with results for every PRS.
+        n_subset_dict (dict): contains the n numbers per PRS.
+    """
+    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    rows = []
+    n_subset_dict = {}
+
+    for prs in prs_columns:
+        cols = [
+            prs,
+            "prob_class_5",
+            "age",
+            "sex",
+            "diagnosis",
+            "pc1",
+            "pc2",
+            "pc3",
+            "pc4",
+            "pc5",
+        ]
+        subset = multimodal_df[cols].dropna()
+        n_subset = len(subset)
+        n_subset_dict[prs] = n_subset
+
+        formula = (
+            f"prob_class_5 ~ {prs} + age + C(sex) + C(diagnosis)  + "
+            "pc1 + pc2 + pc3 + pc4 + pc5"
+        )
+
+        model = smf.glm(formula=formula, data=subset)
+
+        result = model.fit(cov_type="HC3")  # correct for heteroscedasticity
+
+        coef = result.params.get(prs, np.nan)
+        se = result.bse.get(prs, np.nan)
+        pval = result.pvalues.get(prs, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_lower, ci_upper = result.conf_int().loc[prs].tolist()
+
+        rows.append(
+            {
+                "prs": prs,
+                "coef": coef,
+                "se": se,
+                "ci_low": ci_lower,
+                "ci_high": ci_upper,
+                "pval": pval,
+            }
+        )
+
+    df = pd.DataFrame(rows).set_index("prs")
+    df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
+    df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
+    df = df.sort_values(by="FDR")
+    return df, n_subset_dict
 
 
 def prs_cv_delta_mse(multimodal_df, n_splits=5, random_state=42):
