@@ -10,30 +10,30 @@ from psycourse.data_analysis.lipid_permutation_analysis import (
     lipid_class_enrichment_gsea,
 )
 
+REGRESSION_RESULTS_PATH = BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
+
 LIPID_ENRICHMENT_INPUTS = {
     "default": {
-        "regression_results_df_path": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
         / "univariate_lipid_results.pkl",
-        "produces": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "lipid_enrichment_results.pkl",
+        "produces": REGRESSION_RESULTS_PATH / "lipid_enrichment_results.pkl",
     },
-    "cov_diag": {
-        "regression_results_df_path": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "univariate_lipid_results_cov_diag.pkl",
-        "produces": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "lipid_enrichment_results_cov_diag.pkl",
+    "cov_diagnosis": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "univariate_lipid_results_cov_diagnosis.pkl",
+        "produces": REGRESSION_RESULTS_PATH
+        / "lipid_enrichment_results_cov_diagnosis.pkl",
+    },
+    "cov_med": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "univariate_lipid_results_cov_med.pkl",
+        "produces": REGRESSION_RESULTS_PATH / "lipid_enrichment_results_cov_med.pkl",
+    },
+    "cov_med_and_diag": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "univariate_lipid_results_cov_med_and_diag.pkl",
+        "produces": REGRESSION_RESULTS_PATH
+        / "lipid_enrichment_results_cov_med_and_diag.pkl",
     },
 }
 

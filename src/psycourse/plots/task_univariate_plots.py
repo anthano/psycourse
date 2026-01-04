@@ -1,5 +1,9 @@
+from pathlib import Path
+from typing import Annotated
+
 import matplotlib.pyplot as plt
 import pandas as pd
+from pytask import Product, task
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.plots.univariate_plots import (
@@ -41,20 +45,26 @@ def task_plot_univariate_lipid_regression(
 ########################################################################################
 # PRS
 ########################################################################################
-def task_plot_univariate_prs_regression(
-    script_path=SRC / "plots" / "univariate_plots.py",
-    prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "univariate_prs_results.pkl",
-    produces=BLD_PLOTS_DIR / "univariate_prs_regression_plot.svg",
-):
-    """Plot the prs associated with cluster 5 probability
-    using regression coefficients and FDR values."""
 
-    prs_results = pd.read_pickle(prs_results_path)
-    fig, ax = plot_univariate_prs_regression(prs_results)
 
-    # Save the plot
-    plt.savefig(produces, bbox_inches="tight")
+FILES = {
+    "standard_cov": "univariate_prs_results_standard_cov.pkl",
+    "cov_bmi": "univariate_prs_results_cov_bmi.pkl",
+    "cov_diagnosis": "univariate_prs_results_cov_diagnosis.pkl",
+}
+
+for name, input_file in FILES.items():
+    input_path = UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR / input_file
+    output_path = BLD_PLOTS_DIR / f"univariate_prs_regression_plot_{name}.png"
+
+    @task(id=name, kwargs={"prs_results_path": input_path, "produces": output_path})
+    def task_plot_univariate_prs_regression(
+        prs_results_path: Path,
+        produces: Annotated[Path, Product],
+    ):
+        prs_results = pd.read_pickle(prs_results_path)
+        fig, ax = plot_univariate_prs_regression(prs_results)
+        plt.savefig(produces, bbox_inches="tight")
 
 
 def task_plot_corr_matrix_lipid_top20(
