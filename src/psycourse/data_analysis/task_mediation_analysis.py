@@ -7,7 +7,6 @@ from pytask import Product, task
 from psycourse.config import BLD_DATA, BLD_RESULTS
 from psycourse.data_analysis.mediation_analysis import mediation_analysis
 
-# Define all PRS keys and their task kwargs.
 PRS_TASKS = {
     prs: {
         "prs": prs,
@@ -23,7 +22,6 @@ PRS_TASKS = {
     ]
 }
 
-# Define a single task template and use kwargs to customize behavior.
 for prs_id, kwargs in PRS_TASKS.items():
 
     @task(id=prs_id, kwargs=kwargs)
