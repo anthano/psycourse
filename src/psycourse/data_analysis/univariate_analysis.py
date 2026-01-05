@@ -644,3 +644,80 @@ def univariate_lipid_regression_cov_med_and_diag(multimodal_df):
     )
 
     return n_subset_lipid_dict, top20, results_df
+
+
+########################################################################################
+# Lipids X PRS Association
+########################################################################################
+
+
+def lipid_prs_regression(df, top_n=20):
+    prs_columns = [
+        "BD_PRS",
+        "MDD_PRS",
+        "SCZ_PRS",
+        "Lipid_BD_PRS",
+        "Lipid_MDD_PRS",
+        "Lipid_SCZ_PRS",
+    ]
+    lipid_columns = (
+        pd.Index([c for c in df.columns if c.startswith("gpeak")]).unique().tolist()
+    )
+
+    covariates = ["age", "sex", "bmi", "duration_illness", "smoker"]
+
+    n_subset = {prs: {} for prs in prs_columns}
+    results_by_prs = {}
+    top_by_prs = {}
+
+    for prs in prs_columns:
+        records = []
+
+        for lipid in lipid_columns:
+            cols = [lipid, prs] + covariates
+            subset = df.loc[:, cols].dropna()
+            n_subset[prs][lipid] = len(subset)
+
+            formula = (
+                f"{lipid} ~ {prs} + age + C(sex) + bmi + duration_illness + C(smoker)"
+            )
+            result = smf.ols(formula, data=subset).fit(cov_type="HC3")
+
+            coef = result.params.get(prs, np.nan)
+            se = result.bse.get(prs, np.nan)
+            pval = result.pvalues.get(prs, np.nan)
+
+            if prs in result.params.index:
+                ci_low, ci_high = result.conf_int().loc[prs].tolist()
+            else:
+                ci_low, ci_high = np.nan, np.nan
+
+            records.append(
+                dict(
+                    lipid=lipid,
+                    n=len(subset),
+                    coef=coef,
+                    se=se,
+                    pval=pval,
+                    ci_low=ci_low,
+                    ci_high=ci_high,
+                )
+            )
+
+        prs_df = pd.DataFrame(records).set_index("lipid")
+
+        p = prs_df["pval"].astype(float).to_numpy()
+        mask = np.isfinite(p)
+        fdr = np.full_like(p, np.nan, dtype=float)
+        if mask.any():
+            fdr[mask] = multipletests(p[mask], method="fdr_bh")[1]
+
+        prs_df["FDR"] = fdr
+        prs_df["log10_FDR"] = -np.log10(
+            np.clip(prs_df["FDR"], np.finfo(float).tiny, None)
+        )
+
+        results_by_prs[prs] = prs_df.sort_values("pval")
+        top_by_prs[prs] = results_by_prs[prs].head(top_n)
+
+    return n_subset, top_by_prs, results_by_prs

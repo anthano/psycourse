@@ -2,6 +2,7 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
+    lipid_prs_regression,
     prs_cv_delta_mse,
     univariate_lipid_regression,
     univariate_lipid_regression_cov_diagnosis,
@@ -234,3 +235,41 @@ def task_univariate_lipid_regression_cov_med_and_diag(
     pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
     top20_lipids.to_pickle(produces["top20_lipids"])
     univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
+
+
+########################################################################################
+# Lipid X PRS Regression
+########################################################################################
+
+prs_types = ["BD", "MDD", "SCZ", "Lipid_BD", "Lipid_MDD", "Lipid_SCZ"]
+lipid_prs_result_dir = BLD_RESULTS / "univariate" / "continuous_analysis" / "lipidXprs"
+
+
+lipid_prs_regression_produces = (
+    {
+        f"{prs}_Lipid_association_top20": lipid_prs_result_dir
+        / f"{prs}_Lipid_association_top20.pkl"
+        for prs in prs_types
+    }
+    | {
+        f"{prs}_Lipid_association": lipid_prs_result_dir
+        / f"{prs}_Lipid_association.pkl"
+        for prs in prs_types
+    }
+    | {"n_subset": lipid_prs_result_dir / "PRS_Lipid_association_n_subset.pkl"}
+)
+
+
+def task_lipid_prs_regression(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=lipid_prs_regression_produces,
+):
+    data = pd.read_pickle(multimodal_df_path)
+    n_subset, top_by_prs, results_by_prs = lipid_prs_regression(data)
+
+    for prs in prs_types:
+        top_by_prs[f"{prs}_PRS"].to_pickle(produces[f"{prs}_Lipid_association_top20"])
+        results_by_prs[f"{prs}_PRS"].to_pickle(produces[f"{prs}_Lipid_association"])
+
+    pd.to_pickle(n_subset, produces["n_subset"])
