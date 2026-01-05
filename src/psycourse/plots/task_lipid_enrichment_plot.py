@@ -11,41 +11,38 @@ from psycourse.plots.lipid_enrichment_plot import (
 )
 
 ANNOT_DF_PATH = BLD_DATA / "cleaned_lipid_class_data.pkl"
+LIPID_RESULTS_PATH = BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
+PLOT_PATH = BLD_RESULTS / "plots" / "enrichment_analysis"
 
 LIPID_PLOT_VARIANTS = {
     "default": {
-        "results_df": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "univariate_lipid_results.pkl",
-        "enrichment_df": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "lipid_enrichment_results.pkl",
-        "strength_plot_path": BLD_RESULTS
-        / "plots"
-        / "lipid_enrichment_strength_plot.svg",
-        "coef_plot_path": BLD_RESULTS / "plots" / "lipid_enrichment_bp_plot.svg",
+        "results_df": LIPID_RESULTS_PATH / "univariate_lipid_results.pkl",
+        "enrichment_df": LIPID_RESULTS_PATH / "lipid_enrichment_results.pkl",
+        "strength_plot_path": PLOT_PATH / "lipid_enrichment_strength_plot.svg",
+        "coef_plot_path": PLOT_PATH / "lipid_enrichment_bp_plot.svg",
     },
-    "cov_diag": {
-        "results_df": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "univariate_lipid_results_cov_diag.pkl",
-        "enrichment_df": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "lipid"
-        / "lipid_enrichment_results_cov_diag.pkl",
-        "strength_plot_path": BLD_RESULTS
-        / "plots"
-        / "lipid_enrichment_strength_plot_cov_diag.svg",
-        "coef_plot_path": BLD_RESULTS
-        / "plots"
-        / "lipid_enrichment_bp_plot_cov_diag.svg",
+    "cov_diagnosis": {
+        "results_df": LIPID_RESULTS_PATH / "univariate_lipid_results_cov_diagnosis.pkl",
+        "enrichment_df": LIPID_RESULTS_PATH
+        / "lipid_enrichment_results_cov_diagnosis.pkl",
+        "strength_plot_path": PLOT_PATH
+        / "lipid_enrichment_strength_plot_cov_diagnosis.svg",
+        "coef_plot_path": PLOT_PATH / "lipid_enrichment_bp_plot_cov_diagnosis.svg",
+    },
+    "cov_med": {
+        "results_df": LIPID_RESULTS_PATH / "univariate_lipid_results_cov_med.pkl",
+        "enrichment_df": LIPID_RESULTS_PATH / "lipid_enrichment_results_cov_med.pkl",
+        "strength_plot_path": PLOT_PATH / "lipid_enrichment_strength_plot_cov_med.svg",
+        "coef_plot_path": PLOT_PATH / "lipid_enrichment_bp_plot_cov_med.svg",
+    },
+    "cov_med_and_diag": {
+        "results_df": LIPID_RESULTS_PATH
+        / "univariate_lipid_results_cov_med_and_diag.pkl",
+        "enrichment_df": LIPID_RESULTS_PATH
+        / "lipid_enrichment_results_cov_med_and_diag.pkl",
+        "strength_plot_path": PLOT_PATH
+        / "lipid_enrichment_strength_plot_cov_med_and_diag.svg",
+        "coef_plot_path": PLOT_PATH / "lipid_enrichment_bp_plot_cov_med_and_diag.svg",
     },
 }
 
