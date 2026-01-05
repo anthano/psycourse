@@ -27,7 +27,7 @@ sophies_files
 src/sandbox/
 sandbox.ipynb
 src/psycourse/data_management/prsscope_sandbox.ipynb
-src/results_overview.ipynb
+src/psycourse/results_overview.ipynb
 
 # latex
 *.aux
