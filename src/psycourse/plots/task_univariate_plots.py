@@ -26,20 +26,47 @@ BLD_PLOTS_DIR = BLD_RESULTS / "plots"
 # ======================================================================================
 # LIPIDS
 # ======================================================================================
-def task_plot_univariate_lipid_regression(
-    script_path=SRC / "plots" / "univariate_plots.py",
-    top20_lipids_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
-    / "univariate_lipid_results_top20.pkl",
-    annotation_df_path=BLD_DATA / "cleaned_lipid_class_data.pkl",
-    produces=BLD_PLOTS_DIR / "univariate_lipid_regression_plot.svg",
-):
-    """Plot the top 20 lipids associated with cluster 5 probability
-    using regression coefficients and FDR values."""
+FILES = {
+    "standard_cov": "univariate_lipid_results_top20.pkl",
+    "cov_med": "univariate_lipid_results_top20_cov_med.pkl",
+    "cov_diagnosis": "univariate_lipid_results_top20_cov_diagnosis.pkl",
+    "cov_med_and_diag": "univariate_lipid_results_top20_cov_med_and_diag.pkl",
+}
 
-    lipid_top20 = pd.read_pickle(top20_lipids_path)
-    cleaned_annotation_df = pd.read_pickle(annotation_df_path)
-    fig, ax = plot_univariate_lipid_regression(lipid_top20, cleaned_annotation_df)
-    plt.savefig(produces, bbox_inches="tight")
+for name, input_file in FILES.items():
+    input_path = UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / input_file
+    output_path = BLD_PLOTS_DIR / f"univariate_lipid_regression_plot_{name}.svg"
+
+ANNOTATION_DF_PATH = BLD_DATA / "cleaned_lipid_class_data.pkl"
+
+FILES = {
+    "standard_cov": "univariate_lipid_results_top20.pkl",
+    "cov_med": "univariate_lipid_results_top20_cov_med.pkl",
+    "cov_diagnosis": "univariate_lipid_results_top20_cov_diagnosis.pkl",
+    "cov_med_and_diag": "univariate_lipid_results_top20_cov_med_and_diag.pkl",
+}
+
+for name, input_file in FILES.items():
+    input_path = UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / input_file
+    output_path = BLD_PLOTS_DIR / f"univariate_lipid_regression_plot_{name}.svg"
+
+    @task(
+        id=name,
+        kwargs={
+            "lipid_results_path": input_path,
+            "annotation_df_path": ANNOTATION_DF_PATH,
+            "produces": output_path,
+        },
+    )
+    def task_plot_univariate_lipid_regression(
+        lipid_results_path: Path,
+        annotation_df_path: Path,
+        produces: Annotated[Path, Product],
+    ):
+        lipid_results = pd.read_pickle(lipid_results_path)
+        annotation_df = pd.read_pickle(annotation_df_path)
+        fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+        plt.savefig(produces, bbox_inches="tight")
 
 
 ########################################################################################
@@ -55,7 +82,7 @@ FILES = {
 
 for name, input_file in FILES.items():
     input_path = UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR / input_file
-    output_path = BLD_PLOTS_DIR / f"univariate_prs_regression_plot_{name}.png"
+    output_path = BLD_PLOTS_DIR / f"univariate_prs_regression_plot_{name}.svg"
 
     @task(id=name, kwargs={"prs_results_path": input_path, "produces": output_path})
     def task_plot_univariate_prs_regression(
