@@ -1,28 +1,31 @@
 import numpy as np
-from sklearn.linear_model import RidgeCV
-from sklearn.metrics import r2_score
-from sklearn.model_selection import KFold, cross_val_predict
-from sklearn.pipeline import make_pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.decomposition import PCA
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 
-def multivariate_regression(multimodal_df):
-    """Multivariate regression analysis to assess variance of severe psychosis cluster
-    explained by lipid species and lipid-psychiatric PRS.
+def severe_cluster5_classification(multimodal_df, random_state=42):
+    """
+    Classification of severe psychosis subtype based on PRS and lipidomic data.
+
     Args:
-        multimodal_df (pd.DataFrame): DataFrame with all needed columns.
+    multimodal_df (pd.DataFrame): Dataframe containing all data.
 
     Returns:
-        multivariate_regression_results (dict): Dictionary with R² results."""
 
-    df = multimodal_df.copy().dropna()
-    df["sex"] = df["sex"].map({"F": 0, "M": 1}).astype(np.int8)
-    df["smoker"] = df["smoker"].map({"former": 0, "never": 1, "yes": 2}).astype(np.int8)
+    """
 
-    target_col = "prob_class_5"
+    df = multimodal_df.copy()
+
+    lipid_features = [col for col in df.columns if col.startswith("gpeak")]
+
     covariates = [
         "age",
-        "bmi",
         "sex",
         "smoker",
         "duration_illness",
@@ -32,50 +35,126 @@ def multivariate_regression(multimodal_df):
         "pc4",
         "pc5",
     ]
-    prs_features = ["SCZ_PRS", "BD_PRS", "MDD_PRS"]
-    lipid_features = [col for col in df.columns if col.startswith("gpeak")]
-    # Remove rows where all lipid features are NaN
-    data_with_lipids = df[~df[lipid_features].isna().all(axis=1)]
-    relevant_cols = covariates + lipid_features + prs_features + [target_col]
+    prs_features = ["SCZ_PRS", "MDD_PRS", "BD_PRS"]
+    df["sex"] = df["sex"].map({"F": 0, "M": 1})
+    df["smoker"] = df["smoker"].map({"former": 0, "never": 1, "yes": 2})
 
-    analysis_data = data_with_lipids[relevant_cols].copy()  # noqa: F841
+    base_cols = ["true_label"] + covariates + prs_features
+    keep = df[base_cols].notna().all(axis=1)
+    if lipid_features:
+        keep &= ~df[lipid_features].isna().all(axis=1)
 
-    y = df[target_col].values
-    X_cov = df[covariates].values
-    X_covPRS = df[covariates + prs_features].values
-    X_covLip = df[covariates + lipid_features].values
-    X_full = df[covariates + prs_features + lipid_features].values
+    df = df.loc[keep].reset_index(drop=True)
 
-    cv = KFold(n_splits=10, shuffle=True, random_state=42)
-
-    R2_cov = _cv_r2(X_cov, y, cv)
-    R2_covPRS = _cv_r2(X_covPRS, y, cv)
-    R2_covLip = _cv_r2(X_covLip, y, cv)
-    R2_full = _cv_r2(X_full, y, cv)
-
-    dR2_PRS = R2_covPRS - R2_cov
-    dR2_Lip = R2_covLip - R2_cov
-    dR2_Lip_givenPRS = R2_full - R2_covPRS
-    dR2_PRS_givenLip = R2_full - R2_covLip
-
-    multivariate_regression_results = {
-        "R2_cov": R2_cov,
-        "R2_covPRS": R2_covPRS,
-        "R2_covLip": R2_covLip,
-        "R2_full": R2_full,
-        "dR2_PRS": dR2_PRS,
-        "dR2_Lip": dR2_Lip,
-        "dR2_Lip_givenPRS": dR2_Lip_givenPRS,
-        "dR2_PRS_givenLip": dR2_PRS_givenLip,
+    feature_sets = {
+        "cov": covariates,
+        "cov_prs": covariates + prs_features,
+        "cov_lip": covariates + lipid_features,
+        "full": covariates + prs_features + lipid_features,
     }
 
-    print(df["prob_class_5"].describe())
-    print("Var(y):", df["prob_class_5"].var())
+    y = (df["true_label"] == 5).astype(int).to_numpy()
+    outer_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=random_state)
 
-    return multivariate_regression_results
+    hyperparameter_space = np.logspace(-4, 3, 15)
+    l1_ratios = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.95]
+    n_pcs = 10
 
+    results = {}
 
-def _cv_r2(X, y, cv):
-    model = make_pipeline(StandardScaler(), RidgeCV(alphas=[0.1, 1.0, 10.0]))
-    y_pred = cross_val_predict(model, X, y, cv=cv)
-    return r2_score(y, y_pred)
+    for name, features in feature_sets.items():
+        X = df[features].to_numpy()
+
+        clf_cv = LogisticRegressionCV(
+            Cs=hyperparameter_space,
+            penalty="elasticnet",
+            solver="saga",
+            l1_ratios=l1_ratios,
+            class_weight="balanced",
+            cv=3,
+            max_iter=5000,
+            n_jobs=-1,
+            random_state=random_state,
+            refit=True,
+        )
+
+        uses_lipids = any(f in lipid_features for f in features)
+
+        if uses_lipids:
+            X = df[features]
+
+            cov_block = [cov for cov in covariates if cov in features]
+            prs_block = [prs for prs in prs_features if prs in features]
+            lipids_block = [lipid for lipid in lipid_features if lipid in features]
+
+            preprocessing = ColumnTransformer(
+                transformers=[
+                    (
+                        "cov_prs",
+                        Pipeline(
+                            [
+                                ("imputer", SimpleImputer(strategy="median")),
+                                ("scaler", StandardScaler()),
+                            ]
+                        ),
+                        cov_block + prs_block,
+                    ),
+                    (
+                        "lipids",
+                        Pipeline(
+                            [
+                                ("imputer", SimpleImputer(strategy="median")),
+                                ("scaler", StandardScaler()),
+                                (
+                                    "pca",
+                                    PCA(n_components=n_pcs, random_state=random_state),  # noqa: F821
+                                ),
+                            ]
+                        ),
+                        lipids_block,
+                    ),
+                ],
+                remainder="drop",
+            )
+
+            model = Pipeline([("preprocessing", preprocessing), ("classifier", clf_cv)])
+        else:
+            X = df[features].to_numpy()
+            model = Pipeline(
+                [
+                    ("imputer", SimpleImputer(strategy="median")),
+                    ("scaler", StandardScaler()),
+                    ("classifier", clf_cv),
+                ]
+            )
+
+        oof_prob = cross_val_predict(model, X, y, cv=outer_cv, method="predict_proba")[
+            :, 1
+        ]
+
+        results[name] = {
+            "n": int(len(df)),
+            "n_pos": int(y.sum()),
+            "oof_average_precision": float(average_precision_score(y, oof_prob)),
+            "oof_ROC_AUC": float(roc_auc_score(y, oof_prob)),
+            "oof_prob": oof_prob,
+        }
+
+    results["dAP_PRS"] = (
+        results["cov_prs"]["oof_average_precision"]
+        - results["cov"]["oof_average_precision"]
+    )
+    results["dAP_Lip"] = (
+        results["cov_lip"]["oof_average_precision"]
+        - results["cov"]["oof_average_precision"]
+    )
+    results["dAP_Lip_givenPRS"] = (
+        results["full"]["oof_average_precision"]
+        - results["cov_prs"]["oof_average_precision"]
+    )
+    results["dAP_PRS_givenLip"] = (
+        results["full"]["oof_average_precision"]
+        - results["cov_lip"]["oof_average_precision"]
+    )
+
+    return results
