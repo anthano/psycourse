@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 
@@ -55,7 +56,7 @@ def merge_multimodal_complete_df(
 
     multimodal_df = multimodal_df.set_index("id")
 
-    class_means_df = compute_lipid_class_means(lipid_data, lipid_class)
+    class_means_df = _lipid_class_scores(lipid_data, lipid_class)
     multimodal_df = multimodal_df.join(class_means_df, how="left")
     multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
 
@@ -65,20 +66,45 @@ def merge_multimodal_complete_df(
 ##################### Helper Function  #####################
 
 
-def compute_lipid_class_means(intensity_df, lipid_class):
-    lipid_dict = lipid_class.groupby("class").apply(lambda g: list(g.index)).to_dict()
-    class_means = {}
+def _lipid_class_scores(
+    lipid_df: pd.DataFrame,
+    lipid_class_scores_df: pd.DataFrame,
+    class_col: str = "class",
+    prefix: str = "class_",
+    min_frac_present: float = 0.7,
+    ddof: int = 0,
+) -> pd.DataFrame:
+    """
+    lipid_df: rows=samples, cols=lipid features (raw lipid names)
+    lipid_class_df: index = raw lipid names (must match lipid_df columns),
+                    column `class_col` contains the class label per lipid.
+    Returns: DataFrame of per-sample class scores (mean of within-lipid z-scores).
+    """
 
-    for class_name, species_list in lipid_dict.items():
-        # Only include species that exist in the intensity_df
-        valid_species = [
-            lipid for lipid in species_list if lipid in intensity_df.columns
-        ]
-        if not valid_species:
-            continue
-        # Compute mean across those species for each individual
-        class_means[f"{class_name}_mean"] = intensity_df[valid_species].mean(axis=1)
+    # keep only lipids that exist in lipid_df
+    if class_col not in lipid_class_scores_df.columns:
+        raise KeyError(f"Column '{class_col}' not found in lipid_class_scores_df")
+    m = lipid_class_scores_df[[class_col]].copy()
+    m = m.loc[m.index.intersection(lipid_df.columns)]
+    m = m.dropna(subset=[class_col])
 
-    class_means_df = pd.DataFrame(class_means, index=intensity_df.index)
+    lipid_cols = m.index.tolist()
 
-    return class_means_df
+    # z-score each lipid across samples (ignore NaNs)
+    X = lipid_df[lipid_cols].copy()
+    mu = X.mean(axis=0, skipna=True)
+    sd = X.std(axis=0, ddof=ddof, skipna=True).replace(0, np.nan)
+    Xz = (X - mu) / sd
+
+    lipid_class_scores_df = pd.DataFrame(index=lipid_df.index)
+
+    for cls, idx in m.groupby(class_col).groups.items():
+        cols = list(idx)  # lipid names for this class
+
+        present_frac = Xz[cols].notna().mean(axis=1)
+        score = Xz[cols].mean(axis=1, skipna=True)
+
+        score[present_frac < min_frac_present] = np.nan
+        lipid_class_scores_df[f"{prefix}{cls}"] = score
+
+    return lipid_class_scores_df
