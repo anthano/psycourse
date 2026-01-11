@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.metrics import average_precision_score, roc_auc_score
@@ -22,7 +21,24 @@ def severe_cluster5_classification(multimodal_df, random_state=42):
 
     df = multimodal_df.copy()
 
-    lipid_features = [col for col in df.columns if col.startswith("gpeak")]
+    lipid_features = [
+        "class_LPE",
+        "class_PC",
+        "class_PC_O",
+        "class_PC_P",
+        "class_PE",
+        "class_PE_P",
+        "class_TAG",
+        "class_dCer",
+        "class_dSM",
+        "class_CAR",
+        "class_CE",
+        "class_DAG",
+        "class_FA",
+        "class_LPC",
+        "class_LPC_O",
+        "class_LPC_P",
+    ]
 
     covariates = [
         "age",
@@ -58,7 +74,7 @@ def severe_cluster5_classification(multimodal_df, random_state=42):
 
     hyperparameter_space = np.logspace(-4, 3, 15)
     l1_ratios = [0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.95]
-    n_pcs = 10
+    # n_pcs = 10
 
     results = {}
 
@@ -105,10 +121,10 @@ def severe_cluster5_classification(multimodal_df, random_state=42):
                             [
                                 ("imputer", SimpleImputer(strategy="median")),
                                 ("scaler", StandardScaler()),
-                                (
-                                    "pca",
-                                    PCA(n_components=n_pcs, random_state=random_state),  # noqa: F821
-                                ),
+                                # (
+                                #    "pca",
+                                #    PCA(n_components=n_pcs, random_state=random_state),
+                                # ),
                             ]
                         ),
                         lipids_block,
