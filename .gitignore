@@ -28,6 +28,7 @@ src/sandbox/
 sandbox.ipynb
 src/psycourse/data_management/prsscope_sandbox.ipynb
 src/psycourse/results_overview.ipynb
+src/psycourse/integrated_analysis/diablo_model.ipynb
 
 # latex
 *.aux

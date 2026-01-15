@@ -24,3 +24,25 @@ def task_prep_data_for_integrated_analysis(
     lipid_df.to_pickle(produces["lipid_data"])
     prs_df.to_pickle(produces["prs_data"])
     outcome_df.to_pickle(produces["outcome_data"])
+
+
+products_feather = {
+    "lipid_data": BLD_DATA / "integrated_analysis_lipid_data.csv",
+    "prs_data": BLD_DATA / "integrated_analysis_prs_data.csv",
+    "outcome_data": BLD_DATA / "integrated_analysis_outcome_data.csv",
+}
+
+
+def task_prep_data_for_integrated_analysis_csv(
+    lipid_data=products["lipid_data"],
+    prs_data=products["prs_data"],
+    outcome_data=products["outcome_data"],
+    produces=products_feather,
+):
+    lipid_df = pd.read_pickle(lipid_data)
+    prs_df = pd.read_pickle(prs_data)
+    outcome_df = pd.read_pickle(outcome_data)
+
+    lipid_df.to_csv(produces["lipid_data"])
+    prs_df.to_csv(produces["prs_data"])
+    outcome_df.to_csv(produces["outcome_data"])
