@@ -5,10 +5,15 @@ from psycourse.data_management.data_prep_integrated_analysis import (
     prep_data_for_integrated_analysis,
 )
 
+OUTPUT_DIR = BLD_DATA / "integrated_analysis"
+
 products = {
-    "lipid_data": BLD_DATA / "integrated_analysis_lipid_data.pkl",
-    "prs_data": BLD_DATA / "integrated_analysis_prs_data.pkl",
-    "outcome_data": BLD_DATA / "integrated_analysis_outcome_data.pkl",
+    "lipid_df_test": OUTPUT_DIR / "integrated_analysis_lipid_df_test.pkl",
+    "prs_df_test": OUTPUT_DIR / "integrated_analysis_prs_df_test.pkl",
+    "outcome_df_test": OUTPUT_DIR / "integrated_analysis_outcome_df_test.pkl",
+    "lipid_df_train": OUTPUT_DIR / "integrated_analysis_lipid_df_train.pkl",
+    "prs_df_train": OUTPUT_DIR / "integrated_analysis_prs_df_train.pkl",
+    "outcome_df_train": OUTPUT_DIR / "integrated_analysis_outcome_df_train.pkl",
 }
 
 
@@ -18,31 +23,50 @@ def task_prep_data_for_integrated_analysis(
     produces=products,
 ):
     multimodal_lipid_subset_df = pd.read_pickle(multimodal_lipid_subset_path)
-    lipid_df, prs_df, outcome_df = prep_data_for_integrated_analysis(
-        multimodal_lipid_subset_df
-    )
-    lipid_df.to_pickle(produces["lipid_data"])
-    prs_df.to_pickle(produces["prs_data"])
-    outcome_df.to_pickle(produces["outcome_data"])
+    (
+        lipid_df_test,
+        prs_df_test,
+        outcome_df_test,
+        lipid_df_train,
+        prs_df_train,
+        outcome_df_train,
+    ) = prep_data_for_integrated_analysis(multimodal_lipid_subset_df)
+    lipid_df_test.to_pickle(produces["lipid_df_test"])
+    prs_df_test.to_pickle(produces["prs_df_test"])
+    outcome_df_test.to_pickle(produces["outcome_df_test"])
+    lipid_df_train.to_pickle(produces["lipid_df_train"])
+    prs_df_train.to_pickle(produces["prs_df_train"])
+    outcome_df_train.to_pickle(produces["outcome_df_train"])
 
 
-products_feather = {
-    "lipid_data": BLD_DATA / "integrated_analysis_lipid_data.csv",
-    "prs_data": BLD_DATA / "integrated_analysis_prs_data.csv",
-    "outcome_data": BLD_DATA / "integrated_analysis_outcome_data.csv",
+products_csv = {
+    "lipid_df_test": OUTPUT_DIR / "integrated_analysis_lipid_df_test.csv",
+    "prs_df_test": OUTPUT_DIR / "integrated_analysis_prs_df_test.csv",
+    "outcome_df_test": OUTPUT_DIR / "integrated_analysis_outcome_df_test.csv",
+    "lipid_df_train": OUTPUT_DIR / "integrated_analysis_lipid_df_train.csv",
+    "prs_df_train": OUTPUT_DIR / "integrated_analysis_prs_df_train.csv",
+    "outcome_df_train": OUTPUT_DIR / "integrated_analysis_outcome_df_train.csv",
 }
 
 
 def task_prep_data_for_integrated_analysis_csv(
-    lipid_data=products["lipid_data"],
-    prs_data=products["prs_data"],
-    outcome_data=products["outcome_data"],
-    produces=products_feather,
+    script_path=SRC / "data_management" / "data_prep_integrated_analysis.py",
+    multimodal_lipid_subset_path=BLD_DATA / "multimodal_lipid_subset_df.pkl",
+    produces=products_csv,
 ):
-    lipid_df = pd.read_pickle(lipid_data)
-    prs_df = pd.read_pickle(prs_data)
-    outcome_df = pd.read_pickle(outcome_data)
+    multimodal_lipid_subset_df = pd.read_pickle(multimodal_lipid_subset_path)
+    (
+        lipid_df_test,
+        prs_df_test,
+        outcome_df_test,
+        lipid_df_train,
+        prs_df_train,
+        outcome_df_train,
+    ) = prep_data_for_integrated_analysis(multimodal_lipid_subset_df)
 
-    lipid_df.to_csv(produces["lipid_data"])
-    prs_df.to_csv(produces["prs_data"])
-    outcome_df.to_csv(produces["outcome_data"])
+    lipid_df_test.to_csv(produces["lipid_df_test"])
+    prs_df_test.to_csv(produces["prs_df_test"])
+    outcome_df_test.to_csv(produces["outcome_df_test"])
+    lipid_df_train.to_csv(produces["lipid_df_train"])
+    prs_df_train.to_csv(produces["prs_df_train"])
+    outcome_df_train.to_csv(produces["outcome_df_train"])
