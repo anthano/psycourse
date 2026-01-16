@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
 def prep_data_for_integrated_analysis(multimodal_lipid_subset_df):
@@ -12,11 +13,35 @@ def prep_data_for_integrated_analysis(multimodal_lipid_subset_df):
         outcome_data(pd.DataFrame): dataframe for subgroup labels.
     """
 
-    lipid_df = _prep_lipid_data(multimodal_lipid_subset_df)
-    prs_df = _prep_prs_data(multimodal_lipid_subset_df)
-    outcome_df = _prep_outcome_data(multimodal_lipid_subset_df)
+    multimodal_lipid_subset_df = multimodal_lipid_subset_df.copy()
+    y = (multimodal_lipid_subset_df["true_label"] == 5).astype(
+        int
+    )  # 1 = label 5, 0 = rest
 
-    return lipid_df, prs_df, outcome_df
+    X_train, X_test, y_train, y_test = train_test_split(
+        multimodal_lipid_subset_df,
+        y,
+        test_size=0.25,
+        stratify=y,
+        random_state=42,
+        shuffle=True,
+    )
+
+    lipid_df_train = _prep_lipid_data(X_train)
+    prs_df_train = _prep_prs_data(X_train)
+    lipid_df_test = _prep_lipid_data(X_test)
+    prs_df_test = _prep_prs_data(X_test)
+    outcome_df_test = y_test
+    outcome_df_train = y_train
+
+    return (
+        lipid_df_test,
+        prs_df_test,
+        outcome_df_test,
+        lipid_df_train,
+        prs_df_train,
+        outcome_df_train,
+    )
 
 
 ########################################################################################
