@@ -24,6 +24,7 @@ prs_cols = [
     "SleepDurationLong_PRS",
     "SleepDurationShort_PRS",
 ]
+
 lipid_cols = [
     "class_LPE",
     "class_PC",
@@ -46,12 +47,17 @@ lipid_cols = [
 score_cols = ["PRS_CCA_Component_1", "Lipid_CCA_Component_1"]
 
 for score_col in score_cols:
-    path = RESULTS_DIR / f"cca_{score_col}_regression_results.pkl"
+    cca_result_path = RESULTS_DIR / f"cca_{score_col}_results.pkl"
+    regression_result_path = RESULTS_DIR / f"cca_{score_col}_regression_results.pkl"
 
     @task(id=score_col)
-    def _(produces: Annotated[Path, Product] = path, score_col=score_col):
+    def _(  # noqa: F811
+        score_col: str[score_col],
+        produces_cca_result: Annotated[Path, Product] = cca_result_path,
+        produces_regression_result: Annotated[Path, Product] = regression_result_path,
+    ) -> None:
         df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
-        result_df = cca_prs_lipids_regression(
+        cca_result_df, result_df = cca_prs_lipids_regression(
             multimodal_lipid_subset_df=df,
             prs_cols=prs_cols,
             lipid_cols=lipid_cols,
@@ -59,4 +65,5 @@ for score_col in score_cols:
             n_permutations=10000,
             random_state=42,
         )
-        result_df.to_pickle(produces)
+        cca_result_df.to_pickle(produces_cca_result)
+        result_df.to_pickle(produces_regression_result)
