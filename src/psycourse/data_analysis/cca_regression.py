@@ -25,8 +25,8 @@ def cca_prs_lipids_regression(
     use_cols = prs_cols + lipid_cols
     data = df[use_cols].dropna().copy()
 
-    result_df, _ = _perform_cca(data, prs_cols, lipid_cols, n_components)
-    combined_df = _join_cca_results_with_df(multimodal_lipid_subset_df, result_df)
+    cca_result_df, cca = _perform_cca(data, prs_cols, lipid_cols, n_components)
+    combined_df = _join_cca_results_with_df(multimodal_lipid_subset_df, cca_result_df)
 
     if categorical_cols is None:
         categorical_cols = ("sex", "smoker")
@@ -56,7 +56,7 @@ def cca_prs_lipids_regression(
     )
 
     regression_result_df["p_perm_two_sided"] = p_perm
-    return regression_result_df
+    return cca_result_df, regression_result_df
 
 
 ########################################################################################
@@ -95,11 +95,11 @@ def _join_cca_results_with_df(multimodal_df, result_df):
 
 def _build_formula(y_col, score_col, covar_cols, categorical_cols):
     terms = [score_col]
-    for c in covar_cols:
-        if c in categorical_cols:
-            terms.append(f"C({c})")
+    for col in covar_cols:
+        if col in categorical_cols:
+            terms.append(f"C({col})")
         else:
-            terms.append(c)
+            terms.append(col)
     return f"{y_col} ~ " + " + ".join(terms)
 
 
@@ -108,8 +108,8 @@ def _fit_glm_get_t(subset, y_col, score_col, covar_cols, categorical_cols):
     res = smf.glm(formula=formula, data=subset).fit(cov_type="HC3")
     coef = res.params.get(score_col, np.nan)
     se = res.bse.get(score_col, np.nan)
-    t = coef / se if np.isfinite(coef) and np.isfinite(se) and se != 0 else np.nan
-    return res, t
+    t_stat = coef / se if np.isfinite(coef) and np.isfinite(se) and se != 0 else np.nan
+    return res, t_stat
 
 
 def _perform_regression(combined_df, y_col, score_col, covar_cols, categorical_cols):
