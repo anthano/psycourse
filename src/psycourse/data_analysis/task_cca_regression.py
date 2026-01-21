@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 from typing import Annotated
 
@@ -47,17 +48,26 @@ lipid_cols = [
 score_cols = ["PRS_CCA_Component_1", "Lipid_CCA_Component_1"]
 
 for score_col in score_cols:
-    cca_result_path = RESULTS_DIR / f"cca_{score_col}_results.pkl"
+    cca_path = RESULTS_DIR / "cca_model.pkl"
     regression_result_path = RESULTS_DIR / f"cca_{score_col}_regression_results.pkl"
+    prs_loadings_path = RESULTS_DIR / "cca_prs_loadings.pkl"
+    lipid_loadings_path = RESULTS_DIR / "cca_lipid_loadings.pkl"
 
-    @task(id=score_col)
-    def _(  # noqa: F811
-        score_col: str[score_col],
-        produces_cca_result: Annotated[Path, Product] = cca_result_path,
+    @task(id=score_col, kwargs={"score_col": score_col})
+    def _(
+        score_col: str,
         produces_regression_result: Annotated[Path, Product] = regression_result_path,
+        _cca_path=cca_path,
+        _prs_loadings_path=prs_loadings_path,
+        _lipid_loadings_path=lipid_loadings_path,
     ) -> None:
         df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
-        cca_result_df, result_df = cca_prs_lipids_regression(
+        (
+            cca,
+            prs_loadings_df,
+            lipid_loadings_df,
+            regression_result_df,
+        ) = cca_prs_lipids_regression(
             multimodal_lipid_subset_df=df,
             prs_cols=prs_cols,
             lipid_cols=lipid_cols,
@@ -65,5 +75,10 @@ for score_col in score_cols:
             n_permutations=10000,
             random_state=42,
         )
-        cca_result_df.to_pickle(produces_cca_result)
-        result_df.to_pickle(produces_regression_result)
+
+        with open(_cca_path, "wb") as f:
+            pickle.dump(cca, f)
+
+        prs_loadings_df.to_pickle(_prs_loadings_path)
+        lipid_loadings_df.to_pickle(_lipid_loadings_path)
+        regression_result_df.to_pickle(produces_regression_result)

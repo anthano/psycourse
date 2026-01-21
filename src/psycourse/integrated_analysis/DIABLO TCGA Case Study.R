@@ -23,7 +23,8 @@ Y = breast.TCGA$data.train$subtype # set the response variable as the Y datafram
 summary(Y)
 
 
-## ---- fig.show = "hold", out.width = "33%", fig.cap = "FIGURE 1: Circle Correlation Plots for pairwise PLS models on the breast TCGA data. Only displays the top 25 features for each dimension, subsetting by those with a correlation above 0.5. "----
+## ---- fig.show = "hold", out.width = "33%", fig.cap = "FIGURE 1: Circle Correlation Plots for pairwise PLS models on the breast TCGA data.
+# Only displays the top 25 features for each dimension, subsetting by those with a correlation above 0.5. "----
 list.keepX = c(25, 25) # select arbitrary values of features to keep
 list.keepY = c(25, 25)
 
