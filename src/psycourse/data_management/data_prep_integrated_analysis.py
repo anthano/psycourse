@@ -28,17 +28,21 @@ def prep_data_for_integrated_analysis(multimodal_lipid_subset_df):
     )
 
     lipid_df_train = _prep_lipid_data(X_train)
+    lipid_class_df_train = _prep_lipid_class_data(X_train)
     prs_df_train = _prep_prs_data(X_train)
     lipid_df_test = _prep_lipid_data(X_test)
+    lipid_class_df_test = _prep_lipid_class_data(X_test)
     prs_df_test = _prep_prs_data(X_test)
     outcome_df_test = y_test
     outcome_df_train = y_train
 
     return (
         lipid_df_test,
+        lipid_class_df_test,
         prs_df_test,
         outcome_df_test,
         lipid_df_train,
+        lipid_class_df_train,
         prs_df_train,
         outcome_df_train,
     )
@@ -58,6 +62,33 @@ def _prep_lipid_data(multimodal_lipid_subset_df):
         lipid_df = lipid_df.join(multimodal_lipid_subset_df[col])
 
     return lipid_df
+
+
+def _prep_lipid_class_data(multimodal_lipid_subset_df):
+    lipid_columns = [
+        "class_LPE",
+        "class_PC",
+        "class_PC_O",
+        "class_PC_P",
+        "class_PE",
+        "class_PE_P",
+        "class_TAG",
+        "class_dCer",
+        "class_dSM",
+        "class_CAR",
+        "class_CE",
+        "class_DAG",
+        "class_FA",
+        "class_LPC",
+        "class_LPC_O",
+        "class_LPC_P",
+    ]
+
+    lipid_class_df = pd.DataFrame(index=multimodal_lipid_subset_df.index)
+    for col in lipid_columns:
+        lipid_class_df = lipid_class_df.join(multimodal_lipid_subset_df[col])
+
+    return lipid_class_df
 
 
 def _prep_prs_data(multimodal_lipid_subset_df):

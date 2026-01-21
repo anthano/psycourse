@@ -26,7 +26,21 @@ def cca_prs_lipids_regression(
     data = df[use_cols].dropna().copy()
 
     cca_result_df, cca = _perform_cca(data, prs_cols, lipid_cols, n_components)
+    obs_corrs, p_corrs = _permute_cca_corr_pvals(
+        df=data,
+        prs_cols=prs_cols,
+        lipid_cols=lipid_cols,
+        n_components=n_components,
+        n_permutations=n_permutations,
+        random_state=random_state,
+    )
+
+    for k in range(len(p_corrs)):
+        cca_result_df[f"CCA_Correlation_p_perm_{k+1}"] = p_corrs[k]
+
     combined_df = _join_cca_results_with_df(multimodal_lipid_subset_df, cca_result_df)
+
+    prs_loadings_df, lipid_loadings_df = _get_loadings(cca, prs_cols, lipid_cols)
 
     if categorical_cols is None:
         categorical_cols = ("sex", "smoker")
@@ -56,7 +70,7 @@ def cca_prs_lipids_regression(
     )
 
     regression_result_df["p_perm_two_sided"] = p_perm
-    return cca_result_df, regression_result_df
+    return cca, prs_loadings_df, lipid_loadings_df, regression_result_df
 
 
 ########################################################################################
@@ -171,3 +185,57 @@ def _permute_label_pval(
         return np.nan
 
     return float((1 + np.sum(np.abs(t_perm) >= abs(t_observed))) / (1 + t_perm.size))
+
+
+def _permute_cca_corr_pvals(
+    df,
+    prs_cols,
+    lipid_cols,
+    n_components,
+    n_permutations=5000,
+    random_state=0,
+):
+    X1 = StandardScaler().fit_transform(df[prs_cols].to_numpy(dtype=float))
+    X2 = StandardScaler().fit_transform(df[lipid_cols].to_numpy(dtype=float))
+
+    n_components = int(min(n_components, X1.shape[1], X2.shape[1]))
+    rng = np.random.default_rng(random_state)
+
+    cca = CCA(n_components=n_components, max_iter=5000)
+    U, V = cca.fit_transform(X1, X2)
+    obs = np.array(
+        [np.corrcoef(U[:, k], V[:, k])[0, 1] for k in range(n_components)], dtype=float
+    )
+
+    null = np.empty((n_permutations, n_components), dtype=float)
+    for i in range(n_permutations):
+        idx = rng.permutation(X2.shape[0])
+        cca_p = CCA(n_components=n_components, max_iter=5000)
+        Up, Vp = cca_p.fit_transform(X1, X2[idx, :])
+        null[i, :] = [
+            np.corrcoef(Up[:, k], Vp[:, k])[0, 1] for k in range(n_components)
+        ]
+
+    pvals = np.empty(n_components, dtype=float)
+    abs_null = np.abs(null)
+    abs_obs = np.abs(obs)
+    for k in range(n_components):
+        pvals[k] = (1 + np.sum(abs_null[:, k] >= abs_obs[k])) / (1 + n_permutations)
+
+    return obs, pvals
+
+
+def _get_loadings(cca, prs_cols, lipid_cols, component=1):
+    lipid_cols = [col.removeprefix("class_") for col in lipid_cols]
+
+    k = component - 1
+    prs_vec = cca.x_loadings_[:, k]
+    lipid_vec = cca.y_loadings_[:, k]
+
+    prs_loadings_df = pd.DataFrame(
+        {"cca_loading": prs_vec}, index=pd.Index(prs_cols, name="prs")
+    )
+    lipid_loadings_df = pd.DataFrame(
+        {"cca_loading": lipid_vec}, index=pd.Index(lipid_cols, name="class")
+    )
+    return prs_loadings_df, lipid_loadings_df

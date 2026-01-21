@@ -37,8 +37,8 @@ summary(Y_bin)
 # (Optional but recommended for sanity) Explore pairwise integration first
 #    sPLS between PRS and lipids (unsupervised wrt outcome)
 # -----------------------------
-expl_keepX <- 10   # PRS (17 total)
-expl_keepY <- 50   # lipids (361 total)
+expl_keepX <- 17   # PRS (17 total)
+expl_keepY <- 361   # lipids (16 total)
 
 spls_expl <- spls(X$prs, X$lipids, ncomp = 1, keepX = expl_keepX, keepY = expl_keepY)
 cor(spls_expl$variates$X, spls_expl$variates$Y)
@@ -69,7 +69,7 @@ set.seed(1)
 ncomp <- 1  # keep small for your setting; consider 2 only if stable
 
 test_keepX <- list(
-  lipids = c(10, 20, 40, 60, 80, 120),  # selected lipid species
+  lipids = c(3, 5, 8, 10, 12, 15),  # selected lipid species (out of 17)
   prs    = c(3, 5, 8, 10, 12, 15)        # selected PRS (out of 17)
 )
 
