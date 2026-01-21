@@ -70,7 +70,6 @@ def _lipid_class_scores(
     lipid_df: pd.DataFrame,
     lipid_class_scores_df: pd.DataFrame,
     class_col: str = "class",
-    prefix: str = "class_",
     min_frac_present: float = 0.7,
     ddof: int = 0,
 ) -> pd.DataFrame:
@@ -105,6 +104,6 @@ def _lipid_class_scores(
         score = Xz[cols].mean(axis=1, skipna=True)
 
         score[present_frac < min_frac_present] = np.nan
-        lipid_class_scores_df[f"{prefix}{cls}"] = score
+        lipid_class_scores_df[f"{cls}"] = score
 
     return lipid_class_scores_df

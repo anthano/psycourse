@@ -66,22 +66,22 @@ def _prep_lipid_data(multimodal_lipid_subset_df):
 
 def _prep_lipid_class_data(multimodal_lipid_subset_df):
     lipid_columns = [
-        "class_LPE",
-        "class_PC",
-        "class_PC_O",
-        "class_PC_P",
-        "class_PE",
-        "class_PE_P",
-        "class_TAG",
-        "class_dCer",
-        "class_dSM",
-        "class_CAR",
-        "class_CE",
-        "class_DAG",
-        "class_FA",
-        "class_LPC",
-        "class_LPC_O",
-        "class_LPC_P",
+        "LPE",
+        "PC",
+        "PC_O",
+        "PC_P",
+        "PE",
+        "PE_P",
+        "TAG",
+        "dCer",
+        "dSM",
+        "CAR",
+        "CE",
+        "DAG",
+        "FA",
+        "LPC",
+        "LPC_O",
+        "LPC_P",
     ]
 
     lipid_class_df = pd.DataFrame(index=multimodal_lipid_subset_df.index)
