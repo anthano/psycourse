@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Annotated
 
 import pandas as pd
-from pytask import Product, task
+from pytask import Product
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
-from psycourse.data_analysis.cca_regression import cca_prs_lipids_regression
+from psycourse.data_analysis.cca_regression import cca_regression_analysis
 
 RESULTS_DIR = BLD_RESULTS / "cca_regression"
 
@@ -27,58 +27,34 @@ prs_cols = [
 ]
 
 lipid_cols = [
-    "class_LPE",
-    "class_PC",
-    "class_PC_O",
-    "class_PC_P",
-    "class_PE",
-    "class_PE_P",
-    "class_TAG",
-    "class_dCer",
-    "class_dSM",
-    "class_CAR",
-    "class_CE",
-    "class_DAG",
-    "class_FA",
-    "class_LPC",
-    "class_LPC_O",
-    "class_LPC_P",
+    "LPE",
+    "PC",
+    "PC_O",
+    "PC_P",
+    "PE",
+    "PE_P",
+    "TAG",
+    "dCer",
+    "dSM",
+    "CAR",
+    "CE",
+    "DAG",
+    "FA",
+    "LPC",
+    "LPC_O",
+    "LPC_P",
 ]
 
-score_cols = ["PRS_CCA_Component_1", "Lipid_CCA_Component_1"]
 
-for score_col in score_cols:
-    cca_path = RESULTS_DIR / "cca_model.pkl"
-    regression_result_path = RESULTS_DIR / f"cca_{score_col}_regression_results.pkl"
-    prs_loadings_path = RESULTS_DIR / "cca_prs_loadings.pkl"
-    lipid_loadings_path = RESULTS_DIR / "cca_lipid_loadings.pkl"
+def task_cca_regression(
+    product: Annotated[Path, Product] = RESULTS_DIR / "results.pkl",
+) -> None:
+    df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
 
-    @task(id=score_col, kwargs={"score_col": score_col})
-    def _(
-        score_col: str,
-        produces_regression_result: Annotated[Path, Product] = regression_result_path,
-        _cca_path=cca_path,
-        _prs_loadings_path=prs_loadings_path,
-        _lipid_loadings_path=lipid_loadings_path,
-    ) -> None:
-        df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
-        (
-            cca,
-            prs_loadings_df,
-            lipid_loadings_df,
-            regression_result_df,
-        ) = cca_prs_lipids_regression(
-            multimodal_lipid_subset_df=df,
-            prs_cols=prs_cols,
-            lipid_cols=lipid_cols,
-            score_col=score_col,
-            n_permutations=10000,
-            random_state=42,
-        )
+    results_dict = cca_regression_analysis(
+        df=df, prs_cols=prs_cols, lipid_class_cols=lipid_cols
+    )
 
-        with open(_cca_path, "wb") as f:
-            pickle.dump(cca, f)
-
-        prs_loadings_df.to_pickle(_prs_loadings_path)
-        lipid_loadings_df.to_pickle(_lipid_loadings_path)
-        regression_result_df.to_pickle(produces_regression_result)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)  # ensure directory exists
+    with open(product, "wb") as f:
+        pickle.dump(results_dict, f)
