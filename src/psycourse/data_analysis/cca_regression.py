@@ -1,241 +1,199 @@
-from typing import Sequence
-
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 from sklearn.cross_decomposition import CCA
 from sklearn.preprocessing import StandardScaler
-from statsmodels.stats.multitest import multipletests
 
 
-def cca_prs_lipids_regression(
-    multimodal_lipid_subset_df: pd.DataFrame,
+def cca_regression_analysis(
+    df: pd.DataFrame,
     prs_cols: list[str],
-    lipid_cols: list[str],
-    n_components: int = 1,
-    score_col: str = "PRS_CCA_Component_1",  # or "Lipid_CCA_Component_1"
-    covar_cols: list[str] | None = None,
-    categorical_cols: Sequence[str] | None = None,
+    lipid_class_cols: list[str],
     y_col: str = "prob_class_5",
-    n_permutations: int = 10000,
-    random_state: int = 0,
-):
-    df = multimodal_lipid_subset_df.copy()
+    categorical_covars: tuple[str, ...] = ("sex", "smoker"),
+    n_components: int = 1,
+    n_perm_coupling: int = 10000,
+    n_perm_regression: int = 20000,
+    random_state: int = 42,
+) -> dict:
+    """
+    Perform canonical correlation analysis (CCA) on PRS and lipid class data,
+    controlling for covariates.
+    Use the first CCA component scores to analyse association with
+    cluster 5 probability via OLS regression, with permutation testing for significance.
+    """
 
-    use_cols = prs_cols + lipid_cols
-    data = df[use_cols].dropna().copy()
+    prs_covar_cols = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+    lipid_covar_cols = ["age", "sex", "bmi", "duration_illness", "smoker"]
 
-    cca_result_df, cca = _perform_cca(data, prs_cols, lipid_cols, n_components)
-    obs_corrs, p_corrs = _permute_cca_corr_pvals(
-        df=data,
-        prs_cols=prs_cols,
-        lipid_cols=lipid_cols,
-        n_components=n_components,
-        n_permutations=n_permutations,
-        random_state=random_state,
+    prs_cols = [col for col in prs_cols if col in df.columns]
+    lipid_class_cols = [col for col in lipid_class_cols if col in df.columns]
+    prs_covar_cols = [col for col in prs_covar_cols if col in df.columns]
+    lipid_covar_cols = [col for col in lipid_covar_cols if col in df.columns]
+
+    needed = list(
+        dict.fromkeys(
+            [y_col] + prs_cols + lipid_class_cols + prs_covar_cols + lipid_covar_cols
+        )
+    )
+    imputed_df = _impute_df(df[needed].copy())
+
+    # residualize blocks
+    prs_resid = _residualize_block(
+        imputed_df[prs_cols].astype(float),
+        imputed_df[prs_covar_cols],
+        categorical_covars,
+    )
+    lip_resid = _residualize_block(
+        imputed_df[lipid_class_cols].astype(float),
+        imputed_df[lipid_covar_cols],
+        categorical_covars,
     )
 
-    for k in range(len(p_corrs)):
-        cca_result_df[f"CCA_Correlation_p_perm_{k+1}"] = p_corrs[k]
+    # standardize residuals
+    X = StandardScaler().fit_transform(prs_resid.to_numpy())
+    Y = StandardScaler().fit_transform(lip_resid.to_numpy())
 
-    combined_df = _join_cca_results_with_df(multimodal_lipid_subset_df, cca_result_df)
-
-    prs_loadings_df, lipid_loadings_df = _get_loadings(cca, prs_cols, lipid_cols)
-
-    if categorical_cols is None:
-        categorical_cols = ("sex", "smoker")
-    if covar_cols is None:
-        if score_col.startswith("PRS_CCA_Component"):
-            covar_cols = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
-        elif score_col.startswith("Lipid_CCA_Component"):
-            covar_cols = ["age", "sex", "bmi", "duration_illness", "smoker"]
-
-    regression_result_df, t_obs = _perform_regression(
-        combined_df=combined_df,
-        y_col=y_col,
-        score_col=score_col,
-        covar_cols=covar_cols,
-        categorical_cols=categorical_cols,
-    )
-
-    p_perm = _permute_label_pval(
-        combined_df=combined_df,
-        t_observed=t_obs,
-        y_col=y_col,
-        score_col=score_col,
-        covar_cols=covar_cols,
-        categorical_cols=categorical_cols,
-        n_permutations=n_permutations,
-        random_state=random_state,
-    )
-
-    regression_result_df["p_perm_two_sided"] = p_perm
-    return cca, prs_loadings_df, lipid_loadings_df, regression_result_df
-
-
-########################################################################################
-# HELPER FUNCTIONS
-########################################################################################
-
-
-def _perform_cca(df, prs_cols, lipid_cols, n_components):
-    prs_x1 = df[prs_cols].to_numpy(dtype=float)
-    lipid_x2 = df[lipid_cols].to_numpy(dtype=float)
-
-    scaled_prs_X1 = StandardScaler().fit_transform(prs_x1)
-    scaled_lipid_X2 = StandardScaler().fit_transform(lipid_x2)
-
-    n_components = int(
-        min(n_components, scaled_prs_X1.shape[1], scaled_lipid_X2.shape[1])
-    )
+    n_components = int(min(n_components, X.shape[1], Y.shape[1]))
     cca = CCA(n_components=n_components, max_iter=5000)
-    prs_scores, lipid_scores = cca.fit_transform(scaled_prs_X1, scaled_lipid_X2)
+    U, V = cca.fit_transform(X, Y)
 
-    cols = {}
-    for k in range(n_components):
-        cols[f"PRS_CCA_Component_{k+1}"] = prs_scores[:, k]
-        cols[f"Lipid_CCA_Component_{k+1}"] = lipid_scores[:, k]
-        cols[f"CCA_Correlation_{k+1}"] = np.corrcoef(
-            prs_scores[:, k], lipid_scores[:, k]
-        )[0, 1]
+    can_corr = float(np.corrcoef(U[:, 0], V[:, 0])[0, 1])
 
-    result_df = pd.DataFrame(cols, index=df.index)
-    return result_df, cca
+    # orient comp1 to positive correlation for interpretability
+    if can_corr < 0:
+        V[:, 0] *= -1
+        cca.y_loadings_[:, 0] *= -1
+        can_corr = -can_corr
+
+    # coupling permutation p-value (permute Y rows, refit CCA)
+    rng = np.random.default_rng(random_state)
+    null = np.empty(n_perm_coupling, dtype=float)
+    for i in range(n_perm_coupling):
+        idx = rng.permutation(Y.shape[0])
+        cca_p = CCA(n_components=1, max_iter=5000)
+        Up, Vp = cca_p.fit_transform(X, Y[idx, :])
+        null[i] = np.corrcoef(Up[:, 0], Vp[:, 0])[0, 1]
+    p_coupling = float(
+        (1 + np.sum(np.abs(null) >= abs(can_corr))) / (1 + n_perm_coupling)
+    )
+
+    # build score df for regression
+    scores_df = pd.DataFrame(
+        {
+            "PRS_CCA_Component_1": U[:, 0],
+            "Lipid_CCA_Component_1": V[:, 0],
+            y_col: imputed_df[y_col].to_numpy(dtype=float),
+        },
+        index=imputed_df.index,
+    )
+
+    # regress continuous probability on each score
+    res_prs, t_prs = _fit_ols_get_t(scores_df, y_col, "PRS_CCA_Component_1")
+    res_lip, t_lip = _fit_ols_get_t(scores_df, y_col, "Lipid_CCA_Component_1")
+
+    p_perm_prs = _permute_regression_pval(
+        scores_df=scores_df,
+        y_col=y_col,
+        score_col="PRS_CCA_Component_1",
+        t_observed=t_prs,
+        n_permutations=n_perm_regression,
+        random_state=random_state,
+    )
+    p_perm_lip = _permute_regression_pval(
+        scores_df=scores_df,
+        y_col=y_col,
+        score_col="Lipid_CCA_Component_1",
+        t_observed=t_lip,
+        n_permutations=n_perm_regression,
+        random_state=random_state,
+    )
+
+    prs_loadings = pd.Series(
+        cca.x_loadings_[:, 0], index=prs_cols, name="cca_loading"
+    ).sort_values(key=np.abs, ascending=False)
+    lipid_loadings = pd.Series(
+        cca.y_loadings_[:, 0], index=lipid_class_cols, name="cca_loading"
+    ).sort_values(key=np.abs, ascending=False)
+
+    results_dict = {
+        "cca": cca,
+        "canonical_corr_comp1": can_corr,
+        "p_coupling_perm_comp1": p_coupling,
+        "scores": scores_df,
+        "reg_prob_on_prs_score": res_prs,
+        "p_perm_prob_on_prs_score": float(p_perm_prs),
+        "reg_prob_on_lipid_score": res_lip,
+        "p_perm_prob_on_lipid_score": float(p_perm_lip),
+        "prs_loadings": prs_loadings,
+        "lipid_class_loadings": lipid_loadings,
+    }
+
+    return results_dict
 
 
-def _join_cca_results_with_df(multimodal_df, result_df):
-    return multimodal_df.join(result_df, how="inner")
-
-
-def _build_formula(y_col, score_col, covar_cols, categorical_cols):
-    terms = [score_col]
-    for col in covar_cols:
-        if col in categorical_cols:
-            terms.append(f"C({col})")
-        else:
-            terms.append(col)
-    return f"{y_col} ~ " + " + ".join(terms)
-
-
-def _fit_glm_get_t(subset, y_col, score_col, covar_cols, categorical_cols):
-    formula = _build_formula(y_col, score_col, covar_cols, categorical_cols)
-    res = smf.glm(formula=formula, data=subset).fit(cov_type="HC3")
+def _fit_ols_get_t(scores_df: pd.DataFrame, y_col: str, score_col: str):
+    res = smf.ols(f"{y_col} ~ {score_col}", data=scores_df).fit(cov_type="HC3")
     coef = res.params.get(score_col, np.nan)
     se = res.bse.get(score_col, np.nan)
     t_stat = coef / se if np.isfinite(coef) and np.isfinite(se) and se != 0 else np.nan
-    return res, t_stat
+    return res, float(t_stat)
 
 
-def _perform_regression(combined_df, y_col, score_col, covar_cols, categorical_cols):
-    cols = [score_col, y_col, *covar_cols]
-    subset = combined_df[cols].dropna()
-
-    res, t_obs = _fit_glm_get_t(subset, y_col, score_col, covar_cols, categorical_cols)
-
-    coef = res.params.get(score_col, np.nan)
-    se = res.bse.get(score_col, np.nan)
-    pval = res.pvalues.get(score_col, np.nan)
-    ci_lower, ci_upper = res.conf_int().loc[score_col].tolist()
-
-    out = pd.DataFrame(
-        [
-            {
-                "prs": score_col,
-                "coef": coef,
-                "se": se,
-                "ci_low": ci_lower,
-                "ci_high": ci_upper,
-                "pval": pval,
-            }
-        ]
-    ).set_index("prs")
-
-    out["FDR"] = multipletests(out["pval"], method="fdr_bh")[1]
-    out["log10_FDR"] = -np.log10(np.clip(out["FDR"], np.finfo(float).tiny, None))
-    out = out.sort_values(by="FDR")
-    return out, t_obs
-
-
-def _permute_label_pval(
-    combined_df,
-    t_observed,
-    y_col,
-    score_col,
-    covar_cols,
-    categorical_cols,
-    n_permutations=10000,
-    random_state=0,
-):
-    cols = [score_col, y_col, *covar_cols]
-    subset = combined_df[cols].dropna().copy()
-
+def _permute_regression_pval(
+    scores_df: pd.DataFrame,
+    y_col: str,
+    score_col: str,
+    t_observed: float,
+    n_permutations: int = 20000,
+    random_state: int = 0,
+) -> float:
     rng = np.random.default_rng(random_state)
-    y = subset[y_col].to_numpy()
-
+    y = scores_df[y_col].to_numpy()
     t_perm = np.empty(n_permutations, dtype=float)
+
     for i in range(n_permutations):
-        subset_perm = subset.copy()
-        subset_perm[y_col] = rng.permutation(y)
-        _, t_perm[i] = _fit_glm_get_t(
-            subset_perm, y_col, score_col, covar_cols, categorical_cols
-        )
+        perm_df = scores_df.copy()
+        perm_df[y_col] = rng.permutation(y)
+        _, t_perm[i] = _fit_ols_get_t(perm_df, y_col, score_col)
 
     t_perm = t_perm[np.isfinite(t_perm)]
     if not np.isfinite(t_observed) or t_perm.size == 0:
-        return np.nan
+        return float("nan")
 
     return float((1 + np.sum(np.abs(t_perm) >= abs(t_observed))) / (1 + t_perm.size))
 
 
-def _permute_cca_corr_pvals(
-    df,
-    prs_cols,
-    lipid_cols,
-    n_components,
-    n_permutations=5000,
-    random_state=0,
-):
-    X1 = StandardScaler().fit_transform(df[prs_cols].to_numpy(dtype=float))
-    X2 = StandardScaler().fit_transform(df[lipid_cols].to_numpy(dtype=float))
-
-    n_components = int(min(n_components, X1.shape[1], X2.shape[1]))
-    rng = np.random.default_rng(random_state)
-
-    cca = CCA(n_components=n_components, max_iter=5000)
-    U, V = cca.fit_transform(X1, X2)
-    obs = np.array(
-        [np.corrcoef(U[:, k], V[:, k])[0, 1] for k in range(n_components)], dtype=float
-    )
-
-    null = np.empty((n_permutations, n_components), dtype=float)
-    for i in range(n_permutations):
-        idx = rng.permutation(X2.shape[0])
-        cca_p = CCA(n_components=n_components, max_iter=5000)
-        Up, Vp = cca_p.fit_transform(X1, X2[idx, :])
-        null[i, :] = [
-            np.corrcoef(Up[:, k], Vp[:, k])[0, 1] for k in range(n_components)
-        ]
-
-    pvals = np.empty(n_components, dtype=float)
-    abs_null = np.abs(null)
-    abs_obs = np.abs(obs)
-    for k in range(n_components):
-        pvals[k] = (1 + np.sum(abs_null[:, k] >= abs_obs[k])) / (1 + n_permutations)
-
-    return obs, pvals
+def _impute_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.replace([np.inf, -np.inf], np.nan).copy()
+    for col in df.columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            fill = df[col].median()
+            if pd.isna(fill):
+                fill = 0.0
+        else:
+            mode = df[col].mode(dropna=True)
+            fill = mode.iloc[0] if len(mode) else ""
+        df[col] = df[col].fillna(fill)
+    return df
 
 
-def _get_loadings(cca, prs_cols, lipid_cols, component=1):
-    lipid_cols = [col.removeprefix("class_") for col in lipid_cols]
+def _residualize_block(
+    block: pd.DataFrame,
+    cov: pd.DataFrame,
+    categorical_covars: tuple[str, ...],
+) -> pd.DataFrame:
+    cov = cov.copy()
+    for col in categorical_covars:
+        if col in cov.columns:
+            cov[col] = cov[col].astype("category")
 
-    k = component - 1
-    prs_vec = cca.x_loadings_[:, k]
-    lipid_vec = cca.y_loadings_[:, k]
+    C = pd.get_dummies(cov, drop_first=False)
+    C.insert(0, "Intercept", 1.0)
 
-    prs_loadings_df = pd.DataFrame(
-        {"cca_loading": prs_vec}, index=pd.Index(prs_cols, name="prs")
-    )
-    lipid_loadings_df = pd.DataFrame(
-        {"cca_loading": lipid_vec}, index=pd.Index(lipid_cols, name="class")
-    )
-    return prs_loadings_df, lipid_loadings_df
+    X = C.to_numpy(dtype=float)
+    Y = block.to_numpy(dtype=float)
+
+    beta, *_ = np.linalg.lstsq(X, Y, rcond=None)
+    resid = Y - X @ beta
+    return pd.DataFrame(resid, index=block.index, columns=block.columns)
