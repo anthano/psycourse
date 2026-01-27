@@ -132,6 +132,11 @@ def cca_regression_analysis(
     return results_dict
 
 
+########################################################################################
+# HELPER FUNCTIONS
+########################################################################################
+
+
 def _fit_ols_get_t(scores_df: pd.DataFrame, y_col: str, score_col: str):
     res = smf.ols(f"{y_col} ~ {score_col}", data=scores_df).fit(cov_type="HC3")
     coef = res.params.get(score_col, np.nan)
