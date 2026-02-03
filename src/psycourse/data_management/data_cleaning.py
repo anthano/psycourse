@@ -302,7 +302,7 @@ def clean_lipidomic_data(sample_description, lipid_intensities):
     """Cleans the lipidomic data. Takes the lipid_intensities file and the
     sample description file; removes duplicates and removes the lipids that are affected
     by fasting status according to Tkachev et al., 2023 or have a skewed distribution
-    according to analysis by colleagues in Munich (did not check myself).
+    according to analysis by colleagues in Munich.
 
     Args:
         sample_description(pd.DataFrame): The input dataframe containing
