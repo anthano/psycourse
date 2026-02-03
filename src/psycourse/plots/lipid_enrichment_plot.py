@@ -136,7 +136,7 @@ def plot_lipid_coef_distributions(
     ax.axhline(0, linestyle="--", color=edge, alpha=0.6)
     ax.set_xticks(np.arange(len(classes)))
     ax.set_xticklabels(classes, rotation=45, ha="right")
-    ax.set_ylabel("Lipid coefficient (probability of class 5)")
+    ax.set_ylabel("Coefficient lipid X severe psychosis subtype probability)")
     ax.set_xlabel("Lipid class")
     fig.tight_layout()
 
