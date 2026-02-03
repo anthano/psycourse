@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Patch
 
 
 def enrichment_strength_plot(enrichment_results, variant):
@@ -43,7 +44,6 @@ def plot_lipid_coef_distributions(
     results_df,
     annot_df,
     enrich_df,
-    variant,
     coef_col="coef",
     class_col="class",
     fdr_thresh=0.05,
@@ -73,30 +73,91 @@ def plot_lipid_coef_distributions(
     merged["class"] = merged["class"].astype(str)
 
     # order classes by NES from enrichment results if available
+    tested = set(enrich_df.index)
+
     classes_in_data = merged["class"].unique().tolist()
-    classes = classes_in_data
+    classes = [cl for cl in classes_in_data if cl in tested]
 
     # list of coefficient arrays per class
     data = [merged.loc[merged["class"] == cl, "coef"].values for cl in classes]
 
     # figure
+
     fig, ax = plt.subplots(figsize=figsize)
-    bp = ax.boxplot(data, positions=np.arange(len(classes)), manage_ticks=False)  # noqa:F841
 
-    ax.axhline(0, linestyle="--")
-    ax.set_xticks(np.arange(len(classes)))
-    ax.set_xticklabels(classes, rotation=90)
-    ax.set_ylabel("Lipid coefficient (probability of class 5)")
-    ax.set_xlabel(f"Lipid class, covariate: {variant}")
-
-    # mark significant classes (GSEA FDR < threshold) with an asterisk
+    # --- colors: highlight significant classes ---
     sig_classes = set(enrich_df.index[enrich_df["FDR"] < fdr_thresh])
-    ymin, ymax = ax.get_ylim()
-    y_text = ymax + 0.02 * (ymax - ymin)
-    for i, cl in enumerate(classes):
-        if cl in sig_classes:
-            ax.text(i, y_text, "*", ha="center", va="bottom")
 
-    ax.set_ylim(ymin, y_text + 0.05 * (ymax - ymin))
+    color_sig = "#3B4CC0"
+    color_nonsig = "#D9D9D9"
+    edge = "#2b2b2b"
+
+    bp = ax.boxplot(
+        data,
+        positions=np.arange(len(classes)),
+        manage_ticks=False,
+        patch_artist=True,
+        showfliers=True,
+        flierprops=dict(
+            marker="o",
+            markersize=3,
+            alpha=0.4,
+            markerfacecolor=edge,
+            markeredgecolor=edge,
+            markeredgewidth=0,
+        ),
+    )
+
+    for patch, cl in zip(bp["boxes"], classes, strict=False):
+        patch.set_facecolor(color_sig if cl in sig_classes else color_nonsig)
+        patch.set_edgecolor(edge)
+        patch.set_alpha(0.85)
+
+    for k in ("whiskers", "caps", "medians"):
+        for artist in bp[k]:
+            artist.set_color(edge)
+            artist.set_linewidth(1.2)
+
+    ax.grid(axis="y", alpha=0.25)
+
+    all_vals = np.concatenate([v for v in data if len(v)])
+    m = np.max(np.abs(all_vals))
+    pad = 0.12 * m
+    ax.set_ylim(-(m + pad), (m + pad))
+
+    star_gap = 0.06 * m
+    y_top = ax.get_ylim()[1]
+    for i, (cl, vals) in enumerate(zip(classes, data, strict=False)):
+        if cl in sig_classes and len(vals):
+            y_star = min(np.max(vals) + star_gap, y_top - 0.02 * (2 * (m + pad)))
+            ax.text(i, y_star, "*", ha="center", va="bottom", fontsize=12)
+
+    # labels etc.
+    ax.axhline(0, linestyle="--", color=edge, alpha=0.6)
+    ax.set_xticks(np.arange(len(classes)))
+    ax.set_xticklabels(classes, rotation=45, ha="right")
+    ax.set_ylabel("Lipid coefficient (probability of class 5)")
+    ax.set_xlabel("Lipid class")
     fig.tight_layout()
+
+    legend_handles = [
+        Patch(facecolor=color_sig, edgecolor=edge, alpha=0.85, label="Significant"),
+        Patch(
+            facecolor=color_nonsig, edgecolor=edge, alpha=0.85, label="Not significant"
+        ),
+    ]
+
+    ax.legend(
+        handles=legend_handles,
+        frameon=False,
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+        borderaxespad=0.0,
+    )
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.set_axisbelow(True)
+    ax.grid(axis="y", alpha=0.2)
+
     return fig, ax
