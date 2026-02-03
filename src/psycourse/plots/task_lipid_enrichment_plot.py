@@ -88,6 +88,6 @@ for variant, files in LIPID_PLOT_VARIANTS.items():
         results_df = pd.read_pickle(results_df_path)
         annot_df = pd.read_pickle(annot_df_path)
         enrich_df = pd.read_pickle(enrichment_df_path)
-        fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df, variant)
+        fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df)
         for path in produces:
-            fig.savefig(path)
+            fig.savefig(path, bbox_inches="tight")
