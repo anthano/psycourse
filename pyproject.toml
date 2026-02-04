@@ -88,6 +88,7 @@ pingouin = ">=0.5.5,<0.6"
 r-base = ">=4.4.3,<4.6"
 pytask-r = ">=0.4.1,<0.5"
 pyarrow = ">=21.0.0,<23"
+openpyxl = ">=3.1.5,<4"
 
 [tool.pixi.pypi-dependencies]
 pdbp = "*"
