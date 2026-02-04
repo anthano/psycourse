@@ -76,7 +76,7 @@ def _create_task(modality):
         "depends_on": list(config.values()),
         "produces": BLD_RESULTS
         / "descriptive_stats"
-        / f"n_per_analysis_{modality}.csv",
+        / f"n_per_analysis_{modality}.pkl",
         "cov_1_name": cov_names[0],
         "cov_2_name": cov_names[1],
         "standard_cov_path": config["standard_cov"],
@@ -123,4 +123,4 @@ for modality in ["prs", "lipid"]:
         )
 
         # Save output
-        n_per_analysis_df.to_csv(produces)
+        n_per_analysis_df.to_pickle(produces)
