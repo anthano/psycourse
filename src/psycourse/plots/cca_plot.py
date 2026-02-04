@@ -42,46 +42,65 @@ def plot_cca_regression_summary(
     prs_top = _topk_signed(prs_load, top_k)
     lip_top = _topk_signed(lip_load, top_k)
 
+    # Define colors from your theme
+    primary_color = "#3B4CC0"
+    secondary_color = "#7B68EE"  # lighter purple for variety
+    dark_gray = "#2b2b2b"
+    light_gray = "#D9D9D9"
+
     # layout: 2 rows x 4 cols
     fig, axes = plt.subplots(2, 4, figsize=figsize, constrained_layout=True)
     ax_uv, ax_u_y, ax_v_y, ax_null_coup = axes[0]
     ax_prs, ax_lip, ax_null_prs, ax_null_lip = axes[1]
 
+    # Set background color for the figure
+    fig.patch.set_facecolor("white")
+
     # (A) U1 vs V1
-    ax_uv.scatter(u, v, s=18, alpha=0.8)
+    ax_uv.scatter(u, v, s=25, alpha=0.6, color=primary_color, edgecolors="none")
     a, b = _ols_line(u, v)
     xx = np.linspace(np.nanmin(u), np.nanmax(u), 200)
-    ax_uv.plot(xx, a + b * xx)
+    ax_uv.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
     title = f"U1 vs V1 (r={can_corr:.3f})"
     if p_coup is not None:
-        title += f", p_perm={float(p_coup):.3g}"
-    ax_uv.set_title(title)
-    ax_uv.set_xlabel("PRS CCA Component 1 (U1)")
-    ax_uv.set_ylabel("Lipid CCA Component 1 (V1)")
+        title += f", p={float(p_coup):.3g}"
+    ax_uv.set_title(title, fontsize=11, pad=10)
+    ax_uv.set_xlabel("PRS CCA Component 1 (U1)", fontsize=10)
+    ax_uv.set_ylabel("Lipid CCA Component 1 (V1)", fontsize=10)
+    ax_uv.grid(True, alpha=0.3, linestyle=":", color=light_gray)
+    ax_uv.set_axisbelow(True)
 
     # (B) y vs U1
-    ax_u_y.scatter(u, y_plot, s=18, alpha=0.8)
+    ax_u_y.scatter(u, y_plot, s=25, alpha=0.6, color=primary_color, edgecolors="none")
     a, b = _ols_line(u, y)
     xx = np.linspace(np.nanmin(u), np.nanmax(u), 200)
-    ax_u_y.plot(xx, a + b * xx)
+    ax_u_y.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
     p = results.get("p_perm_prob_on_prs_score", None)
     ax_u_y.set_title(
-        f"{y_col} ~ U1" + (f" (p_perm={float(p):.3g})" if p is not None else "")
+        f"{y_col} ~ U1" + (f" (p={float(p):.3g})" if p is not None else ""),
+        fontsize=11,
+        pad=10,
     )
-    ax_u_y.set_xlabel("U1")
-    ax_u_y.set_ylabel(y_col)
+    ax_u_y.set_xlabel("U1", fontsize=10)
+    ax_u_y.set_ylabel(y_col, fontsize=10)
+    ax_u_y.grid(True, alpha=0.3, linestyle=":", color=light_gray)
+    ax_u_y.set_axisbelow(True)
 
     # (C) y vs V1
-    ax_v_y.scatter(v, y_plot, s=18, alpha=0.8)
+    ax_v_y.scatter(v, y_plot, s=25, alpha=0.6, color=secondary_color, edgecolors="none")
     a, b = _ols_line(v, y)
     xx = np.linspace(np.nanmin(v), np.nanmax(v), 200)
-    ax_v_y.plot(xx, a + b * xx)
+    ax_v_y.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
     p = results.get("p_perm_prob_on_lipid_score", None)
     ax_v_y.set_title(
-        f"{y_col} ~ V1" + (f" (p_perm={float(p):.3g})" if p is not None else "")
+        f"{y_col} ~ V1" + (f" (p={float(p):.3g})" if p is not None else ""),
+        fontsize=11,
+        pad=10,
     )
-    ax_v_y.set_xlabel("V1")
-    ax_v_y.set_ylabel(y_col)
+    ax_v_y.set_xlabel("V1", fontsize=10)
+    ax_v_y.set_ylabel(y_col, fontsize=10)
+    ax_v_y.grid(True, alpha=0.3, linestyle=":", color=light_gray)
+    ax_v_y.set_axisbelow(True)
 
     # (D) Coupling null (r)
     coupling_null = results.get("coupling_null", None)
@@ -90,29 +109,59 @@ def plot_cca_regression_summary(
     else:
         null = np.asarray(coupling_null, float)
         null = null[np.isfinite(null)]
-        ax_null_coup.hist(null, bins=40, alpha=0.85)
-        ax_null_coup.axvline(can_corr, linewidth=2)
-        ax_null_coup.set_title("Coupling perm null (r)")
-        ax_null_coup.set_xlabel("Null canonical correlation")
-        ax_null_coup.set_ylabel("Count")
+        ax_null_coup.hist(
+            null,
+            bins=40,
+            alpha=0.7,
+            color=light_gray,
+            edgecolor=dark_gray,
+            linewidth=0.5,
+        )
+        ax_null_coup.axvline(
+            can_corr, color=primary_color, linewidth=2.5, alpha=0.9, label="Observed"
+        )
+        ax_null_coup.set_title("Coupling permutation null", fontsize=11, pad=10)
+        ax_null_coup.set_xlabel("Null canonical correlation", fontsize=10)
+        ax_null_coup.set_ylabel("Count", fontsize=10)
+        ax_null_coup.legend(frameon=False, fontsize=9)
+        ax_null_coup.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
+        ax_null_coup.set_axisbelow(True)
 
     # (E) PRS loadings
     if len(prs_top) == 0:
         ax_prs.set_axis_off()
     else:
-        ax_prs.barh(prs_top.index[::-1], prs_top.to_numpy()[::-1])
-        ax_prs.axvline(0, linewidth=1)
-        ax_prs.set_title(f"Top PRS loadings (k={len(prs_top)})")
-        ax_prs.set_xlabel("Loading on U1")
+        colors = [
+            primary_color if x >= 0 else secondary_color for x in prs_top.to_numpy()
+        ]
+        ax_prs.barh(
+            prs_top.index[::-1], prs_top.to_numpy()[::-1], color=colors[::-1], alpha=0.8
+        )
+        ax_prs.axvline(0, color=dark_gray, linewidth=1.5, alpha=0.8)
+        ax_prs.set_title(f"Top PRS loadings (k={len(prs_top)})", fontsize=11, pad=10)
+        ax_prs.set_xlabel("Loading on U1", fontsize=10)
+        ax_prs.tick_params(axis="y", labelsize=9)
+        ax_prs.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="x")
+        ax_prs.set_axisbelow(True)
 
     # (F) Lipid loadings
     if len(lip_top) == 0:
         ax_lip.set_axis_off()
     else:
-        ax_lip.barh(lip_top.index[::-1], lip_top.to_numpy()[::-1])
-        ax_lip.axvline(0, linewidth=1)
-        ax_lip.set_title(f"Top lipid-class loadings (k={len(lip_top)})")
-        ax_lip.set_xlabel("Loading on V1")
+        colors = [
+            primary_color if x >= 0 else secondary_color for x in lip_top.to_numpy()
+        ]
+        ax_lip.barh(
+            lip_top.index[::-1], lip_top.to_numpy()[::-1], color=colors[::-1], alpha=0.8
+        )
+        ax_lip.axvline(0, color=dark_gray, linewidth=1.5, alpha=0.8)
+        ax_lip.set_title(
+            f"Top lipid-class loadings (k={len(lip_top)})", fontsize=11, pad=10
+        )
+        ax_lip.set_xlabel("Loading on V1", fontsize=10)
+        ax_lip.tick_params(axis="y", labelsize=9)
+        ax_lip.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="x")
+        ax_lip.set_axisbelow(True)
 
     # helper to extract observed t
     def _get_t(res_key: str, col_name: str) -> float:
@@ -139,12 +188,29 @@ def plot_cca_regression_summary(
     else:
         null = np.asarray(prs_null_t, float)
         null = null[np.isfinite(null)]
-        ax_null_prs.hist(null, bins=40, alpha=0.85)
+        ax_null_prs.hist(
+            null,
+            bins=40,
+            alpha=0.7,
+            color=light_gray,
+            edgecolor=dark_gray,
+            linewidth=0.5,
+        )
         if np.isfinite(t_obs_prs):
-            ax_null_prs.axvline(t_obs_prs, linewidth=2)
-        ax_null_prs.set_title("PRS score perm null (t)")
-        ax_null_prs.set_xlabel("Null t-statistic")
-        ax_null_prs.set_ylabel("Count")
+            ax_null_prs.axvline(
+                t_obs_prs,
+                color=primary_color,
+                linewidth=2.5,
+                alpha=0.9,
+                label="Observed",
+            )
+        ax_null_prs.set_title("PRS score permutation null", fontsize=11, pad=10)
+        ax_null_prs.set_xlabel("Null t-statistic", fontsize=10)
+        ax_null_prs.set_ylabel("Count", fontsize=10)
+        if np.isfinite(t_obs_prs):
+            ax_null_prs.legend(frameon=False, fontsize=9)
+        ax_null_prs.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
+        ax_null_prs.set_axisbelow(True)
 
     # (H) Lipid regression null (t)
     lip_null_t = results.get("lip_regression_null_t", None)
@@ -154,12 +220,29 @@ def plot_cca_regression_summary(
     else:
         null = np.asarray(lip_null_t, float)
         null = null[np.isfinite(null)]
-        ax_null_lip.hist(null, bins=40, alpha=0.85)
+        ax_null_lip.hist(
+            null,
+            bins=40,
+            alpha=0.7,
+            color=light_gray,
+            edgecolor=dark_gray,
+            linewidth=0.5,
+        )
         if np.isfinite(t_obs_lip):
-            ax_null_lip.axvline(t_obs_lip, linewidth=2)
-        ax_null_lip.set_title("Lipid score perm null (t)")
-        ax_null_lip.set_xlabel("Null t-statistic")
-        ax_null_lip.set_ylabel("Count")
+            ax_null_lip.axvline(
+                t_obs_lip,
+                color=secondary_color,
+                linewidth=2.5,
+                alpha=0.9,
+                label="Observed",
+            )
+        ax_null_lip.set_title("Lipid score permutation null", fontsize=11, pad=10)
+        ax_null_lip.set_xlabel("Null t-statistic", fontsize=10)
+        ax_null_lip.set_ylabel("Count", fontsize=10)
+        if np.isfinite(t_obs_lip):
+            ax_null_lip.legend(frameon=False, fontsize=9)
+        ax_null_lip.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
+        ax_null_lip.set_axisbelow(True)
 
     return fig
 
