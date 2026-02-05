@@ -9,7 +9,7 @@ from psycourse.plots.cca_plot import plot_cca_regression_summary
 
 products = {
     "plots": BLD_RESULTS / "plots" / "cca" / "cca_regression.svg",
-    "plots_for_writing": WRITING / "plots" / "cca" / "cca_regression.svg",
+    "plots_for_writing": WRITING / "plots" / "cca" / "cca_regression.png",
 }
 
 

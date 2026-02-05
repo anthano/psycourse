@@ -11,7 +11,7 @@ from psycourse.plots.mediation_plots import (
 
 products_results_plot = {
     "plots": BLD_RESULTS / "plots" / "mediation" / "mediation_results.svg",
-    "plots_for_writing": WRITING / "plots" / "mediation" / "mediation_results.svg",
+    "plots_for_writing": WRITING / "plots" / "mediation" / "mediation_results.png",
 }
 
 
@@ -36,7 +36,7 @@ def task_plot_mediation_results(
 
 products_heatmap = {
     "plots": BLD_RESULTS / "plots" / "mediation" / "mediation_heatmap.svg",
-    "plots_for_writing": WRITING / "plots" / "mediation" / "mediation_heatmap.svg",
+    "plots_for_writing": WRITING / "plots" / "mediation" / "mediation_heatmap.png",
 }
 
 
