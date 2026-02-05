@@ -3,11 +3,38 @@ import pickle
 import pandas as pd
 from pytask import task
 
-from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
+from psycourse.config import BLD_DATA, BLD_RESULTS, SRC, WRITING
 from psycourse.descriptive_stats.descriptive_tables import (
     create_lipid_table,
+    get_demographics_table,
     get_participants_per_analysis,
 )
+
+DEMOGRAPHICS_INPUT_PATH = {
+    "df": BLD_DATA / "multimodal_complete_df.pkl",
+    "lipid_df": BLD_DATA / "multimodal_lipid_subset_df.pkl",
+}
+
+DEMOGRAPHICS_OUTPUT_PATH = {
+    "pkl": BLD_RESULTS / "descriptive_stats" / "demographics.pkl",
+    "csv": BLD_RESULTS / "descriptive_stats" / "demographics.csv",
+    "md": WRITING / "tables" / "demographics.md",
+}
+
+
+def task_get_demographics_table(
+    script_path=SRC / "descriptive_stats" / "descriptive_tables.py",
+    input_data_path=DEMOGRAPHICS_INPUT_PATH,
+    produces=DEMOGRAPHICS_OUTPUT_PATH,
+):
+    df = pd.read_pickle(DEMOGRAPHICS_INPUT_PATH["df"])
+    lipid_df = pd.read_pickle(DEMOGRAPHICS_INPUT_PATH["lipid_df"])
+
+    demographics_table = get_demographics_table(df, lipid_df)
+
+    demographics_table.to_pickle(DEMOGRAPHICS_OUTPUT_PATH["pkl"])
+    demographics_table.to_csv(DEMOGRAPHICS_OUTPUT_PATH["csv"], index=False)
+    demographics_table.to_markdown(DEMOGRAPHICS_OUTPUT_PATH["md"], index=False)
 
 
 @task()
