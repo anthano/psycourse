@@ -39,7 +39,7 @@ def task_plot_univariate_lipid_regression_standard_cov(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_standard_cov.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_standard_cov.svg",
+    / "univariate_lipid_regression_plot_standard_cov.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
@@ -57,7 +57,7 @@ def task_plot_univariate_lipid_regression_cov_med(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_med.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_med.svg",
+    / "univariate_lipid_regression_plot_cov_med.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
@@ -75,7 +75,7 @@ def task_plot_univariate_lipid_regression_cov_diagnosis(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_diagnosis.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_diagnosis.svg",
+    / "univariate_lipid_regression_plot_cov_diagnosis.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
@@ -93,7 +93,7 @@ def task_plot_univariate_lipid_regression_cov_med_and_diag(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_med_and_diag.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_med_and_diag.svg",
+    / "univariate_lipid_regression_plot_cov_med_and_diag.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
@@ -115,7 +115,7 @@ def task_plot_univariate_prs_regression_standard_cov(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_regression_plot_standard_cov.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_standard_cov.svg",
+    / "univariate_prs_regression_plot_standard_cov.png",
 ):
     prs_results = pd.read_pickle(prs_results_path)
     fig, ax = plot_univariate_prs_regression(prs_results)
@@ -131,7 +131,7 @@ def task_plot_univariate_prs_regression_cov_bmi(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_regression_plot_cov_bmi.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_bmi.svg",
+    / "univariate_prs_regression_plot_cov_bmi.png",
 ):
     prs_results = pd.read_pickle(prs_results_path)
     fig, ax = plot_univariate_prs_regression(prs_results)
@@ -147,7 +147,7 @@ def task_plot_univariate_prs_regression_cov_diagnosis(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_regression_plot_cov_diagnosis.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_diagnosis.svg",
+    / "univariate_prs_regression_plot_cov_diagnosis.png",
 ):
     prs_results = pd.read_pickle(prs_results_path)
     fig, ax = plot_univariate_prs_regression(prs_results)
@@ -170,7 +170,7 @@ def task_plot_corr_matrix_lipid_top20(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_corr_matrix_top20.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_corr_matrix_top20.svg",
+    / "lipid_corr_matrix_top20.png",
 ):
     multimodal_df = pd.read_pickle(multimodal_data_path)
     lipid_top20 = pd.read_pickle(top20_lipids_path)
@@ -187,7 +187,7 @@ def task_plot_corr_matrix_prs(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "prs_corr_matrix.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "prs_corr_matrix.svg",
+    / "prs_corr_matrix.png",
 ):
     multimodal_df = pd.read_pickle(multimodal_data_path)
     plot_corr_matrix_prs(multimodal_df)
@@ -203,7 +203,7 @@ def task_plot_prs_cv_delta_mse(
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "prs_cv_delta_mse_plot.svg",
     writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "prs_cv_delta_mse_plot.svg",
+    / "prs_cv_delta_mse_plot.png",
 ):
     delta_df = pd.read_pickle(delta_df_path)
     fig, ax = plot_prs_cv_delta_mse(delta_df)
