@@ -67,13 +67,13 @@ prs_data_paths = {
     "bpd_data": DATA_DIR / "prs" / "final_bpd_2025-07-02_prs_collection.tsv",
     "lipid_bpd_data": DATA_DIR
     / "lipid_prs"
-    / "lipids_bpd_prs_2026-01-02_prs_collection.tsv",
+    / "lipids_bpd_prs_2026-02-06_prs_collection.tsv",
     "lipid_scz_data": DATA_DIR
     / "lipid_prs"
-    / "lipids_scz_prs_2026-01-03_prs_collection.tsv",
+    / "lipids_scz_prs_2026-02-06_prs_collection.tsv",
     "lipid_mdd_data": DATA_DIR
     / "lipid_prs"
-    / "lipids_mdd_prs_2025-12-16_prs_collection.tsv",
+    / "lipids_mdd_prs_2026-02-06_prs_collection.tsv",
 }
 
 
