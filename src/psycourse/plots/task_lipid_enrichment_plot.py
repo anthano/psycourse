@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytask
 
@@ -91,3 +92,56 @@ for variant, files in LIPID_PLOT_VARIANTS.items():
         fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df)
         for path in produces:
             fig.savefig(path, bbox_inches="tight")
+
+
+COMBINED_VARIANTS = [
+    ("default", "A", "Primary Model"),
+    ("cov_diagnosis", "B", "Covariate: diagnosis"),
+    ("cov_med", "C", "Covariate: medication"),
+]
+
+
+@pytask.task(
+    id="combined_bp_plot",
+    kwargs={
+        "produces": dual_output("lipid_enrichment_bp_plot_combined.svg"),
+    },
+)
+def task_lipid_coef_distribution_combined(
+    produces: Annotated[list[Path], pytask.Product],
+):
+    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+
+    fig, axes = plt.subplots(
+        nrows=3,
+        ncols=1,
+        figsize=(10, 13),  # tall enough for three stacked panels
+        constrained_layout=True,  # handles tight spacing + legend overflow cleanly
+    )
+
+    for ax, (variant, panel_label, covariate_label) in zip(
+        axes, COMBINED_VARIANTS, strict=False
+    ):
+        files = LIPID_PLOT_VARIANTS[variant]
+        results_df = pd.read_pickle(LIPID_RESULTS_PATH / files["results_df"])
+        enrich_df = pd.read_pickle(LIPID_RESULTS_PATH / files["enrichment_df"])
+
+        plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
+
+        # Panel letter in the top-left corner (publication convention)
+        ax.text(
+            -0.08,
+            1.18,
+            panel_label,
+            transform=ax.transAxes,
+            fontsize=14,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+
+        # Covariate label as subtitle below the panel letter
+        ax.set_title(covariate_label, loc="left", fontsize=11, pad=4)
+
+    for path in produces:
+        fig.savefig(path, bbox_inches="tight")

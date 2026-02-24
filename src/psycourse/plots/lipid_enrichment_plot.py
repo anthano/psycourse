@@ -48,6 +48,7 @@ def plot_lipid_coef_distributions(
     class_col="class",
     fdr_thresh=0.05,
     figsize=(8, 4),
+    ax=None,  # <-- new
 ):
     """
     Boxplots of lipid coefficients per class, marking classes
@@ -72,22 +73,18 @@ def plot_lipid_coef_distributions(
     )
     merged["class"] = merged["class"].astype(str)
 
-    # order classes by NES from enrichment results if available
     tested = set(enrich_df.index)
-
     classes_in_data = merged["class"].unique().tolist()
     classes = [cl for cl in classes_in_data if cl in tested]
-
-    # list of coefficient arrays per class
     data = [merged.loc[merged["class"] == cl, "coef"].values for cl in classes]
 
-    # figure
+    # Create figure only if no ax was passed in
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
 
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # --- colors: highlight significant classes ---
     sig_classes = set(enrich_df.index[enrich_df["FDR"] < fdr_thresh])
-
     color_sig = "#3B4CC0"
     color_nonsig = "#D9D9D9"
     edge = "#2b2b2b"
@@ -132,13 +129,11 @@ def plot_lipid_coef_distributions(
             y_star = min(np.max(vals) + star_gap, y_top - 0.02 * (2 * (m + pad)))
             ax.text(i, y_star, "*", ha="center", va="bottom", fontsize=12)
 
-    # labels etc.
     ax.axhline(0, linestyle="--", color=edge, alpha=0.6)
     ax.set_xticks(np.arange(len(classes)))
     ax.set_xticklabels(classes, rotation=45, ha="right")
-    ax.set_ylabel("Coefficient lipid X severe psychosis subtype probability)")
+    ax.set_ylabel("Coefficient (lipid X severe psychosis subtype probability)")
     ax.set_xlabel("Lipid class")
-    fig.tight_layout()
 
     legend_handles = [
         Patch(facecolor=color_sig, edgecolor=edge, alpha=0.85, label="Significant"),
@@ -146,7 +141,6 @@ def plot_lipid_coef_distributions(
             facecolor=color_nonsig, edgecolor=edge, alpha=0.85, label="Not significant"
         ),
     ]
-
     ax.legend(
         handles=legend_handles,
         frameon=False,
@@ -158,6 +152,5 @@ def plot_lipid_coef_distributions(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.set_axisbelow(True)
-    ax.grid(axis="y", alpha=0.2)
 
     return fig, ax
