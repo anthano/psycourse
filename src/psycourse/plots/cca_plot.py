@@ -20,7 +20,6 @@ def plot_cca_regression_summary(
       results["prs_loadings"], results["lipid_class_loadings"]
       results["coupling_null"] (optional)
       results["prs_regression_null_t"] (optional)
-      results["lip_regression_null_t"] (optional)
       results["reg_prob_on_prs_score"], results["reg_prob_on_lipid_score"]
     """
     scores = results["scores"].copy()
@@ -34,6 +33,8 @@ def plot_cca_regression_summary(
     else:
         y_plot = y
 
+    y_label = "Severe psychosis probability"
+
     can_corr = float(results.get("canonical_corr_comp1", np.corrcoef(u, v)[0, 1]))
     p_coup = results.get("p_coupling_perm_comp1", None)
 
@@ -42,19 +43,40 @@ def plot_cca_regression_summary(
     prs_top = _topk_signed(prs_load, top_k)
     lip_top = _topk_signed(lip_load, top_k)
 
-    # Define colors from your theme
     primary_color = "#3B4CC0"
-    secondary_color = "#7B68EE"  # lighter purple for variety
+    secondary_color = "#7B68EE"
     dark_gray = "#2b2b2b"
     light_gray = "#D9D9D9"
 
-    # layout: 2 rows x 4 cols
-    fig, axes = plt.subplots(2, 4, figsize=figsize, constrained_layout=True)
-    ax_uv, ax_u_y, ax_v_y, ax_null_coup = axes[0]
-    ax_prs, ax_lip, ax_null_prs, ax_null_lip = axes[1]
+    # layout: 2 rows, top=3 panels, bottom=2 panels centered
+    from matplotlib.gridspec import GridSpec
 
-    # Set background color for the figure
+    fig = plt.figure(figsize=figsize, layout="constrained")
+    gs = GridSpec(2, 6, figure=fig)
+    ax_uv = fig.add_subplot(gs[0, 0:2])
+    ax_u_y = fig.add_subplot(gs[0, 2:4])
+    ax_v_y = fig.add_subplot(gs[0, 4:6])
+    ax_prs = fig.add_subplot(gs[1, 1:3])
+    ax_lip = fig.add_subplot(gs[1, 3:5])
+
     fig.patch.set_facecolor("white")
+
+    # Panel labels A–E
+    for ax, label in zip(
+        [ax_uv, ax_u_y, ax_v_y, ax_prs, ax_lip],
+        ["A", "B", "C", "D", "E"],
+        strict=False,
+    ):
+        ax.text(
+            -0.08,
+            1.12,
+            label,
+            transform=ax.transAxes,
+            fontsize=14,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
 
     # (A) U1 vs V1
     ax_uv.scatter(u, v, s=25, alpha=0.6, color=primary_color, edgecolors="none")
@@ -77,12 +99,13 @@ def plot_cca_regression_summary(
     ax_u_y.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
     p = results.get("p_perm_prob_on_prs_score", None)
     ax_u_y.set_title(
-        f"{y_col} ~ U1" + (f" (p={float(p):.3g})" if p is not None else ""),
+        "Severe psychosis probability ~ U1"
+        + (f" (p={float(p):.3g})" if p is not None else ""),
         fontsize=11,
         pad=10,
     )
     ax_u_y.set_xlabel("U1", fontsize=10)
-    ax_u_y.set_ylabel(y_col, fontsize=10)
+    ax_u_y.set_ylabel(y_label, fontsize=10)
     ax_u_y.grid(True, alpha=0.3, linestyle=":", color=light_gray)
     ax_u_y.set_axisbelow(True)
 
@@ -93,41 +116,17 @@ def plot_cca_regression_summary(
     ax_v_y.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
     p = results.get("p_perm_prob_on_lipid_score", None)
     ax_v_y.set_title(
-        f"{y_col} ~ V1" + (f" (p={float(p):.3g})" if p is not None else ""),
+        "Severe psychosis probability ~ V1"
+        + (f" (p={float(p):.3g})" if p is not None else ""),
         fontsize=11,
         pad=10,
     )
     ax_v_y.set_xlabel("V1", fontsize=10)
-    ax_v_y.set_ylabel(y_col, fontsize=10)
+    ax_v_y.set_ylabel(y_label, fontsize=10)
     ax_v_y.grid(True, alpha=0.3, linestyle=":", color=light_gray)
     ax_v_y.set_axisbelow(True)
 
-    # (D) Coupling null (r)
-    coupling_null = results.get("coupling_null", None)
-    if coupling_null is None:
-        ax_null_coup.set_axis_off()
-    else:
-        null = np.asarray(coupling_null, float)
-        null = null[np.isfinite(null)]
-        ax_null_coup.hist(
-            null,
-            bins=40,
-            alpha=0.7,
-            color=light_gray,
-            edgecolor=dark_gray,
-            linewidth=0.5,
-        )
-        ax_null_coup.axvline(
-            can_corr, color=primary_color, linewidth=2.5, alpha=0.9, label="Observed"
-        )
-        ax_null_coup.set_title("Coupling permutation null", fontsize=11, pad=10)
-        ax_null_coup.set_xlabel("Null canonical correlation", fontsize=10)
-        ax_null_coup.set_ylabel("Count", fontsize=10)
-        ax_null_coup.legend(frameon=False, fontsize=9)
-        ax_null_coup.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
-        ax_null_coup.set_axisbelow(True)
-
-    # (E) PRS loadings
+    # (D) PRS loadings
     if len(prs_top) == 0:
         ax_prs.set_axis_off()
     else:
@@ -144,7 +143,7 @@ def plot_cca_regression_summary(
         ax_prs.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="x")
         ax_prs.set_axisbelow(True)
 
-    # (F) Lipid loadings
+    # (E) Lipid loadings
     if len(lip_top) == 0:
         ax_lip.set_axis_off()
     else:
@@ -163,92 +162,11 @@ def plot_cca_regression_summary(
         ax_lip.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="x")
         ax_lip.set_axisbelow(True)
 
-    # helper to extract observed t
-    def _get_t(res_key: str, col_name: str) -> float:
-        res = results.get(res_key, None)
-        if res is None:
-            return float("nan")
-        try:
-            tv = getattr(res, "tvalues", None)
-            if tv is None:
-                return float("nan")
-            # tv can be array-like or Series
-            if isinstance(tv, (pd.Series, dict)):
-                return float(tv.get(col_name, np.nan))
-            # fallback: try params index ordering
-            return float(tv[1])  # intercept, slope
-        except Exception:
-            return float("nan")
-
-    # (G) PRS regression null (t)
-    prs_null_t = results.get("prs_regression_null_t", None)
-    t_obs_prs = _get_t("reg_prob_on_prs_score", "PRS_CCA_Component_1")
-    if prs_null_t is None:
-        ax_null_prs.set_axis_off()
-    else:
-        null = np.asarray(prs_null_t, float)
-        null = null[np.isfinite(null)]
-        ax_null_prs.hist(
-            null,
-            bins=40,
-            alpha=0.7,
-            color=light_gray,
-            edgecolor=dark_gray,
-            linewidth=0.5,
-        )
-        if np.isfinite(t_obs_prs):
-            ax_null_prs.axvline(
-                t_obs_prs,
-                color=primary_color,
-                linewidth=2.5,
-                alpha=0.9,
-                label="Observed",
-            )
-        ax_null_prs.set_title("PRS score permutation null", fontsize=11, pad=10)
-        ax_null_prs.set_xlabel("Null t-statistic", fontsize=10)
-        ax_null_prs.set_ylabel("Count", fontsize=10)
-        if np.isfinite(t_obs_prs):
-            ax_null_prs.legend(frameon=False, fontsize=9)
-        ax_null_prs.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
-        ax_null_prs.set_axisbelow(True)
-
-    # (H) Lipid regression null (t)
-    lip_null_t = results.get("lip_regression_null_t", None)
-    t_obs_lip = _get_t("reg_prob_on_lipid_score", "Lipid_CCA_Component_1")
-    if lip_null_t is None:
-        ax_null_lip.set_axis_off()
-    else:
-        null = np.asarray(lip_null_t, float)
-        null = null[np.isfinite(null)]
-        ax_null_lip.hist(
-            null,
-            bins=40,
-            alpha=0.7,
-            color=light_gray,
-            edgecolor=dark_gray,
-            linewidth=0.5,
-        )
-        if np.isfinite(t_obs_lip):
-            ax_null_lip.axvline(
-                t_obs_lip,
-                color=secondary_color,
-                linewidth=2.5,
-                alpha=0.9,
-                label="Observed",
-            )
-        ax_null_lip.set_title("Lipid score permutation null", fontsize=11, pad=10)
-        ax_null_lip.set_xlabel("Null t-statistic", fontsize=10)
-        ax_null_lip.set_ylabel("Count", fontsize=10)
-        if np.isfinite(t_obs_lip):
-            ax_null_lip.legend(frameon=False, fontsize=9)
-        ax_null_lip.grid(True, alpha=0.3, linestyle=":", color=light_gray, axis="y")
-        ax_null_lip.set_axisbelow(True)
-
     return fig
 
 
 ########################################################################################
-# HELPER
+# HELPERS
 ########################################################################################
 
 
