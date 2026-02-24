@@ -18,10 +18,10 @@ def mediation_analysis(multimodal_lipid_subset_df, lipid_enrichment_result_df):
     prs_cols = [
         "BD_PRS",
         "SCZ_PRS",
-        "MDD_PRS",
+        "Education_PRS",
         "Lipid_BD_PRS",
         "Lipid_SCZ_PRS",
-        "Lipid_MDD_PRS",
+        "Lipid_Edu_PRS",
     ]
     covars = [
         "age",

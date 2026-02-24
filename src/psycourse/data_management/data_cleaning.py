@@ -903,7 +903,9 @@ def clean_cluster_labels(labels_df):
 ########################################################################################
 
 
-def clean_prs_data(prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd_data):
+def clean_prs_data(
+    prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd_data, lipid_edu_data
+):
     prs_data = prs_data.set_index(prs_data["FID"])
     clean_prs_df = pd.DataFrame(index=(prs_data["FID"]).rename("gsa_id"))
     prs_renaming_dict = {
@@ -945,6 +947,11 @@ def clean_prs_data(prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd
     lipid_mdd_data = lipid_mdd_data.set_index(lipid_mdd_data["FID"])
     clean_prs_df["Lipid_MDD_PRS"] = lipid_mdd_data[
         "mdd_adams2025_pst_eff_a1_b0.5_phiauto"
+    ]
+
+    lipid_edu_data = lipid_edu_data.set_index(lipid_edu_data["FID"])
+    clean_prs_df["Lipid_Edu_PRS"] = lipid_edu_data[
+        "EduYears_Okbay2022_pst_eff_a1_b0.5_phiauto"
     ]
 
     return clean_prs_df

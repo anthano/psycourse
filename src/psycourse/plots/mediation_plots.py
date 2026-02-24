@@ -10,15 +10,15 @@ def plot_mediation_results(mediation_df):
     indirect = mediation_df.loc[(slice(None), slice(None), "Indirect"), :].copy()
     indirect = indirect.reset_index()
 
-    # Filter out Lipid_* PRSs
-    indirect = indirect[~indirect["prs"].str.startswith("Lipid_")]
-
     # Define colors that match your theme
     prs_colors = {
         "BD_PRS": "#3B4CC0",  # Your blue
         "SCZ_PRS": "#7B68EE",  # Medium purple (between your blue and plasma)
-        "MDD_PRS": "#B83280",  # Magenta-purple (from plasma range)
+        "Education_PRS": "#B83280",  # Magenta-purple (from plasma range)
     }
+
+    # Keep only psychiatric PRSs with defined colors
+    indirect = indirect[indirect["prs"].isin(prs_colors)]
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -104,7 +104,7 @@ def plot_mediation_heatmap(mediation_df):
     heatmap_data = indirect.pivot(index="mediator", columns="prs", values="coef")
 
     # Reorder columns
-    column_order = ["BD", "SCZ", "MDD"]
+    column_order = ["BD", "SCZ", "Education"]
     heatmap_data = heatmap_data[
         [col for col in column_order if col in heatmap_data.columns]
     ]

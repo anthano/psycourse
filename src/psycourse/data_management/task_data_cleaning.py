@@ -74,6 +74,9 @@ prs_data_paths = {
     "lipid_mdd_data": DATA_DIR
     / "lipid_prs"
     / "lipids_mdd_prs_2026-02-06_prs_collection.tsv",
+    "lipid_edu_data": DATA_DIR
+    / "lipid_prs"
+    / "lipids_edu_prs_2026-02-24_prs_collection.tsv",
 }
 
 
@@ -89,8 +92,14 @@ def task_clean_prs_data(
     lipid_bpd_data = pd.read_csv(prs_data_paths["lipid_bpd_data"], sep="\t")
     lipid_scz_data = pd.read_csv(prs_data_paths["lipid_scz_data"], sep="\t")
     lipid_mdd_data = pd.read_csv(prs_data_paths["lipid_mdd_data"], sep="\t")
+    lipid_edu_data = pd.read_csv(prs_data_paths["lipid_edu_data"], sep="\t")
     cleaned_prs_data = clean_prs_data(
-        prs_data, bpd_data, lipid_bpd_data, lipid_scz_data, lipid_mdd_data
+        prs_data,
+        bpd_data,
+        lipid_bpd_data,
+        lipid_scz_data,
+        lipid_mdd_data,
+        lipid_edu_data,
     )
     cleaned_prs_data.to_pickle(produces)
 
