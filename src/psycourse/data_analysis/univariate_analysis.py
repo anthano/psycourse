@@ -719,6 +719,153 @@ def univariate_lipid_regression_cov_panss(multimodal_df):
     return n_subset_lipid_dict, top20, results_df
 
 
+def univariate_lipid_regression_cov_panss_neg(multimodal_df):
+    """
+    Perform univariate regression analysis for lipid intensity values against
+    the probability of class 5 with an added covariate panss neg.
+    This function iterates through all lipid columns in the
+    provided multimodal DataFrame, fits a GLM model for each, and returns a DataFrame
+    with coefficients, p-values, and FDR-corrected p-values.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+    Returns:
+        top20 (pd.DataFrame): DataFrame with the top 20 lipids based on FDR-corrected
+        p-values.
+        results_df (pd.DataFrame): DataFrame with lipid names as index, coefficients,
+        p-values, and FDR-corrected p-values.
+
+    """
+    lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
+    records = []
+    n_subset_lipid_dict = {}
+    for lipid in lipid_columns:
+        subset = multimodal_df[
+            [
+                lipid,
+                "prob_class_5",
+                "age",
+                "sex",
+                "bmi",
+                "duration_illness",
+                "smoker",
+                "panss_sum_neg",
+            ]
+        ].dropna()
+
+        n_subset_lipid_dict[lipid] = len(subset)
+
+        formula = (
+            f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + "
+            "duration_illness + C(smoker) + panss_sum_neg"
+        )
+
+        model = smf.ols(formula, data=subset)
+        result = model.fit(cov_type="HC3")  # adjust for heteroscedasticity
+        coef = result.params.get(lipid, np.nan)
+        se = result.bse.get(lipid, np.nan)
+        pval = result.pvalues.get(lipid, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_low, ci_high = result.conf_int().loc[lipid].tolist()
+
+        records.append(
+            {
+                "lipid": lipid,
+                "coef": coef,
+                "pval": pval,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+            }
+        )
+
+    results_df = pd.DataFrame(records).set_index("lipid")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+
+    top20 = results_df.nsmallest(20, "FDR")
+    results_df["log10_FDR"] = -np.log10(
+        np.clip(results_df["FDR"], np.finfo(float).tiny, None)
+    )
+
+    return n_subset_lipid_dict, top20, results_df
+
+
+def univariate_lipid_regression_cov_panss_both(multimodal_df):
+    """
+    Perform univariate regression analysis for lipid intensity values against
+    the probability of class 5 with an added covariate panss neg + panss_pos.
+    This function iterates through all lipid columns in the
+    provided multimodal DataFrame, fits a GLM model for each, and returns a DataFrame
+    with coefficients, p-values, and FDR-corrected p-values.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+    Returns:
+        top20 (pd.DataFrame): DataFrame with the top 20 lipids based on FDR-corrected
+        p-values.
+        results_df (pd.DataFrame): DataFrame with lipid names as index, coefficients,
+        p-values, and FDR-corrected p-values.
+
+    """
+    lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
+    records = []
+    n_subset_lipid_dict = {}
+    for lipid in lipid_columns:
+        subset = multimodal_df[
+            [
+                lipid,
+                "prob_class_5",
+                "age",
+                "sex",
+                "bmi",
+                "duration_illness",
+                "smoker",
+                "panss_sum_neg",
+                "panss_sum_pos",
+            ]
+        ].dropna()
+
+        n_subset_lipid_dict[lipid] = len(subset)
+
+        formula = (
+            f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + "
+            "duration_illness + C(smoker) + panss_sum_neg + panss_sum_pos"
+        )
+
+        model = smf.ols(formula, data=subset)
+        result = model.fit(cov_type="HC3")  # adjust for heteroscedasticity
+        coef = result.params.get(lipid, np.nan)
+        se = result.bse.get(lipid, np.nan)
+        pval = result.pvalues.get(lipid, np.nan)
+
+        # 95% CI (respects robust covariance)
+        ci_low, ci_high = result.conf_int().loc[lipid].tolist()
+
+        records.append(
+            {
+                "lipid": lipid,
+                "coef": coef,
+                "pval": pval,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+            }
+        )
+
+    results_df = pd.DataFrame(records).set_index("lipid")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(results_df["FDR"])
+
+    top20 = results_df.nsmallest(20, "FDR")
+    results_df["log10_FDR"] = -np.log10(
+        np.clip(results_df["FDR"], np.finfo(float).tiny, None)
+    )
+
+    return n_subset_lipid_dict, top20, results_df
+
+
 ########################################################################################
 # Lipids X PRS Association
 ########################################################################################
