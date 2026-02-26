@@ -34,6 +34,10 @@ LIPID_PLOT_VARIANTS = {
         "results_df": "univariate_lipid_results_cov_med_and_diag.pkl",
         "enrichment_df": "lipid_enrichment_results_cov_med_and_diag.pkl",
     },
+    "cov_panss": {
+        "results_df": "univariate_lipid_results_cov_panss.pkl",
+        "enrichment_df": "lipid_enrichment_results_cov_panss.pkl",
+    },
 }
 
 
