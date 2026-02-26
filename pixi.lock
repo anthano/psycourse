@@ -10,6 +10,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/_r-mutex-1.0.1-anacondar_1.tar.bz2
+      - conda: https://conda.anaconda.org/conda-forge/noarch/adjusttext-1.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-48.1-unix_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/alsa-lib-1.2.15.3-hb03c661_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.10.0-pyhe01879c_0.conda
@@ -398,6 +399,7 @@ environments:
       - pypi: ./
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_r-mutex-1.0.1-anacondar_1.tar.bz2
+      - conda: https://conda.anaconda.org/conda-forge/noarch/adjusttext-1.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-48.0-unix_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.9.0-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.4-pyhd8ed1ab_1.conda
@@ -775,6 +777,20 @@ packages:
   purls: []
   size: 3566
   timestamp: 1562343890778
+- conda: https://conda.anaconda.org/conda-forge/noarch/adjusttext-1.3.0-pyhd8ed1ab_0.conda
+  sha256: 1fce2ff1859d1494c053387b241b44a12cd6ac97c0e27cd0edba70bce268c97f
+  md5: 57a40ccb7b409dfae9d340629b71d73e
+  depends:
+  - matplotlib-base
+  - numpy
+  - python >=3.6
+  - scipy
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/adjusttext?source=hash-mapping
+  size: 18280
+  timestamp: 1730725098822
 - conda: https://conda.anaconda.org/conda-forge/noarch/adwaita-icon-theme-48.0-unix_0.conda
   sha256: 63e532087119112c81d81c067e00d1fd49ff1b842ffea4469b78b505be63c042
   md5: 11539f9e49efaa281da735ded100b152
@@ -7042,8 +7058,8 @@ packages:
   timestamp: 1740663381256
 - pypi: ./
   name: psycourse
-  version: 0.1.dev177+g3b2e07c35.d20260204
-  sha256: 899d9e7554dbaffbb19141dd770c6b1bc476445f5deddfabdc261a0bd339b154
+  version: 0.1.dev187+ge15903575.d20260226
+  sha256: 2dea104e55ee5992c40c82ab7b83f1593a9c87c0cf7b8448956ce0bcd121f8ba
   requires_dist:
   - snakeviz>=2.2.2,<3
   requires_python: '>=3.11'
