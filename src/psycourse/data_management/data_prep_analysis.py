@@ -43,6 +43,8 @@ def merge_multimodal_complete_df(
     multimodal_df["other_psy_med_count"] = phenotypic_data["other_psy_med_count"]
     multimodal_df["panss_sum_pos"] = phenotypic_data["panss_sum_pos"]
     multimodal_df["panss_sum_neg"] = phenotypic_data["panss_sum_neg"]
+    multimodal_df["panss_sum_gen"] = phenotypic_data["panss_sum_gen"]
+    multimodal_df["panss_total_score"] = phenotypic_data["panss_total_score"]
 
     multimodal_df = multimodal_df.join(cluster_probabilities_full, how="left")
 
