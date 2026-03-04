@@ -28,6 +28,8 @@ UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR = (
 PANSS_COLUMNS = (
     "panss_sum_pos",
     "panss_sum_neg",
+    "panss_sum_gen",
+    "panss_total_score",
 )
 
 SCRIPT_PATH = SRC / "data_analysis" / "univariate_analysis_panss.py"

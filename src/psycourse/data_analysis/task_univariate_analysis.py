@@ -10,8 +10,10 @@ from psycourse.data_analysis.univariate_analysis import (
     univariate_lipid_regression_cov_med,
     univariate_lipid_regression_cov_med_and_diag,
     univariate_lipid_regression_cov_panss,
-    univariate_lipid_regression_cov_panss_both,
+    univariate_lipid_regression_cov_panss_gen,
     univariate_lipid_regression_cov_panss_neg,
+    univariate_lipid_regression_cov_panss_pos_neg,
+    univariate_lipid_regression_cov_panss_total,
     univariate_prs_ancova,
     univariate_prs_regression,
     univariate_prs_regression_cov_bmi,
@@ -294,6 +296,58 @@ def task_univariate_lipid_regression_cov_panss_neg(
 
 # ======================================================================================
 
+univariate_lipid_regression_cov_panss_gen_produces = {
+    "n_subset_dict": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "n_subset_dict_cov_panss_gen.pkl",
+    "top20_lipids": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_gen.pkl",
+    "univariate_lipid_results": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_cov_panss_gen.pkl",
+}
+
+
+def task_univariate_lipid_regression_cov_panss_gen(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=univariate_lipid_regression_cov_panss_gen_produces,
+):
+    data = pd.read_pickle(multimodal_df_path)
+    n_subset_dict, top20_lipids, univariate_lipid_results = (
+        univariate_lipid_regression_cov_panss_gen(data)
+    )
+    pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
+    top20_lipids.to_pickle(produces["top20_lipids"])
+    univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
+
+
+# ======================================================================================
+
+univariate_lipid_regression_cov_panss_total_score_produces = {
+    "n_subset_dict": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "n_subset_dict_cov_panss_total_score.pkl",
+    "top20_lipids": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_total_score.pkl",
+    "univariate_lipid_results": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_cov_panss_total_score.pkl",
+}
+
+
+def task_univariate_lipid_regression_cov_panss_total(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=univariate_lipid_regression_cov_panss_total_score_produces,
+):
+    data = pd.read_pickle(multimodal_df_path)
+    n_subset_dict, top20_lipids, univariate_lipid_results = (
+        univariate_lipid_regression_cov_panss_total(data)
+    )
+    pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
+    top20_lipids.to_pickle(produces["top20_lipids"])
+    univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
+
+
+# ======================================================================================
+
 univariate_lipid_regression_cov_panss_both_produces = {
     "n_subset_dict": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
     / "n_subset_dict_cov_panss_both.pkl",
@@ -311,7 +365,7 @@ def task_univariate_lipid_regression_cov_panss_both(
 ):
     data = pd.read_pickle(multimodal_df_path)
     n_subset_dict, top20_lipids, univariate_lipid_results = (
-        univariate_lipid_regression_cov_panss_both(data)
+        univariate_lipid_regression_cov_panss_pos_neg(data)
     )
     pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
     top20_lipids.to_pickle(produces["top20_lipids"])
