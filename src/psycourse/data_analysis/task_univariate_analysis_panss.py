@@ -15,7 +15,7 @@ from psycourse.data_analysis.univariate_analysis_panss import (
     univariate_lipid_regression_panss,
     univariate_prs_regression_cov_bmi_panss,
     univariate_prs_regression_cov_diagnosis_panss,
-    univariate_prs_regression_panss,
+    univariate_prs_regression_panss_pos,
 )
 
 UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
@@ -61,7 +61,7 @@ def _lipid_products(kind: str, col: str) -> dict[str, Path]:
 # ======================================================================================
 
 _PRS_SPECS: dict[str, Callable] = {
-    "standard_cov": univariate_prs_regression_panss,
+    "standard_cov": univariate_prs_regression_panss_pos,
     "cov_bmi": univariate_prs_regression_cov_bmi_panss,
     "cov_diagnosis": univariate_prs_regression_cov_diagnosis_panss,
 }

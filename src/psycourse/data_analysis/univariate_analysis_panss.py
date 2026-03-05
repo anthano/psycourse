@@ -11,7 +11,7 @@ from statsmodels.stats.multitest import multipletests
 # PRS sensitivity = ["bmi"], ["diagnosis"]
 
 
-def univariate_prs_regression_panss(multimodal_df, panss_column):
+def univariate_prs_regression_panss_pos(multimodal_df, panss_column):
     """
     Univariate GLMs of panss_column on each PRS, adjusted for covariates.
     Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).

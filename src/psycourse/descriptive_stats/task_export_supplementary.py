@@ -1,7 +1,7 @@
 import pandas as pd
 from pytask import task
 
-from psycourse.config import BLD_RESULTS, WRITING
+from psycourse.config import BLD_RESULTS
 
 
 @task(
@@ -64,7 +64,7 @@ from psycourse.config import BLD_RESULTS, WRITING
             / "mediation_analysis_results.pkl",
             # ... add other tables here
         },
-        "produces": WRITING / "supplementary_tables.xlsx",
+        "produces": BLD_RESULTS / "supplementary_tables" / "supplementary_tables.xlsx",
     }
 )
 def task_export_all_supplementary_tables(depends_on, produces):

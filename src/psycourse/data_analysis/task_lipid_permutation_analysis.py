@@ -46,11 +46,17 @@ LIPID_ENRICHMENT_INPUTS = {
         "produces": REGRESSION_RESULTS_PATH
         / "lipid_enrichment_results_cov_panss_neg.pkl",
     },
-    "cov_panss_both": {
+    "cov_panss_gen": {
         "regression_results_df_path": REGRESSION_RESULTS_PATH
-        / "univariate_lipid_results_cov_panss_both.pkl",
+        / "univariate_lipid_results_cov_panss_gen.pkl",
         "produces": REGRESSION_RESULTS_PATH
-        / "lipid_enrichment_results_cov_panss_both.pkl",
+        / "lipid_enrichment_results_cov_panss_gen.pkl",
+    },
+    "cov_panss_total_score": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "univariate_lipid_results_cov_panss_total_score.pkl",
+        "produces": REGRESSION_RESULTS_PATH
+        / "lipid_enrichment_results_cov_panss_total_score.pkl",
     },
     "panss_pos": {
         "regression_results_df_path": REGRESSION_RESULTS_PATH
@@ -83,6 +89,22 @@ LIPID_ENRICHMENT_INPUTS = {
         "produces": REGRESSION_RESULTS_PATH
         / "panss"
         / "lipid_enrichment_results_cov_med_panss_sum_neg.pkl",
+    },
+    "panss_gen": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "panss"
+        / "univariate_lipid_results_standard_panss_sum_gen.pkl",
+        "produces": REGRESSION_RESULTS_PATH
+        / "panss"
+        / "lipid_enrichment_results_panss_gen.pkl",
+    },
+    "panss_total_score": {
+        "regression_results_df_path": REGRESSION_RESULTS_PATH
+        / "panss"
+        / "univariate_lipid_results_standard_panss_total_score.pkl",
+        "produces": REGRESSION_RESULTS_PATH
+        / "panss"
+        / "lipid_enrichment_results_panss_total_score.pkl",
     },
 }
 

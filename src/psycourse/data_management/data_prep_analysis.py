@@ -1,5 +1,14 @@
 import numpy as np
 import pandas as pd
+from sklearn.impute import KNNImputer
+
+# Ordinal codes used when encoding categorical covariates for KNN imputation.
+# Sex: CategoricalDtype(["F", "M"]) → 0/1 and back.
+_SEX_ENCODE = {"F": 0, "M": 1}
+_SEX_DECODE = {0: "F", 1: "M"}
+# Smoker: CategoricalDtype(["never", "former", "yes"]) → 0/1/2 ordinal and back.
+_SMOKER_ENCODE = {"never": 0, "former": 1, "yes": 2}
+_SMOKER_DECODE = {0: "never", 1: "former", 2: "yes"}
 
 
 def merge_multimodal_complete_df(
@@ -64,7 +73,9 @@ def merge_multimodal_complete_df(
     multimodal_df = multimodal_df.join(class_means_df, how="left")
     multimodal_df["gsa_id"] = phenotypic_data["gsa_id"]
 
-    return multimodal_df
+    multimodal_df_imputed = _impute_covariates(multimodal_df)
+
+    return multimodal_df_imputed
 
 
 ##################### Helper Function  #####################
@@ -111,3 +122,108 @@ def _lipid_class_scores(
         lipid_class_scores_df[f"{cls}"] = score
 
     return lipid_class_scores_df
+
+
+def _impute_covariates(
+    df: pd.DataFrame,
+    covariate_cols: list[str] | None = None,
+    n_neighbors: int = 7,
+    weights: str = "uniform",
+) -> pd.DataFrame:
+    """
+    Imputes missing values in covariate columns using KNN imputation.
+    Lipid species, lipid class scores, and PRS columns are explicitly
+    excluded and left unchanged, as missingness in these modalities
+    is not assumed to be missing at random.
+
+    Categorical covariates are handled as follows before imputation:
+      - sex (CategoricalDtype ["F", "M"]): encoded as 0/1, imputed, rounded,
+        and decoded back to CategoricalDtype(["F", "M"]).
+      - smoker (CategoricalDtype ["never", "former", "yes"]): encoded
+        ordinally as 0/1/2, imputed, rounded to the nearest integer,
+        and decoded back to CategoricalDtype(["never", "former", "yes"]).
+        This preserves the three-level structure so that downstream
+        pd.get_dummies produces two dummy columns rather than treating
+        smoker as a continuous predictor.
+
+    Args:
+        df: Merged multimodal DataFrame as returned by
+            merge_multimodal_complete_df.
+        covariate_cols: Columns to impute. Defaults to the standard
+            covariate set used in primary models (age, sex, bmi,
+            duration_illness, smoker).
+        n_neighbors: Number of neighbours for KNN imputation (default 7).
+        weights: Weight function for KNN — 'uniform' weights all
+            neighbours equally; 'distance' weights by inverse distance.
+
+    Returns:
+        pd.DataFrame: Copy of df with covariate missingness imputed.
+        Original df is not modified.
+    """
+    if covariate_cols is None:
+        covariate_cols = ["age", "sex", "bmi", "duration_illness", "smoker"]
+
+    missing_cols = [c for c in covariate_cols if c not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Covariate columns not found in DataFrame: {missing_cols}")
+
+    df_out = df.copy()
+
+    # Encode sex to 0/1. sex is stored as CategoricalDtype(["F", "M"]),
+    # so dtype == object is False — check for CategoricalDtype explicitly.
+    sex_was_categorical = False
+    if "sex" in df_out.columns and (
+        hasattr(df_out["sex"].dtype, "categories") or df_out["sex"].dtype == object
+    ):
+        df_out["sex"] = df_out["sex"].map(_SEX_ENCODE)
+        sex_was_categorical = True
+
+    # Encode smoker to 0/1/2. smoker is stored as
+    # CategoricalDtype(["never", "former", "yes"]), so pd.to_numeric would
+    # coerce every valid value to NaN — map explicitly before numeric conversion.
+    smoker_was_categorical = False
+    if "smoker" in df_out.columns and (
+        hasattr(df_out["smoker"].dtype, "categories")
+        or df_out["smoker"].dtype == object
+    ):
+        df_out["smoker"] = df_out["smoker"].map(_SMOKER_ENCODE)
+        smoker_was_categorical = True
+
+    # Convert all covariate columns to plain float64 (handles nullable Int8/Float32
+    # dtypes that KNNImputer cannot accept directly).
+    for col in covariate_cols:
+        df_out[col] = pd.to_numeric(df_out[col], errors="coerce")
+
+    # KNN imputation. Wrap the numpy output in a DataFrame that carries the
+    # original index so that the assignment back to df_out is index-safe.
+    imputer = KNNImputer(n_neighbors=n_neighbors, weights=weights)
+    imputed = imputer.fit_transform(df_out[covariate_cols])
+    df_out[covariate_cols] = pd.DataFrame(
+        imputed, index=df_out.index, columns=covariate_cols
+    )
+
+    # Restore sex: round to nearest int, clip to valid range {0, 1}, decode
+    # back to CategoricalDtype so downstream pd.get_dummies works correctly.
+    if sex_was_categorical and "sex" in df_out.columns:
+        df_out["sex"] = (
+            df_out["sex"]
+            .round()
+            .clip(0, 1)
+            .astype(int)
+            .map(_SEX_DECODE)
+            .astype(pd.CategoricalDtype(categories=["F", "M"]))
+        )
+
+    # Restore smoker: round to nearest int, clip to valid range {0, 1, 2},
+    # decode back to CategoricalDtype so the three-level structure is preserved.
+    if smoker_was_categorical and "smoker" in df_out.columns:
+        df_out["smoker"] = (
+            df_out["smoker"]
+            .round()
+            .clip(0, 2)
+            .astype(int)
+            .map(_SMOKER_DECODE)
+            .astype(pd.CategoricalDtype(categories=["never", "former", "yes"]))
+        )
+
+    return df_out
