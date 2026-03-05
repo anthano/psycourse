@@ -4,6 +4,9 @@ import numpy as np
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
 
+_ACCENT = "#3B4CC0"  # project primary blue
+_GREY_EDGE = "#888888"
+
 ############# Lipids ###################
 
 
@@ -42,20 +45,27 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
         zorder=2,
     )
 
-    # scatter colored by -log10(FDR), but show FDR ticks on the colorbar
+    # scatter: filled accent for FDR-significant, open grey for non-significant
     neglogq = -np.log10(lipid_sorted["FDR"].clip(lower=np.finfo(float).tiny))
-    vmin = 1.0
-    vmax = float(np.nanmax(neglogq))
-    sc = ax.scatter(
-        lipid_sorted["coef"],
-        y,
-        c=neglogq,
-        cmap="plasma",
-        vmin=vmin,
-        vmax=vmax,
-        s=90,
+    sig = (neglogq >= -np.log10(0.05)).to_numpy()
+    coef = lipid_sorted["coef"].to_numpy()
+    ax.scatter(
+        coef[sig],
+        y[sig],
+        color=_ACCENT,
         edgecolor="k",
+        s=90,
         zorder=3,
+        label="FDR < 0.05",
+    )
+    ax.scatter(
+        coef[~sig],
+        y[~sig],
+        facecolor="white",
+        edgecolor=_GREY_EDGE,
+        s=90,
+        zorder=3,
+        label="FDR ≥ 0.05",
     )
 
     # zero (null) line
@@ -80,17 +90,7 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
     ax.set_ylabel("Lipids")
     ax.set_title("Lipid Associations with Severe Psychosis Cluster Probability")
 
-    # Colorbar showing FDR ticks
-    cbar = plt.colorbar(sc)
-    cbar.set_label("FDR (q)")
-    ticks_all = np.array([1, 1.30103, 2, 3])
-    ticks = ticks_all[ticks_all <= vmax]
-    cbar.set_ticks(ticks)  # q= 0.1, 0.05, 0.01
-    cbar.ax.yaxis.set_major_formatter(
-        mtick.FuncFormatter(
-            lambda t, _: f"{10**(-t):.2g}" if 10 ** (-t) >= 0.01 else f"{10**(-t):.1e }"
-        )
-    )
+    ax.legend(loc="lower right", frameon=True)
     plt.tight_layout()
 
     return fig, ax
@@ -348,20 +348,27 @@ def plot_univariate_prs_regression(prs_results):
         zorder=2,
     )
 
-    # scatter colored by -log10(FDR), but show FDR ticks on the colorbar
+    # scatter: filled accent for FDR-significant, open grey for non-significant
     neglogq = -np.log10(prs_sorted["FDR"].clip(lower=np.finfo(float).tiny))
-    vmin = 1.0
-    vmax = float(np.nanmax(neglogq))
-    sc = ax.scatter(
-        prs_sorted["coef"],
-        y,
-        c=neglogq,
-        vmin=vmin,
-        vmax=vmax,
-        cmap="plasma",
-        s=90,
+    sig = (neglogq >= -np.log10(0.05)).to_numpy()
+    coef = prs_sorted["coef"].to_numpy()
+    ax.scatter(
+        coef[sig],
+        y[sig],
+        color=_ACCENT,
         edgecolor="k",
+        s=90,
         zorder=3,
+        label="FDR < 0.05",
+    )
+    ax.scatter(
+        coef[~sig],
+        y[~sig],
+        facecolor="white",
+        edgecolor=_GREY_EDGE,
+        s=90,
+        zorder=3,
+        label="FDR ≥ 0.05",
     )
 
     # zero (null) line
@@ -386,17 +393,7 @@ def plot_univariate_prs_regression(prs_results):
     ax.set_ylabel("PRS")
     ax.set_title("PRS Associations with Severe Psychosis Cluster Probability")
 
-    # colorbar showing FDR
-    cbar = plt.colorbar(sc)
-    cbar.set_label("FDR (q)")
-    ticks_all = np.array([1, 1.30103, 2])
-    ticks = ticks_all[ticks_all <= vmax]
-    cbar.set_ticks(ticks)  # q= 0.1, 0.05, 0.01
-    cbar.ax.yaxis.set_major_formatter(
-        mtick.FuncFormatter(
-            lambda t, _: f"{10**(-t):.2g}" if 10 ** (-t) >= 0.01 else f"{10**(-t):.1e }"
-        )
-    )
+    ax.legend(loc="lower right", frameon=True)
 
     plt.tight_layout()
 

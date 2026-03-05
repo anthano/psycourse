@@ -103,6 +103,96 @@ def task_plot_univariate_lipid_regression_cov_med_and_diag(
     plt.close()
 
 
+@task
+def task_plot_univariate_lipid_regression_cov_panss(
+    lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_panss_neg(
+    lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_neg.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_neg.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_neg.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_panss_gen(
+    lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_gen.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_gen.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_gen.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_panss_total_score(
+    lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_total_score.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_total_score.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_total_score.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_panss_both(
+    lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
+    / "univariate_lipid_results_top20_cov_panss_both.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_both.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_panss_both.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
 # ============================================================================
 # UNIVARIATE PRS REGRESSION TASKS
 # ============================================================================
