@@ -1,11 +1,67 @@
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 import seaborn as sns
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.patches import Patch
 
-_ACCENT = "#3B4CC0"  # project primary blue
 _GREY_EDGE = "#888888"
+
+# PRS significance tier colors
+_PRS_FDR = "#4a2d8a"  # FDR < 0.05
+_PRS_NOM = "#9b85c2"  # p < 0.05, FDR ≥ 0.05
+_PRS_NS = "#f0edf7"  # p ≥ 0.05
+
+# Lipid significance tier colors
+_LIP_FDR = "#b5335a"  # FDR < 0.05
+_LIP_NOM = "#e89ab5"  # p < 0.05, FDR ≥ 0.05
+_LIP_NS = "#fceef3"  # p ≥ 0.05
+
+# Combined-figure accent colors (PRS + lipid together)
+_COMBINED_PRS = "#4a2d8a"
+_COMBINED_LIP = "#b5335a"
+_COMBINED_SHARED = "#cccccc"
+
+
+def _palette_colors(palette: str) -> tuple[str, str, str]:
+    """Return (fdr_color, nom_color, ns_color) for the requested palette."""
+    if palette == "lipid":
+        return _LIP_FDR, _LIP_NOM, _LIP_NS
+    return _PRS_FDR, _PRS_NOM, _PRS_NS
+
+
+def _sig_colors(pval_arr, fdr_arr, palette: str = "prs"):
+    """Return per-row tier color based on p-value and FDR arrays."""
+    fdr_c, nom_c, ns_c = _palette_colors(palette)
+    colors = []
+    for p, q in zip(pval_arr, fdr_arr, strict=False):
+        if q < 0.05:
+            colors.append(fdr_c)
+        elif p < 0.05:
+            colors.append(nom_c)
+        else:
+            colors.append(ns_c)
+    return colors
+
+
+def _legend_elements(palette: str = "prs"):
+    """Return fresh legend handles for the three significance tiers."""
+    fdr_c, nom_c, ns_c = _palette_colors(palette)
+    return [
+        Patch(facecolor=fdr_c, edgecolor="k", label="FDR < 0.05"),
+        Patch(facecolor=nom_c, edgecolor="k", label="p < 0.05"),
+        Patch(facecolor=ns_c, edgecolor="k", label="n.s."),
+    ]
+
+
+def _format_prs_labels(labels):
+    """Apply standard PRS label formatting."""
+    renamed = []
+    for lbl in labels:
+        new_lbl = lbl.replace("_", "-")
+        new_lbl = new_lbl.replace("Education-PRS", "EA-PRS")
+        new_lbl = new_lbl.replace("Lipid-Edu-PRS", "Lipid-EA-PRS")
+        renamed.append(new_lbl)
+    return renamed
+
 
 ############# Lipids ###################
 
@@ -13,7 +69,7 @@ _GREY_EDGE = "#888888"
 def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df):
     """
     Plot lipid GLM coefficients with 95% CIs.
-    Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
+    Points and error bars colored by significance tier.
     """
     mapping = cleaned_annotation_df["lipid_species"].to_dict()
     lipid_results_top20 = lipid_results_top20.rename(index=mapping)
@@ -23,49 +79,35 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
-    # error bars (95% CI)
-    xerr = np.vstack(
-        [
-            lipid_sorted["coef"] - lipid_sorted["ci_low"],
-            lipid_sorted["ci_high"] - lipid_sorted["coef"],
-        ]
-    )
-    ax.errorbar(
-        lipid_sorted["coef"],
-        y,
-        xerr=xerr,
-        fmt="o",
-        ms=6,
-        mec="k",
-        mfc="white",
-        ecolor="k",
-        elinewidth=1,
-        capsize=3,
-        capthick=1,
-        zorder=2,
+    colors = _sig_colors(
+        lipid_sorted["pval"].to_numpy(),
+        lipid_sorted["FDR"].to_numpy(),
+        palette="lipid",
     )
 
-    # scatter: filled accent for FDR-significant, open grey for non-significant
-    neglogq = -np.log10(lipid_sorted["FDR"].clip(lower=np.finfo(float).tiny))
-    sig = (neglogq >= -np.log10(0.05)).to_numpy()
-    coef = lipid_sorted["coef"].to_numpy()
+    # Per-point colored error bars (95% CI)
+    for i, (_, row) in enumerate(lipid_sorted.iterrows()):
+        c = colors[i]
+        ax.errorbar(
+            row["coef"],
+            i,
+            xerr=[[row["coef"] - row["ci_low"]], [row["ci_high"] - row["coef"]]],
+            fmt="none",
+            ecolor=c,
+            elinewidth=1,
+            capsize=3,
+            capthick=1,
+            zorder=2,
+        )
+
+    # Scatter with tier colors
     ax.scatter(
-        coef[sig],
-        y[sig],
-        color=_ACCENT,
+        lipid_sorted["coef"].to_numpy(),
+        y,
+        c=colors,
         edgecolor="k",
         s=90,
         zorder=3,
-        label="FDR < 0.05",
-    )
-    ax.scatter(
-        coef[~sig],
-        y[~sig],
-        facecolor="white",
-        edgecolor=_GREY_EDGE,
-        s=90,
-        zorder=3,
-        label="FDR ≥ 0.05",
     )
 
     # zero (null) line
@@ -88,9 +130,10 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
 
     ax.set_xlabel("Regression Coefficient")
     ax.set_ylabel("Lipids")
-    ax.set_title("Lipid Associations with Severe Psychosis Cluster Probability")
 
-    ax.legend(loc="lower right", frameon=True)
+    ax.legend(
+        handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
+    )
     plt.tight_layout()
 
     return fig, ax
@@ -115,6 +158,12 @@ def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotati
     # Sort by FDR again to fix order
     lipid_class_results_sorted = lipid_class_results.sort_values("FDR")
 
+    colors = _sig_colors(
+        lipid_class_results_sorted["pval"].to_numpy(),
+        lipid_class_results_sorted["FDR"].to_numpy(),
+        palette="lipid",
+    )
+
     plt.figure(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
@@ -123,11 +172,10 @@ def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotati
         plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
 
     # Draw points
-    sc = plt.scatter(
+    plt.scatter(
         lipid_class_results_sorted["coef"],
         lipid_class_results_sorted.index,
-        c=-np.log10(lipid_class_results_sorted["FDR"]),
-        cmap="plasma",
+        c=colors,
         s=80,
         edgecolor="k",
     )
@@ -135,12 +183,9 @@ def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotati
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
     plt.ylabel("Lipid Class")
-    plt.title(
-        "Lipid Class Association with Cluster 5 Probability "
-        "(covariates: age, sex, bmi)"
+    plt.legend(
+        handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
-    cbar = plt.colorbar(sc)
-    cbar.set_label("-log10(FDR)")
     plt.tight_layout()
     # plt.show()
 
@@ -157,6 +202,12 @@ def plot_univariate_lipid_extremes(top20):
     # Sort top 20 by FDR again to fix order
     top20_sorted = top20.sort_values("FDR")
 
+    colors = _sig_colors(
+        top20_sorted["pval"].to_numpy(),
+        top20_sorted["FDR"].to_numpy(),
+        palette="lipid",
+    )
+
     plt.figure(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
@@ -165,11 +216,10 @@ def plot_univariate_lipid_extremes(top20):
         plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
 
     # Draw points
-    sc = plt.scatter(
+    plt.scatter(
         top20_sorted["coef"],
         top20_sorted.index,
-        c=-np.log10(top20_sorted["FDR"]),
-        cmap="plasma",
+        c=colors,
         s=80,
         edgecolor="k",
     )
@@ -177,12 +227,9 @@ def plot_univariate_lipid_extremes(top20):
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
     plt.ylabel("Lipid")
-    plt.title(
-        "Top 20 Lipid Associations with Cluster 5 Probability Top50 vs. Bottom 50 "
-        "(covariates: age, sex, bmi)"
+    plt.legend(
+        handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
-    cbar = plt.colorbar(sc)
-    cbar.set_label("-log10(FDR)")
     plt.tight_layout()
     # plt.show()
 
@@ -227,7 +274,7 @@ def plot_perm_enrichment(
     Dot plot of class enrichment:
       x = ES (mean-rank difference; >0 = enriched toward top of ranking)
       y = lipid class (top_n by FDR)
-      color = -log10(FDR)  (colorbar shows FDR ticks)
+      color = significance tier (FDR < 0.05 / p < 0.05 / n.s.)
       size = n_in_class
     """
     if enrich_df.empty:
@@ -235,10 +282,7 @@ def plot_perm_enrichment(
 
     df = enrich_df.sort_values("FDR").head(top_n).iloc[::-1].copy()  # most sig at top
 
-    # Slightly truncate plasma to avoid very bright top end
-    plasma_trunc = LinearSegmentedColormap.from_list(
-        "plasma_trunc", plt.cm.plasma(np.linspace(0.0, 0.92, 256))
-    )
+    colors = _sig_colors(df["pval"].to_numpy(), df["FDR"].to_numpy(), palette="lipid")
 
     sns.set_theme(
         style="whitegrid",
@@ -254,12 +298,11 @@ def plot_perm_enrichment(
     fig, ax = plt.subplots(figsize=(8, 5))
 
     # Scatter
-    sc = ax.scatter(
+    ax.scatter(
         df["ES"],
         df.index,
         s=20 + 6 * df["n_in_class"],  # size by class size
-        c=df["-log10(FDR)"],
-        cmap=plasma_trunc,
+        c=colors,
         edgecolor="k",
         linewidth=0.6,
         zorder=3,
@@ -271,7 +314,6 @@ def plot_perm_enrichment(
     # Labels / grid
     ax.set_xlabel("Enrichment score (Δ mean rank; >0 = enriched)")
     ax.set_ylabel("Lipid class")
-    ax.set_title(title)
     ax.grid(True, axis="x", color="0.9")
     ax.grid(False, axis="y")
     ax.set_axisbelow(True)
@@ -282,19 +324,9 @@ def plot_perm_enrichment(
     pad = 0.15 * max(0.01, span)
     ax.set_xlim(-span - pad, span + pad)
 
-    # Colorbar formatted in FDR (q)
-    cbar = plt.colorbar(sc)
-    cbar.set_label("FDR (q)")
-
-    def _fmt(t, _pos):
-        q = 10 ** (-t)
-        return f"{q:.2g}" if q >= 0.01 else f"{q:.1e}"
-
-    vmax = float(df["-log10(FDR)"].max())
-    ticks_all = np.array([0, 1, 1.30103, 2, 3])  # q=1, 0.1, 0.05, 0.01, 0.001
-    ticks = ticks_all[ticks_all <= vmax]
-    cbar.set_ticks(ticks)
-    cbar.ax.yaxis.set_major_formatter(mtick.FuncFormatter(_fmt))
+    ax.legend(
+        handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
+    )
 
     plt.tight_layout()
     return fig, ax
@@ -308,7 +340,7 @@ def plot_perm_enrichment(
 def plot_univariate_prs_regression(prs_results):
     """
     Plot PRS GLM coefficients with 95% CIs.
-    Points colored by -log10(FDR); colorbar shows FDR (q) ticks.
+    Points and error bars colored by significance tier.
     """
     plt.rcParams.update(
         {
@@ -320,62 +352,50 @@ def plot_univariate_prs_regression(prs_results):
             "legend.fontsize": 14,
         }
     )
+
+    # Drop Lipid-MDD-PRS
+    norm_idx = prs_results.index.str.replace("_", "-")
+    prs_results = prs_results[norm_idx != "Lipid-MDD-PRS"]
+
     prs_sorted = prs_results.sort_values("FDR").copy()
     y = np.arange(len(prs_sorted))
 
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
-    # error bars (95% CI)
-    xerr = np.vstack(
-        [
-            prs_sorted["coef"] - prs_sorted["ci_low"],
-            prs_sorted["ci_high"] - prs_sorted["coef"],
-        ]
-    )
-    ax.errorbar(
-        prs_sorted["coef"],
-        y,
-        xerr=xerr,
-        fmt="o",
-        ms=6,
-        mec="k",
-        mfc="white",
-        ecolor="k",
-        elinewidth=1,
-        capsize=3,
-        capthick=1,
-        zorder=2,
-    )
+    colors = _sig_colors(prs_sorted["pval"].to_numpy(), prs_sorted["FDR"].to_numpy())
 
-    # scatter: filled accent for FDR-significant, open grey for non-significant
-    neglogq = -np.log10(prs_sorted["FDR"].clip(lower=np.finfo(float).tiny))
-    sig = (neglogq >= -np.log10(0.05)).to_numpy()
-    coef = prs_sorted["coef"].to_numpy()
+    # Per-point colored error bars (95% CI)
+    for i, (_, row) in enumerate(prs_sorted.iterrows()):
+        c = colors[i]
+        ax.errorbar(
+            row["coef"],
+            i,
+            xerr=[[row["coef"] - row["ci_low"]], [row["ci_high"] - row["coef"]]],
+            fmt="none",
+            ecolor=c,
+            elinewidth=1,
+            capsize=3,
+            capthick=1,
+            zorder=2,
+        )
+
+    # Scatter with tier colors
     ax.scatter(
-        coef[sig],
-        y[sig],
-        color=_ACCENT,
+        prs_sorted["coef"].to_numpy(),
+        y,
+        c=colors,
         edgecolor="k",
         s=90,
         zorder=3,
-        label="FDR < 0.05",
-    )
-    ax.scatter(
-        coef[~sig],
-        y[~sig],
-        facecolor="white",
-        edgecolor=_GREY_EDGE,
-        s=90,
-        zorder=3,
-        label="FDR ≥ 0.05",
     )
 
     # zero (null) line
     ax.axvline(0, color="gray", linestyle="--", linewidth=1)
 
     # y labels, most significant at the TOP
-    ax.set_yticks(y, prs_sorted.index)
+    labels = _format_prs_labels(prs_sorted.index.tolist())
+    ax.set_yticks(y, labels)
     ax.invert_yaxis()
 
     # symmetric x limits for balance
@@ -391,9 +411,8 @@ def plot_univariate_prs_regression(prs_results):
 
     ax.set_xlabel("Regression Coefficient")
     ax.set_ylabel("PRS")
-    ax.set_title("PRS Associations with Severe Psychosis Cluster Probability")
 
-    ax.legend(loc="lower right", frameon=True)
+    ax.legend(handles=_legend_elements(palette="prs"), loc="lower right", frameon=True)
 
     plt.tight_layout()
 
@@ -401,22 +420,30 @@ def plot_univariate_prs_regression(prs_results):
 
 
 def plot_univariate_prs_extremes(prs_results):
-    # Sort PRS by FDR to fix order
+    # Drop Lipid-MDD-PRS
+    norm_idx = prs_results.index.str.replace("_", "-")
+    prs_results = prs_results[norm_idx != "Lipid-MDD-PRS"]
+
     prs_sorted = prs_results.sort_values("FDR")
+
+    colors = _sig_colors(prs_sorted["pval"].to_numpy(), prs_sorted["FDR"].to_numpy())
+
+    labels_formatted = _format_prs_labels(prs_sorted.index.tolist())
+    label_map = dict(zip(prs_sorted.index, labels_formatted, strict=False))
 
     plt.figure(figsize=(8, 6))
     sns.set_theme(style="whitegrid")
 
     # Draw lines
-    for i, row in prs_sorted.iterrows():
-        plt.plot([0, row["coef"]], [i, i], "k-", lw=0.5)
+    for idx, row in prs_sorted.iterrows():
+        lbl = label_map[idx]
+        plt.plot([0, row["coef"]], [lbl, lbl], "k-", lw=0.5)
 
     # Draw points
-    sc = plt.scatter(
+    plt.scatter(
         prs_sorted["coef"],
-        prs_sorted.index,
-        c=-np.log10(prs_sorted["FDR"]),
-        cmap="plasma",
+        labels_formatted,
+        c=colors,
         s=80,
         edgecolor="k",
     )
@@ -424,11 +451,7 @@ def plot_univariate_prs_extremes(prs_results):
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
     plt.ylabel("PRS")
-    plt.title(
-        "PRS Association with Cluster5Prob for Top50 vs. Bottom 50 (cov: age, sex, bmi)"
-    )
-    cbar = plt.colorbar(sc)
-    cbar.set_label("-log10(FDR)")
+    plt.legend(handles=_legend_elements(palette="prs"), loc="lower right", frameon=True)
     plt.tight_layout()
     # plt.show()
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
-# Project-standard palette (consistent with cca_plot.py and mediation_plots.py)
-_COLOR_PRS = "#3B4CC0"  # primary blue
-_COLOR_LIP = "#7B68EE"  # secondary purple
+# Combined-figure accent colors (shared with univariate_plots.py combined palette)
+_COLOR_PRS = "#4a2d8a"  # PRS contribution
+_COLOR_LIP = "#b5335a"  # Lipid contribution
+_COLOR_SHARED = "#cccccc"  # Shared variance (if shown)
 _DARK = "#2b2b2b"  # spine / text color
 _GRID = "#D9D9D9"  # gridline color
 
