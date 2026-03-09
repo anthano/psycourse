@@ -3,12 +3,18 @@ from __future__ import annotations
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
-# Combined-figure accent colors (shared with univariate_plots.py combined palette)
-_COLOR_PRS = "#4a2d8a"  # PRS contribution
-_COLOR_LIP = "#b5335a"  # Lipid contribution
-_COLOR_SHARED = "#cccccc"  # Shared variance (if shown)
-_DARK = "#2b2b2b"  # spine / text color
-_GRID = "#D9D9D9"  # gridline color
+from psycourse.config import (
+    PLOT_COMBINED_LIP as _COLOR_LIP,
+)
+from psycourse.config import (
+    PLOT_COMBINED_PRS as _COLOR_PRS,
+)
+from psycourse.config import (
+    PLOT_GRID_DARK as _GRID,
+)
+from psycourse.config import (
+    PLOT_SPINE_COLOR as _DARK,
+)
 
 
 def _sig_label(p: float) -> str:
@@ -44,12 +50,16 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     # ── Values ────────────────────────────────────────────────────────────────
     dr2_prs = results["dR2_prs"]
     dr2_lip = results["dR2_lip"]
+    dr2_joint = results["dR2_joint"]
     p_prs = results["p_perm_dR2_prs"]
     p_lip = results["p_perm_dR2_lip"]
     p_joint = results["p_perm_dR2_joint"]
 
     # ── Figure / axes ─────────────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(3.5, 3.5))
+    # Minimum display height so the shared strip is always visible even when
+    # the true shared variance is near zero. Computed after figsize is fixed.
+    _min_shared_display = dr2_joint * 0.04  # 4 % of total bar height
     fig.patch.set_facecolor("white")
 
     bar_w = 0.50
@@ -76,7 +86,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         zorder=3,
     )
 
-    # ── PRS + Lipids jointly: PRS segment (bottom) + lipid segment (top) ─────
+    # ── PRS + Lipids jointly: PRS (bottom) + shared (middle) + lipid (top) ───
     ax.bar(
         2,
         dr2_prs,
@@ -100,7 +110,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     # ── Significance markers ──────────────────────────────────────────────────
     h_prs = dr2_prs
     h_lip = dr2_lip
-    h_joint = dr2_prs + dr2_lip  # total height of stacked joint bar
+    h_joint = dr2_joint  # total height of stacked joint bar
 
     y_top = max(h_prs, h_lip, h_joint)
     pad = y_top * 0.04

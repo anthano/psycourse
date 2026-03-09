@@ -102,6 +102,7 @@ COMBINED_VARIANTS = [
     ("default", "A", "Primary Model"),
     ("cov_diagnosis", "B", "Covariate: diagnosis"),
     ("cov_med", "C", "Covariate: medication"),
+    ("cov_med_and_diag", "D", "Covariate: medication + diagnosis"),
 ]
 
 
@@ -117,11 +118,13 @@ def task_lipid_coef_distribution_combined(
     annot_df = pd.read_pickle(ANNOT_DF_PATH)
 
     fig, axes = plt.subplots(
-        nrows=3,
+        nrows=4,
         ncols=1,
-        figsize=(10, 13),  # tall enough for three stacked panels
-        constrained_layout=True,  # handles tight spacing + legend overflow cleanly
+        figsize=(9, 12),
+        constrained_layout=False,  # ← changed
     )
+
+    fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
 
     for ax, (variant, panel_label, covariate_label) in zip(
         axes, COMBINED_VARIANTS, strict=False
@@ -131,8 +134,8 @@ def task_lipid_coef_distribution_combined(
         enrich_df = pd.read_pickle(LIPID_RESULTS_PATH / files["enrichment_df"])
 
         plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
+        ax.set_ylabel("")  # ← strip individual labels
 
-        # Panel letter in the top-left corner (publication convention)
         ax.text(
             -0.08,
             1.18,
@@ -143,9 +146,96 @@ def task_lipid_coef_distribution_combined(
             va="bottom",
             ha="left",
         )
-
-        # Covariate label as subtitle below the panel letter
         ax.set_title(covariate_label, loc="left", fontsize=11, pad=4)
+
+    fig.supylabel(
+        "Coefficient (lipid X severe psychosis subtype probability)",
+        fontsize=10,
+        x=0.02,
+    )
 
     for path in produces:
         fig.savefig(path, bbox_inches="tight")
+    plt.close()
+
+
+# ======================================================================================
+
+LIPID_PLOT_VARIANTS_COV_PANSS = {
+    "cov_panss_pos": {
+        "results_df": "univariate_lipid_results_cov_panss.pkl",
+        "enrichment_df": "lipid_enrichment_results_cov_panss.pkl",
+    },
+    "cov_panss_neg": {
+        "results_df": "univariate_lipid_results_cov_panss_neg.pkl",
+        "enrichment_df": "lipid_enrichment_results_cov_panss_neg.pkl",
+    },
+    "cov_panss_gen": {
+        "results_df": "univariate_lipid_results_cov_panss_gen.pkl",
+        "enrichment_df": "lipid_enrichment_results_cov_panss_gen.pkl",
+    },
+    "cov_panss_total": {
+        "results_df": "univariate_lipid_results_cov_panss_total_score.pkl",
+        "enrichment_df": "lipid_enrichment_results_cov_panss_total_score.pkl",
+    },
+}
+
+COMBINED_VARIANTS_COV_PANSS = [
+    ("cov_panss_pos", "A", "Covariate: PANSS positive symptoms"),
+    ("cov_panss_neg", "B", "Covariate: PANSS negative symptoms"),
+    ("cov_panss_gen", "C", "Covariate: PANSS general psychopathology scale"),
+    ("cov_panss_total", "D", "Covariate: PANSS total scale"),
+]
+
+
+@pytask.task(
+    id="combined_bp_plot_cov_panss",
+    kwargs={
+        "produces": dual_output("lipid_enrichment_bp_plot_combined_cov_panss.svg"),
+    },
+)
+def task_lipid_coef_distribution_combined_cov_panss(
+    produces: Annotated[list[Path], pytask.Product],
+):
+    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+
+    fig, axes = plt.subplots(
+        nrows=4,
+        ncols=1,
+        figsize=(11.69, 8.27),
+        constrained_layout=False,  # ← changed
+    )
+
+    fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
+
+    for ax, (variant, panel_label, covariate_label) in zip(
+        axes, COMBINED_VARIANTS_COV_PANSS, strict=False
+    ):
+        files = LIPID_PLOT_VARIANTS_COV_PANSS[variant]
+        results_df = pd.read_pickle(LIPID_RESULTS_PATH / files["results_df"])
+        enrich_df = pd.read_pickle(LIPID_RESULTS_PATH / files["enrichment_df"])
+
+        plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
+        ax.set_ylabel("")  # ← strip individual labels
+
+        ax.text(
+            -0.08,
+            1.18,
+            panel_label,
+            transform=ax.transAxes,
+            fontsize=14,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+        ax.set_title(covariate_label, loc="left", fontsize=11, pad=4)
+
+    fig.supylabel(
+        "Coefficient (lipid X severe psychosis subtype probability)",
+        fontsize=10,
+        x=0.02,
+    )
+
+    for path in produces:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close()
