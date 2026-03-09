@@ -2,6 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Patch
 
+from psycourse.config import (
+    PLOT_LIP_FDR,
+    PLOT_LIP_NS,
+    PLOT_SPINE_COLOR,
+)
+
 
 def enrichment_strength_plot(enrichment_results, variant):
     """Plot enrichment strength for lipid classes based on GSEA results.
@@ -18,9 +24,16 @@ def enrichment_strength_plot(enrichment_results, variant):
     result = result.sort_values("NES")
     fig, ax = plt.subplots(figsize=(6, 4))
     y = range(len(result))
-    ax.hlines(y, 0, result["NES"])
-    ax.plot(result["NES"], y, "o")
-    ax.axvline(0, linestyle="--")
+    ax.hlines(y, 0, result["NES"], colors=PLOT_SPINE_COLOR, linewidth=0.8)
+    ax.plot(
+        result["NES"],
+        y,
+        "o",
+        color=PLOT_LIP_NS,
+        markeredgecolor=PLOT_SPINE_COLOR,
+        markeredgewidth=0.6,
+    )
+    ax.axvline(0, linestyle="--", color=PLOT_SPINE_COLOR, linewidth=0.8)
 
     # mark significant classes
     sig_mask = result["FDR"] < 0.05
@@ -28,10 +41,13 @@ def enrichment_strength_plot(enrichment_results, variant):
         result["NES"][sig_mask],
         [y_i for y_i, m in zip(y, sig_mask, strict=False) if m],
         "o",
-    )  # change marker style/edgecolor to highlight
+        color=PLOT_LIP_FDR,
+        markeredgecolor=PLOT_SPINE_COLOR,
+        markeredgewidth=0.6,
+    )
 
     ax.set_yticks(y)
-    ax.set_yticklabels(result.index)
+    ax.set_yticklabels([lbl.replace("_", "-") for lbl in result.index])
     ax.set_xlabel(f"Normalized Enrichment Score (NES), covariate: {variant}")
     ax.set_title("Lipid class GSEA (NES)")
 
@@ -85,9 +101,9 @@ def plot_lipid_coef_distributions(
         fig = ax.get_figure()
 
     sig_classes = set(enrich_df.index[enrich_df["FDR"] < fdr_thresh])
-    color_sig = "#3B4CC0"
-    color_nonsig = "#D9D9D9"
-    edge = "#2b2b2b"
+    color_sig = PLOT_LIP_FDR
+    color_nonsig = PLOT_LIP_NS
+    edge = PLOT_SPINE_COLOR
 
     bp = ax.boxplot(
         data,
@@ -122,16 +138,18 @@ def plot_lipid_coef_distributions(
     pad = 0.12 * m
     ax.set_ylim(-(m + pad), (m + pad))
 
-    star_gap = 0.06 * m
-    y_top = ax.get_ylim()[1]
-    for i, (cl, vals) in enumerate(zip(classes, data, strict=False)):
-        if cl in sig_classes and len(vals):
-            y_star = min(np.max(vals) + star_gap, y_top - 0.02 * (2 * (m + pad)))
-            ax.text(i, y_star, "*", ha="center", va="bottom", fontsize=12)
+    # star_gap = 0.06 * m
+    # y_top = ax.get_ylim()[1]
+    # for i, (cl, vals) in enumerate(zip(classes, data, strict=False)):
+    #    if cl in sig_classes and len(vals):
+    #        y_star = min(np.max(vals) + star_gap, y_top - 0.02 * (2 * (m + pad)))
+    #        ax.text(i, y_star, "*", ha="center", va="bottom", fontsize=12)
 
     ax.axhline(0, linestyle="--", color=edge, alpha=0.6)
     ax.set_xticks(np.arange(len(classes)))
-    ax.set_xticklabels(classes, rotation=45, ha="right")
+    ax.set_xticklabels(
+        [cl.replace("_", "-") for cl in classes], rotation=45, ha="right"
+    )
     ax.set_ylabel("Coefficient (lipid X severe psychosis subtype probability)")
     ax.set_xlabel("Lipid class")
 

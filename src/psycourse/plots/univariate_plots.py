@@ -3,29 +3,29 @@ import numpy as np
 import seaborn as sns
 from matplotlib.patches import Patch
 
-_GREY_EDGE = "#888888"
-
-# PRS significance tier colors
-_PRS_FDR = "#4a2d8a"  # FDR < 0.05
-_PRS_NOM = "#9b85c2"  # p < 0.05, FDR ≥ 0.05
-_PRS_NS = "#f0edf7"  # p ≥ 0.05
-
-# Lipid significance tier colors
-_LIP_FDR = "#b5335a"  # FDR < 0.05
-_LIP_NOM = "#e89ab5"  # p < 0.05, FDR ≥ 0.05
-_LIP_NS = "#fceef3"  # p ≥ 0.05
-
-# Combined-figure accent colors (PRS + lipid together)
-_COMBINED_PRS = "#4a2d8a"
-_COMBINED_LIP = "#b5335a"
-_COMBINED_SHARED = "#cccccc"
+from psycourse.config import (
+    PLOT_CAPSIZE,
+    PLOT_CAPTHICK,
+    PLOT_DOT_POINT_SIZE,
+    PLOT_ECOLOR,
+    PLOT_EDGECOLOR,
+    PLOT_ELINEWIDTH,
+    PLOT_FOREST_POINT_SIZE,
+    PLOT_LIP_FDR,
+    PLOT_LIP_NOM,
+    PLOT_LIP_NS,
+    PLOT_PRS_FDR,
+    PLOT_PRS_NOM,
+    PLOT_PRS_NS,
+    PLOT_RCPARAMS,
+)
 
 
 def _palette_colors(palette: str) -> tuple[str, str, str]:
     """Return (fdr_color, nom_color, ns_color) for the requested palette."""
     if palette == "lipid":
-        return _LIP_FDR, _LIP_NOM, _LIP_NS
-    return _PRS_FDR, _PRS_NOM, _PRS_NS
+        return PLOT_LIP_FDR, PLOT_LIP_NOM, PLOT_LIP_NS
+    return PLOT_PRS_FDR, PLOT_PRS_NOM, PLOT_PRS_NS
 
 
 def _sig_colors(pval_arr, fdr_arr, palette: str = "prs"):
@@ -66,7 +66,9 @@ def _format_prs_labels(labels):
 ############# Lipids ###################
 
 
-def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df):
+def plot_univariate_lipid_regression(
+    lipid_results_top20, cleaned_annotation_df, ax=None
+):
     """
     Plot lipid GLM coefficients with 95% CIs.
     Points and error bars colored by significance tier.
@@ -76,7 +78,12 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
     lipid_sorted = lipid_results_top20.sort_values("FDR").copy()
     y = np.arange(len(lipid_sorted))
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        standalone = True
+    else:
+        fig = ax.get_figure()
+        standalone = False
     sns.set_theme(style="whitegrid")
 
     colors = _sig_colors(
@@ -85,18 +92,17 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
         palette="lipid",
     )
 
-    # Per-point colored error bars (95% CI)
+    # Per-point colored error bars (95% CI) — whiskers always black
     for i, (_, row) in enumerate(lipid_sorted.iterrows()):
-        c = colors[i]
         ax.errorbar(
             row["coef"],
             i,
             xerr=[[row["coef"] - row["ci_low"]], [row["ci_high"] - row["coef"]]],
             fmt="none",
-            ecolor=c,
-            elinewidth=1,
-            capsize=3,
-            capthick=1,
+            ecolor=PLOT_ECOLOR,
+            elinewidth=PLOT_ELINEWIDTH,
+            capsize=PLOT_CAPSIZE,
+            capthick=PLOT_CAPTHICK,
             zorder=2,
         )
 
@@ -105,8 +111,8 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
         lipid_sorted["coef"].to_numpy(),
         y,
         c=colors,
-        edgecolor="k",
-        s=90,
+        edgecolor=PLOT_EDGECOLOR,
+        s=PLOT_FOREST_POINT_SIZE,
         zorder=3,
     )
 
@@ -129,12 +135,13 @@ def plot_univariate_lipid_regression(lipid_results_top20, cleaned_annotation_df)
     sns.despine(left=True)
 
     ax.set_xlabel("Regression Coefficient")
-    ax.set_ylabel("Lipids")
+    ax.set_ylabel("Lipids", labelpad=10)
 
     ax.legend(
         handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
-    plt.tight_layout()
+    if standalone:
+        plt.tight_layout()
 
     return fig, ax
 
@@ -176,13 +183,13 @@ def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotati
         lipid_class_results_sorted["coef"],
         lipid_class_results_sorted.index,
         c=colors,
-        s=80,
-        edgecolor="k",
+        s=PLOT_DOT_POINT_SIZE,
+        edgecolor=PLOT_EDGECOLOR,
     )
 
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
-    plt.ylabel("Lipid Class")
+    plt.ylabel("Lipid Class", labelpad=10)
     plt.legend(
         handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
@@ -220,13 +227,13 @@ def plot_univariate_lipid_extremes(top20):
         top20_sorted["coef"],
         top20_sorted.index,
         c=colors,
-        s=80,
-        edgecolor="k",
+        s=PLOT_DOT_POINT_SIZE,
+        edgecolor=PLOT_EDGECOLOR,
     )
 
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
-    plt.ylabel("Lipid")
+    plt.ylabel("Lipid", labelpad=10)
     plt.legend(
         handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
@@ -284,17 +291,7 @@ def plot_perm_enrichment(
 
     colors = _sig_colors(df["pval"].to_numpy(), df["FDR"].to_numpy(), palette="lipid")
 
-    sns.set_theme(
-        style="whitegrid",
-        rc={
-            "font.family": "DejaVu Sans",
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 14,
-            "ytick.labelsize": 14,
-            "legend.fontsize": 14,
-        },
-    )
+    sns.set_theme(style="whitegrid", rc=PLOT_RCPARAMS)
     fig, ax = plt.subplots(figsize=(8, 5))
 
     # Scatter
@@ -313,7 +310,7 @@ def plot_perm_enrichment(
 
     # Labels / grid
     ax.set_xlabel("Enrichment score (Δ mean rank; >0 = enriched)")
-    ax.set_ylabel("Lipid class")
+    ax.set_ylabel("Lipid class", labelpad=10)
     ax.grid(True, axis="x", color="0.9")
     ax.grid(False, axis="y")
     ax.set_axisbelow(True)
@@ -337,21 +334,12 @@ def plot_perm_enrichment(
 ########################################################################################
 
 
-def plot_univariate_prs_regression(prs_results):
+def plot_univariate_prs_regression(prs_results, ax=None):
     """
     Plot PRS GLM coefficients with 95% CIs.
     Points and error bars colored by significance tier.
     """
-    plt.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 14,
-            "ytick.labelsize": 14,
-            "legend.fontsize": 14,
-        }
-    )
+    plt.rcParams.update(PLOT_RCPARAMS)
 
     # Drop Lipid-MDD-PRS
     norm_idx = prs_results.index.str.replace("_", "-")
@@ -360,23 +348,27 @@ def plot_univariate_prs_regression(prs_results):
     prs_sorted = prs_results.sort_values("FDR").copy()
     y = np.arange(len(prs_sorted))
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        standalone = True
+    else:
+        fig = ax.get_figure()
+        standalone = False
     sns.set_theme(style="whitegrid")
 
     colors = _sig_colors(prs_sorted["pval"].to_numpy(), prs_sorted["FDR"].to_numpy())
 
-    # Per-point colored error bars (95% CI)
+    # Per-point colored error bars (95% CI) — whiskers always black
     for i, (_, row) in enumerate(prs_sorted.iterrows()):
-        c = colors[i]
         ax.errorbar(
             row["coef"],
             i,
             xerr=[[row["coef"] - row["ci_low"]], [row["ci_high"] - row["coef"]]],
             fmt="none",
-            ecolor=c,
-            elinewidth=1,
-            capsize=3,
-            capthick=1,
+            ecolor=PLOT_ECOLOR,
+            elinewidth=PLOT_ELINEWIDTH,
+            capsize=PLOT_CAPSIZE,
+            capthick=PLOT_CAPTHICK,
             zorder=2,
         )
 
@@ -385,8 +377,8 @@ def plot_univariate_prs_regression(prs_results):
         prs_sorted["coef"].to_numpy(),
         y,
         c=colors,
-        edgecolor="k",
-        s=90,
+        edgecolor=PLOT_EDGECOLOR,
+        s=PLOT_FOREST_POINT_SIZE,
         zorder=3,
     )
 
@@ -410,11 +402,12 @@ def plot_univariate_prs_regression(prs_results):
     sns.despine(left=True)
 
     ax.set_xlabel("Regression Coefficient")
-    ax.set_ylabel("PRS")
+    ax.set_ylabel("PRS", labelpad=10)
 
     ax.legend(handles=_legend_elements(palette="prs"), loc="lower right", frameon=True)
 
-    plt.tight_layout()
+    if standalone:
+        plt.tight_layout()
 
     return fig, ax
 
@@ -444,13 +437,13 @@ def plot_univariate_prs_extremes(prs_results):
         prs_sorted["coef"],
         labels_formatted,
         c=colors,
-        s=80,
-        edgecolor="k",
+        s=PLOT_DOT_POINT_SIZE,
+        edgecolor=PLOT_EDGECOLOR,
     )
 
     plt.axvline(0, color="gray", linestyle="--")
     plt.xlabel("Regression Coefficient")
-    plt.ylabel("PRS")
+    plt.ylabel("PRS", labelpad=10)
     plt.legend(handles=_legend_elements(palette="prs"), loc="lower right", frameon=True)
     plt.tight_layout()
     # plt.show()
@@ -488,16 +481,7 @@ def plot_prs_cv_delta_mse(delta_df, title="Out-of-sample error reduction by PRS"
     Yellow (#f0f921) = improvement (>0), Purple (#0d0887) = worse (<=0).
     Error bars match bar colors. Numeric labels are nudged to avoid overlap."""
 
-    plt.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 14,
-            "ytick.labelsize": 14,
-            "legend.fontsize": 14,
-        }
-    )
+    plt.rcParams.update(PLOT_RCPARAMS)
 
     dd = delta_df.sort_values("delta_mse_pct_mean", ascending=True).copy()
     vals = dd["delta_mse_pct_mean"].to_numpy()
@@ -543,7 +527,7 @@ def plot_prs_cv_delta_mse(delta_df, title="Out-of-sample error reduction by PRS"
 
     # Labels / title
     ax.set_xlabel("Δ MSE (%) vs covariates-only (5-fold CV)")
-    ax.set_ylabel("PRS")
+    ax.set_ylabel("PRS", labelpad=10)
     ax.set_title(title)
 
     # Nice symmetric x-lims with padding

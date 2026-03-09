@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.gridspec import GridSpec
 
+from psycourse.config import PLOT_COMBINED_LIP, PLOT_COMBINED_PRS
+
 
 def plot_cca_main(
     results: dict,
@@ -44,8 +46,6 @@ def plot_cca_main(
     prs_top = _topk_signed(prs_load, 13)
     lip_top = _topk_signed(lip_load, 16)
 
-    primary_color = "#3B4CC0"
-    secondary_color = "#7B68EE"
     dark_gray = "#2b2b2b"
     light_gray = "#D9D9D9"
     y_label = "Severe psychosis probability"
@@ -75,7 +75,7 @@ def plot_cca_main(
         )
 
     # --- Panel A: U1 vs V1 ---
-    ax_uv.scatter(u, v, s=25, alpha=0.6, color=primary_color, edgecolors="none")
+    ax_uv.scatter(u, v, s=25, alpha=0.6, color=PLOT_COMBINED_PRS, edgecolors="none")
     a, b = _ols_line(u, v)
     xx = np.linspace(np.nanmin(u), np.nanmax(u), 200)
     ax_uv.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
@@ -92,7 +92,9 @@ def plot_cca_main(
     ax_uv.spines["right"].set_visible(False)
 
     # --- Panel B: Severity ~ V1 ---
-    ax_uy.scatter(v, y_plot, s=25, alpha=0.6, color=primary_color, edgecolors="none")
+    ax_uy.scatter(
+        v, y_plot, s=25, alpha=0.6, color=PLOT_COMBINED_LIP, edgecolors="none"
+    )
     a, b = _ols_line(v, y)
     xx = np.linspace(np.nanmin(v), np.nanmax(v), 200)
     ax_uy.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
@@ -112,9 +114,7 @@ def plot_cca_main(
     if len(prs_top) == 0:
         ax_prs.set_axis_off()
     else:
-        colors = [
-            primary_color if x >= 0 else secondary_color for x in prs_top.to_numpy()
-        ]
+        colors = [PLOT_COMBINED_PRS] * len(prs_top)
         ax_prs.barh(
             prs_top.index[::-1],
             prs_top.to_numpy()[::-1],
@@ -134,9 +134,7 @@ def plot_cca_main(
     if len(lip_top) == 0:
         ax_lip.set_axis_off()
     else:
-        colors = [
-            primary_color if x >= 0 else secondary_color for x in lip_top.to_numpy()
-        ]
+        colors = [PLOT_COMBINED_LIP] * len(lip_top)
         ax_lip.barh(
             lip_top.index[::-1],
             lip_top.to_numpy()[::-1],

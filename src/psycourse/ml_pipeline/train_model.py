@@ -197,9 +197,25 @@ def svm_model(clean_dataset_for_classifier):
     print("Confusion Matrix:")
     print(cm)
 
+    # Normalized confusion matrix (row-normalized → recall per cell)
+    cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+    cm_data = {
+        "cm": cm,
+        "cm_norm": cm_norm,
+        "classes": best_model.classes_,
+    }
+
     # Classification report
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
+    report_dict = classification_report(y_test, y_pred, output_dict=True)
+
+    # Nested CV scores data
+    nested_scores_data = {
+        "scores": nested_scores,
+        "mean": float(nested_scores.mean()),
+        "std": float(nested_scores.std()),
+    }
 
     # Get predicted probabilities
     probabilities = best_model.predict_proba(X_test)
@@ -245,7 +261,15 @@ def svm_model(clean_dataset_for_classifier):
     )
     print(full_df.head())
 
-    return final_model, full_df, learning_curve_data, roc_data
+    return (
+        final_model,
+        full_df,
+        learning_curve_data,
+        roc_data,
+        nested_scores_data,
+        cm_data,
+        report_dict,
+    )
 
 
 ###############################################################################
