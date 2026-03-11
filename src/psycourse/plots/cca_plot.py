@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.gridspec import GridSpec
 
-from psycourse.config import PLOT_COMBINED_LIP, PLOT_COMBINED_PRS
+from psycourse.config import PLOT_COMBINED_LIP, PLOT_COMBINED_PRS, PLOT_COMBINED_SHARED
 
 
 def plot_cca_main(
@@ -75,7 +75,7 @@ def plot_cca_main(
         )
 
     # --- Panel A: U1 vs V1 ---
-    ax_uv.scatter(u, v, s=25, alpha=0.6, color=PLOT_COMBINED_PRS, edgecolors="none")
+    ax_uv.scatter(u, v, s=25, alpha=0.6, color=PLOT_COMBINED_SHARED, edgecolors="none")
     a, b = _ols_line(u, v)
     xx = np.linspace(np.nanmin(u), np.nanmax(u), 200)
     ax_uv.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)

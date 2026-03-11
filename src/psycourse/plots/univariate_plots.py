@@ -276,6 +276,7 @@ def plot_perm_enrichment(
     enrich_df,
     top_n=16,
     title="Lipid class enrichment (permutation-based)",
+    ax=None,
 ):
     """
     Dot plot of class enrichment:
@@ -292,7 +293,13 @@ def plot_perm_enrichment(
     colors = _sig_colors(df["pval"].to_numpy(), df["FDR"].to_numpy(), palette="lipid")
 
     sns.set_theme(style="whitegrid", rc=PLOT_RCPARAMS)
-    fig, ax = plt.subplots(figsize=(8, 5))
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+        standalone = True
+    else:
+        fig = ax.get_figure()
+        standalone = False
 
     # Scatter
     ax.scatter(
@@ -325,7 +332,8 @@ def plot_perm_enrichment(
         handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
     )
 
-    plt.tight_layout()
+    if standalone:
+        plt.tight_layout()
     return fig, ax
 
 
