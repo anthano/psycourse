@@ -6,6 +6,7 @@ import pandas as pd
 from pytask import Product, task
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, WRITING
+from psycourse.plots.lipid_enrichment_plot import plot_lipid_coef_distributions
 from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_top20,
     plot_corr_matrix_prs,
@@ -20,8 +21,11 @@ UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
 UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR = (
     BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
 )
+UNIVARIATE_LIPID_PANSS_DIR = UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / "panss"
 BLD_PLOTS_DIR = BLD_RESULTS / "plots" / "univariate_analysis"
 WRITING_PLOTS_DIR = WRITING / "plots" / "univariate_analysis"
+BLD_ENRICHMENT_PLOT_DIR = BLD_RESULTS / "plots" / "enrichment_analysis"
+WRITING_ENRICHMENT_PLOT_DIR = WRITING / "plots" / "enrichment_analysis"
 
 ANNOTATION_DF_PATH = BLD_DATA / "cleaned_lipid_class_data.pkl"
 
@@ -525,3 +529,376 @@ def task_plot_prs_cv_delta_mse(
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
+
+
+# ============================================================================
+# PANSS OUTCOME TASKS  (Lipid regression & enrichment with PANSS as outcome)
+# ============================================================================
+
+_PANSS_LABELS = {
+    "pos": "PANSS Positive",
+    "neg": "PANSS Negative",
+    "gen": "PANSS General",
+    "tot": "PANSS Total Score",
+}
+
+# ── Individual lipid regression plots ────────────────────────────────────────
+
+
+@task
+def task_plot_lipid_regression_panss_outcome_pos(
+    lipid_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_pos.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "lipid_regression_panss_outcome_pos.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "lipid_regression_panss_outcome_pos.svg",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_regression_panss_outcome_neg(
+    lipid_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_neg.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "lipid_regression_panss_outcome_neg.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "lipid_regression_panss_outcome_neg.svg",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_regression_panss_outcome_gen(
+    lipid_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_gen.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "lipid_regression_panss_outcome_gen.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "lipid_regression_panss_outcome_gen.svg",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_regression_panss_outcome_tot(
+    lipid_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_total_score.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "lipid_regression_panss_outcome_tot.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "lipid_regression_panss_outcome_tot.svg",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ── Individual enrichment plots ───────────────────────────────────────────────
+
+
+@task
+def task_plot_lipid_enrichment_panss_outcome_pos(
+    results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_pos.pkl",
+    enrich_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_sum_pos.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_pos.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_pos.svg",
+):
+    results_df = pd.read_pickle(results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    enrich_df = pd.read_pickle(enrich_results_path)
+    fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
+    ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_enrichment_panss_outcome_neg(
+    results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_neg.pkl",
+    enrich_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_sum_neg.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_neg.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_neg.svg",
+):
+    results_df = pd.read_pickle(results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    enrich_df = pd.read_pickle(enrich_results_path)
+    fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
+    ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_enrichment_panss_outcome_gen(
+    results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_gen.pkl",
+    enrich_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_gen.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_gen.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_gen.svg",
+):
+    results_df = pd.read_pickle(results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    enrich_df = pd.read_pickle(enrich_results_path)
+    fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
+    ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_lipid_enrichment_panss_outcome_tot(
+    results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_total_score.pkl",
+    enrich_results_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_total_score.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_tot.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
+    / "lipid_enrichment_panss_outcome_tot.svg",
+):
+    results_df = pd.read_pickle(results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    enrich_df = pd.read_pickle(enrich_results_path)
+    fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
+    ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ── Combined 2×2 figures ──────────────────────────────────────────────────────
+
+
+@task
+def task_plot_panss_outcome_lipid_regression_combined(
+    lip_pos_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_pos.pkl",
+    lip_neg_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_neg.pkl",
+    lip_gen_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_sum_gen.pkl",
+    lip_tot_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_top20_standard_panss_total_score.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "panss_outcome_lipid_regression_combined.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "panss_outcome_lipid_regression_combined.svg",
+):
+    """Combined lipid regression figure with each PANSS subscale as outcome.
+
+    Layout: 2 rows × 2 columns (A4-friendly portrait).
+      A (top-left)     PANSS Positive
+      B (top-right)    PANSS Negative
+      C (bottom-left)  PANSS General
+      D (bottom-right) PANSS Total Score
+      Shared legend centred at the bottom.
+    """
+    lip_pos = pd.read_pickle(lip_pos_path)
+    lip_neg = pd.read_pickle(lip_neg_path)
+    lip_gen = pd.read_pickle(lip_gen_path)
+    lip_tot = pd.read_pickle(lip_tot_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 13))
+    fig.subplots_adjust(
+        left=0.18,
+        right=0.98,
+        top=0.95,
+        bottom=0.09,
+        hspace=0.15,
+        wspace=0.48,
+    )
+
+    models = [
+        (lip_pos, _PANSS_LABELS["pos"], axes[0, 0], "A"),
+        (lip_neg, _PANSS_LABELS["neg"], axes[0, 1], "B"),
+        (lip_gen, _PANSS_LABELS["gen"], axes[1, 0], "C"),
+        (lip_tot, _PANSS_LABELS["tot"], axes[1, 1], "D"),
+    ]
+
+    leg_handles, leg_labels = [], []
+    for i, (df, title, ax, label) in enumerate(models):
+        plot_univariate_lipid_regression(df, annotation_df, ax=ax)
+        ax.set_title(title, fontsize=11, pad=6)
+        ax.text(
+            -0.15,
+            1.04,
+            label,
+            transform=ax.transAxes,
+            fontsize=13,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+        panel_leg = ax.get_legend()
+        if panel_leg:
+            if i == 0:
+                leg_handles = panel_leg.legend_handles
+                leg_labels = [t.get_text() for t in panel_leg.get_texts()]
+            panel_leg.remove()
+
+    if leg_handles:
+        fig.legend(
+            leg_handles,
+            leg_labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 0.01),
+            ncol=len(leg_handles),
+            frameon=True,
+            fontsize=11,
+        )
+
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+@task
+def task_plot_panss_outcome_enrichment_combined(
+    results_pos_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_pos.pkl",
+    results_neg_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_neg.pkl",
+    results_gen_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_sum_gen.pkl",
+    results_tot_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "univariate_lipid_results_standard_panss_total_score.pkl",
+    enrich_pos_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_sum_pos.pkl",
+    enrich_neg_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_sum_neg.pkl",
+    enrich_gen_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_gen.pkl",
+    enrich_tot_path=UNIVARIATE_LIPID_PANSS_DIR
+    / "lipid_enrichment_results_panss_total_score.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
+    / "panss_outcome_enrichment_combined.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
+    / "panss_outcome_enrichment_combined.svg",
+):
+    """Combined lipid enrichment (boxplot style) with each PANSS subscale as outcome.
+
+    Layout: 2 rows × 2 columns (A4-friendly portrait).
+      A (top-left)     PANSS Positive
+      B (top-right)    PANSS Negative
+      C (bottom-left)  PANSS General
+      D (bottom-right) PANSS Total Score
+      Shared legend centred at the bottom; shared y-label via supylabel.
+    """
+    results_pos = pd.read_pickle(results_pos_path)
+    results_neg = pd.read_pickle(results_neg_path)
+    results_gen = pd.read_pickle(results_gen_path)
+    results_tot = pd.read_pickle(results_tot_path)
+    enrich_pos = pd.read_pickle(enrich_pos_path)
+    enrich_neg = pd.read_pickle(enrich_neg_path)
+    enrich_gen = pd.read_pickle(enrich_gen_path)
+    enrich_tot = pd.read_pickle(enrich_tot_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+    fig.subplots_adjust(
+        left=0.07,
+        right=0.97,
+        top=0.95,
+        bottom=0.22,
+        hspace=0.65,
+        wspace=0.35,
+    )
+
+    models = [
+        (results_pos, enrich_pos, _PANSS_LABELS["pos"], axes[0, 0], "A"),
+        (results_neg, enrich_neg, _PANSS_LABELS["neg"], axes[0, 1], "B"),
+        (results_gen, enrich_gen, _PANSS_LABELS["gen"], axes[1, 0], "C"),
+        (results_tot, enrich_tot, _PANSS_LABELS["tot"], axes[1, 1], "D"),
+    ]
+
+    leg_handles, leg_labels = [], []
+    for i, (results_df, enrich_df, title, ax, label) in enumerate(models):
+        plot_lipid_coef_distributions(results_df, annotation_df, enrich_df, ax=ax)
+        ax.set_title(title, fontsize=11, pad=6)
+        ax.set_ylabel("")
+        ax.text(
+            -0.10,
+            1.04,
+            label,
+            transform=ax.transAxes,
+            fontsize=13,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+        panel_leg = ax.get_legend()
+        if panel_leg:
+            if i == 0:
+                leg_handles = panel_leg.legend_handles
+                leg_labels = [t.get_text() for t in panel_leg.get_texts()]
+            panel_leg.remove()
+
+    fig.supylabel(
+        "Coefficient (lipid × severe psychosis subtype probability)",
+        fontsize=10,
+        x=0.01,
+    )
+
+    if leg_handles:
+        fig.legend(
+            leg_handles,
+            leg_labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 0.01),
+            ncol=len(leg_handles),
+            frameon=True,
+            fontsize=11,
+        )
+
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)

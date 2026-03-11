@@ -3,12 +3,13 @@ import pandas as pd
 from scipy import stats
 
 
-def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
+def get_demographics_table(df_full, df_subset=None, df_prs=None, group_diagnoses=True):
     """Generate comprehensive demographics table with optional comparison.
 
     Args:
         df_full: Full cohort dataframe
         df_subset: Optional subset dataframe (e.g., lipid subset) for comparison
+        df_prs: Optional PRS subset dataframe for an additional column
         group_diagnoses: If True, collapse diagnoses into broader categories
 
     Returns:
@@ -34,50 +35,75 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
         pct = count / total * 100 if total > 0 else 0
         return f"{count} ({pct:.1f}%)"
 
-    def t_test_p(series1, series2):
-        """Two-sample t-test p-value."""
+    def t_test_stat_p(series1, series2):
+        """Two-sample t-test, returns (t, p)."""
         try:
             s1 = series1.dropna()
             s2 = series2.dropna()
             if len(s1) < 2 or len(s2) < 2:
-                return np.nan
-            _, p = stats.ttest_ind(s1, s2, equal_var=False)
-            return p
+                return np.nan, np.nan
+            t, p = stats.ttest_ind(s1, s2, equal_var=False)
+            return t, p
         except Exception:
-            return np.nan
+            return np.nan, np.nan
 
-    def chi2_test_p(series1, series2):
-        """Chi-square test p-value for categorical variables."""
+    def chi2_test_stat_p(series1, series2):
+        """Chi-square test, returns (stat, p) for categorical variables."""
         try:
             contingency = pd.crosstab(
                 series1.fillna("Missing"), series2.fillna("Missing")
             )
             if contingency.size == 0:
-                return np.nan
+                return np.nan, np.nan
             # Use Fisher's exact for small cell counts
             if (contingency < 5).any().any():
-                _, p = (
-                    stats.fisher_exact(contingency)
-                    if contingency.shape == (2, 2)
-                    else (np.nan, np.nan)
-                )
+                if contingency.shape == (2, 2):
+                    _, p = stats.fisher_exact(contingency)
+                    return np.nan, p  # Fisher exact has no single chi2 stat
+                else:
+                    return np.nan, np.nan
             else:
-                _, p, _, _ = stats.chi2_contingency(contingency)
-            return p
+                chi2, p, _, _ = stats.chi2_contingency(contingency)
+                return chi2, p
         except Exception:
-            return np.nan
+            return np.nan, np.nan
 
-    def mann_whitney_p(series1, series2):
-        """Mann-Whitney U test for non-normal continuous variables."""
+    def mann_whitney_stat_p(series1, series2):
+        """Mann-Whitney U test, returns (U, p)."""
         try:
             s1 = series1.dropna()
             s2 = series2.dropna()
             if len(s1) < 2 or len(s2) < 2:
-                return np.nan
-            _, p = stats.mannwhitneyu(s1, s2, alternative="two-sided")
-            return p
+                return np.nan, np.nan
+            u, p = stats.mannwhitneyu(s1, s2, alternative="two-sided")
+            return u, p
         except Exception:
-            return np.nan
+            return np.nan, np.nan
+
+    def fmt_t(stat, p):
+        """Format t-statistic and p-value."""
+        if np.isnan(p):
+            return "—"
+        if np.isnan(stat):
+            return f"p={p:.3f}"
+        return f"t={stat:.2f}, p={p:.3f}"
+
+    def fmt_chi2(stat, p):
+        """Format chi-square (or Fisher) statistic and p-value."""
+        if np.isnan(p):
+            return "—"
+        if np.isnan(stat):
+            return f"p={p:.3f}"  # Fisher exact — no chi2 stat
+        return f"χ²={stat:.2f}, p={p:.3f}"
+
+    # Determine primary dataset and column name for the first data column.
+    # If df_prs is provided it replaces df_full as the displayed primary column.
+    if df_prs is not None:
+        primary_df = df_prs.copy()
+        primary_col = f"PRS sample (n={len(df_prs)})"
+    else:
+        primary_df = df_full.copy()
+        primary_col = "All Participants"
 
     # Optionally group diagnoses into broader categories
     if group_diagnoses:
@@ -91,8 +117,7 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             "Bipolar-II Disorder": "Bipolar disorder",
             "Recurrent Depression": "Recurrent depression",
         }
-        df_full = df_full.copy()
-        df_full["diagnosis_grouped"] = df_full["diagnosis_sum"].map(diagnosis_map)
+        primary_df["diagnosis_grouped"] = primary_df["diagnosis_sum"].map(diagnosis_map)
         diagnosis_col = "diagnosis_grouped"
         if df_subset is not None:
             df_subset = df_subset.copy()
@@ -104,57 +129,55 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
 
     rows = []
 
-    # Determine if we're doing comparison
+    # Determine if we're doing a two-column comparison
     comparing = df_subset is not None
 
+    def section_row(label):
+        return {
+            "Characteristic": label,
+            primary_col: "",
+            "Lipid Subset": "" if comparing else None,
+            "p-value": "" if comparing else None,
+        }
+
     # === SAMPLE SIZE ===
-    row = {"Characteristic": "N"}
-    row["All Participants"] = f"{len(df_full)}"
+    row = {"Characteristic": "N", primary_col: f"{len(primary_df)}"}
     if comparing:
         row["Lipid Subset"] = f"{len(df_subset)}"
         row["p-value"] = "—"
     rows.append(row)
 
     # === SECTION: DEMOGRAPHICS ===
-    rows.append(
-        {
-            "Characteristic": "**Demographics**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Demographics**"))
 
     # Age
     row = {"Characteristic": "Age, mean (SD), years"}
-    row["All Participants"] = format_mean_sd(df_full["age"])
+    row[primary_col] = format_mean_sd(primary_df["age"])
     if comparing:
         row["Lipid Subset"] = format_mean_sd(df_subset["age"])
-        row["p-value"] = f"{t_test_p(df_full['age'], df_subset['age']):.3f}"
+        t, p = t_test_stat_p(primary_df["age"], df_subset["age"])
+        row["p-value"] = fmt_t(t, p)
     rows.append(row)
 
     # Sex
-    if "sex" in df_full.columns:
+    if "sex" in primary_df.columns:
         if comparing:
-            df_full_temp = df_full.copy()
+            prim_temp = primary_df.copy()
             df_subset_temp = df_subset.copy()
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            sex_p = chi2_test_p(combined["sex"], combined["subset"])
+            combined = pd.concat([prim_temp, df_subset_temp])
+            sex_chi2, sex_p = chi2_test_stat_p(combined["sex"], combined["subset"])
 
-        row = {"Characteristic": "Sex, n (%)"}
-        row["All Participants"] = ""
+        row = {"Characteristic": "Sex, n (%)", primary_col: ""}
         if comparing:
             row["Lipid Subset"] = ""
-            row["p-value"] = f"{sex_p:.3f}" if not np.isnan(sex_p) else "—"
+            row["p-value"] = fmt_chi2(sex_chi2, sex_p)
         rows.append(row)
 
         for sex in ["M", "F"]:
             row = {"Characteristic": f'  {sex}{"ale" if sex == "M" else "emale"}'}
-            row["All Participants"] = format_count_pct(
-                df_full["sex"], sex, len(df_full)
-            )
+            row[primary_col] = format_count_pct(primary_df["sex"], sex, len(primary_df))
             if comparing:
                 row["Lipid Subset"] = format_count_pct(
                     df_subset["sex"], sex, len(df_subset)
@@ -163,42 +186,35 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             rows.append(row)
 
     # BMI
-    if "bmi" in df_full.columns:
+    if "bmi" in primary_df.columns:
         row = {"Characteristic": "BMI, mean (SD), kg/m²"}
-        row["All Participants"] = format_mean_sd(df_full["bmi"])
+        row[primary_col] = format_mean_sd(primary_df["bmi"])
         if comparing:
             row["Lipid Subset"] = format_mean_sd(df_subset["bmi"])
-            row["p-value"] = f"{t_test_p(df_full['bmi'], df_subset['bmi']):.3f}"
+            t, p = t_test_stat_p(primary_df["bmi"], df_subset["bmi"])
+            row["p-value"] = fmt_t(t, p)
         rows.append(row)
 
     # === SECTION: DIAGNOSIS ===
-    rows.append(
-        {
-            "Characteristic": "**Diagnosis, n (%)**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Diagnosis, n (%)**"))
 
-    if diagnosis_col in df_full.columns:
+    if diagnosis_col in primary_df.columns:
         if comparing:
-            df_full_temp = df_full.copy()
+            prim_temp = primary_df.copy()
             df_subset_temp = df_subset.copy()
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            diag_p = chi2_test_p(combined[diagnosis_col], combined["subset"])
+            combined = pd.concat([prim_temp, df_subset_temp])
+            diag_chi2, diag_p = chi2_test_stat_p(
+                combined[diagnosis_col], combined["subset"]
+            )
+            rows[-1]["p-value"] = fmt_chi2(diag_chi2, diag_p)
 
-        # Add p-value to section header
-        if comparing:
-            rows[-1]["p-value"] = f"{diag_p:.3f}" if not np.isnan(diag_p) else "—"
-
-        diagnoses = sorted(df_full[diagnosis_col].dropna().unique())
+        diagnoses = sorted(primary_df[diagnosis_col].dropna().unique())
         for diag in diagnoses:
             row = {"Characteristic": f"  {diag}"}
-            row["All Participants"] = format_count_pct(
-                df_full[diagnosis_col], diag, len(df_full)
+            row[primary_col] = format_count_pct(
+                primary_df[diagnosis_col], diag, len(primary_df)
             )
             if comparing:
                 row["Lipid Subset"] = format_count_pct(
@@ -208,60 +224,49 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             rows.append(row)
 
     # === SECTION: CLINICAL VARIABLES ===
-    rows.append(
-        {
-            "Characteristic": "**Clinical Variables**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Clinical Variables**"))
 
     # Duration of illness
-    if "duration_illness" in df_full.columns:
+    if "duration_illness" in primary_df.columns:
         row = {"Characteristic": "Duration of illness, mean (SD), years"}
-        row["All Participants"] = format_mean_sd(df_full["duration_illness"])
+        row[primary_col] = format_mean_sd(primary_df["duration_illness"])
         if comparing:
             row["Lipid Subset"] = format_mean_sd(df_subset["duration_illness"])
-            row["p-value"] = f"{t_test_p(df_full['duration_illness'],
-                            df_subset['duration_illness']):.3f}"
+            t, p = t_test_stat_p(
+                primary_df["duration_illness"], df_subset["duration_illness"]
+            )
+            row["p-value"] = fmt_t(t, p)
         rows.append(row)
 
     # === SECTION: LIFESTYLE FACTORS ===
-    rows.append(
-        {
-            "Characteristic": "**Lifestyle Factors**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Lifestyle Factors**"))
 
     # Smoking status
-    if "smoker" in df_full.columns:
+    if "smoker" in primary_df.columns:
         if comparing:
-            df_full_temp = df_full.copy()
+            prim_temp = primary_df.copy()
             df_subset_temp = df_subset.copy()
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            smoking_p = chi2_test_p(combined["smoker"], combined["subset"])
+            combined = pd.concat([prim_temp, df_subset_temp])
+            smoking_chi2, smoking_p = chi2_test_stat_p(
+                combined["smoker"], combined["subset"]
+            )
 
-        row = {"Characteristic": "Smoking status, n (%)"}
-        row["All Participants"] = ""
+        row = {"Characteristic": "Smoking status, n (%)", primary_col: ""}
         if comparing:
             row["Lipid Subset"] = ""
-            row["p-value"] = f"{smoking_p:.3f}" if not np.isnan(smoking_p) else "—"
+            row["p-value"] = fmt_chi2(smoking_chi2, smoking_p)
         rows.append(row)
 
         for status in ["yes", "former", "never"]:
-            if status in df_full["smoker"].values:
+            if status in primary_df["smoker"].values:
                 row = {
-                    "Characteristic": f'  {"Current" if status ==
-                                           "yes" else status.capitalize()}'
+                    "Characteristic": f'  {"Current" if status == "yes"
+                                           else status.capitalize()}'
                 }
-                row["All Participants"] = format_count_pct(
-                    df_full["smoker"], status, len(df_full)
+                row[primary_col] = format_count_pct(
+                    primary_df["smoker"], status, len(primary_df)
                 )
                 if comparing:
                     row["Lipid Subset"] = format_count_pct(
@@ -271,25 +276,17 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
                 rows.append(row)
 
     # === SECTION: MEDICATION ===
-    rows.append(
-        {
-            "Characteristic": "**Medication**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Medication**"))
 
     # Antipsychotic use (any use: count > 0)
-    if "antipsychotics_count" in df_full.columns:
-        df_full_temp = df_full.copy()
-        df_full_temp["any_antipsychotic"] = df_full_temp["antipsychotics_count"] > 0
+    if "antipsychotics_count" in primary_df.columns:
+        prim_temp = primary_df.copy()
+        prim_temp["any_antipsychotic"] = prim_temp["antipsychotics_count"] > 0
 
         row = {"Characteristic": "Antipsychotic use, n (%)"}
-        row["All Participants"] = format_count_pct(
-            df_full_temp["any_antipsychotic"], True, len(df_full)
+        row[primary_col] = format_count_pct(
+            prim_temp["any_antipsychotic"], True, len(primary_df)
         )
-
         if comparing:
             df_subset_temp = df_subset.copy()
             df_subset_temp["any_antipsychotic"] = (
@@ -298,25 +295,24 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             row["Lipid Subset"] = format_count_pct(
                 df_subset_temp["any_antipsychotic"], True, len(df_subset)
             )
-
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            row["p-value"] = (
-                f"{chi2_test_p(combined['any_antipsychotic'], combined['subset']):.3f}"
+            combined = pd.concat([prim_temp, df_subset_temp])
+            chi2, p = chi2_test_stat_p(
+                combined["any_antipsychotic"], combined["subset"]
             )
+            row["p-value"] = fmt_chi2(chi2, p)
         rows.append(row)
 
     # Mood stabilizer use (any use: count > 0)
-    if "mood_stabilizers_count" in df_full.columns:
-        df_full_temp = df_full.copy()
-        df_full_temp["any_mood_stabilizer"] = df_full_temp["mood_stabilizers_count"] > 0
+    if "mood_stabilizers_count" in primary_df.columns:
+        prim_temp = primary_df.copy()
+        prim_temp["any_mood_stabilizer"] = prim_temp["mood_stabilizers_count"] > 0
 
         row = {"Characteristic": "Mood stabilizer use, n (%)"}
-        row["All Participants"] = format_count_pct(
-            df_full_temp["any_mood_stabilizer"], True, len(df_full)
+        row[primary_col] = format_count_pct(
+            prim_temp["any_mood_stabilizer"], True, len(primary_df)
         )
-
         if comparing:
             df_subset_temp = df_subset.copy()
             df_subset_temp["any_mood_stabilizer"] = (
@@ -325,24 +321,24 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             row["Lipid Subset"] = format_count_pct(
                 df_subset_temp["any_mood_stabilizer"], True, len(df_subset)
             )
-
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            row["p-value"] = f"{chi2_test_p(combined['any_mood_stabilizer'],
-                               combined['subset']):.3f}"
+            combined = pd.concat([prim_temp, df_subset_temp])
+            chi2, p = chi2_test_stat_p(
+                combined["any_mood_stabilizer"], combined["subset"]
+            )
+            row["p-value"] = fmt_chi2(chi2, p)
         rows.append(row)
 
     # Antidepressant use (any use: count > 0)
-    if "antidepressants_count" in df_full.columns:
-        df_full_temp = df_full.copy()
-        df_full_temp["any_antidepressant"] = df_full_temp["antidepressants_count"] > 0
+    if "antidepressants_count" in primary_df.columns:
+        prim_temp = primary_df.copy()
+        prim_temp["any_antidepressant"] = prim_temp["antidepressants_count"] > 0
 
         row = {"Characteristic": "Antidepressant use, n (%)"}
-        row["All Participants"] = format_count_pct(
-            df_full_temp["any_antidepressant"], True, len(df_full)
+        row[primary_col] = format_count_pct(
+            prim_temp["any_antidepressant"], True, len(primary_df)
         )
-
         if comparing:
             df_subset_temp = df_subset.copy()
             df_subset_temp["any_antidepressant"] = (
@@ -351,13 +347,13 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
             row["Lipid Subset"] = format_count_pct(
                 df_subset_temp["any_antidepressant"], True, len(df_subset)
             )
-
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            row["p-value"] = (
-                f"{chi2_test_p(combined['any_antidepressant'], combined['subset']):.3f}"
+            combined = pd.concat([prim_temp, df_subset_temp])
+            chi2, p = chi2_test_stat_p(
+                combined["any_antidepressant"], combined["subset"]
             )
+            row["p-value"] = fmt_chi2(chi2, p)
         rows.append(row)
 
     # Total medication count (sum of all medication classes)
@@ -367,70 +363,64 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
         "antidepressants_count",
         "tranquilizers_count",
     ]
-    if all(col in df_full.columns for col in medication_cols):
-        df_full_temp = df_full.copy()
-        df_full_temp["total_medications"] = df_full[medication_cols].sum(axis=1)
+    if all(col in primary_df.columns for col in medication_cols):
+        prim_temp = primary_df.copy()
+        prim_temp["total_medications"] = primary_df[medication_cols].sum(axis=1)
 
         row = {"Characteristic": "Total medications, mean (SD)"}
-        row["All Participants"] = format_mean_sd(df_full_temp["total_medications"])
-
+        row[primary_col] = format_mean_sd(prim_temp["total_medications"])
         if comparing:
             df_subset_temp = df_subset.copy()
             df_subset_temp["total_medications"] = df_subset[medication_cols].sum(axis=1)
             row["Lipid Subset"] = format_mean_sd(df_subset_temp["total_medications"])
-            row["p-value"] = f"{t_test_p(df_full_temp['total_medications'],
-                            df_subset_temp['total_medications']):.3f}"
+            t, p = t_test_stat_p(
+                prim_temp["total_medications"], df_subset_temp["total_medications"]
+            )
+            row["p-value"] = fmt_t(t, p)
         rows.append(row)
 
     # === SECTION: SEVERE PSYCHOSIS SUBTYPE ===
-    rows.append(
-        {
-            "Characteristic": "**Severe Psychosis Subtype**",
-            "All Participants": "",
-            "Lipid Subset": "" if comparing else None,
-            "p-value": "" if comparing else None,
-        }
-    )
+    rows.append(section_row("**Severe Psychosis Subtype**"))
 
     # Cluster 5 probability
-    if "prob_class_5" in df_full.columns:
+    if "prob_class_5" in primary_df.columns:
         row = {"Characteristic": "Cluster 5 probability, mean (SD)"}
-        row["All Participants"] = (
-            f"{df_full['prob_class_5'].mean():.3f} "
-            f"({df_full['prob_class_5'].std():.3f})"
+        row[primary_col] = (
+            f"{primary_df['prob_class_5'].mean():.3f} "
+            f"({primary_df['prob_class_5'].std():.3f})"
         )
         if comparing:
             row["Lipid Subset"] = (
                 f"{df_subset['prob_class_5'].mean():.3f} "
                 f"({df_subset['prob_class_5'].std():.3f})"
             )
-            row["p-value"] = (
-                f"{t_test_p(df_full['prob_class_5'], df_subset['prob_class_5']):.3f}"
-            )
+            t, p = t_test_stat_p(primary_df["prob_class_5"], df_subset["prob_class_5"])
+            row["p-value"] = fmt_t(t, p)
         rows.append(row)
 
     # Cluster assignments
-    if "predicted_label" in df_full.columns:
+    if "predicted_label" in primary_df.columns:
         if comparing:
-            df_full_temp = df_full.copy()
+            prim_temp = primary_df.copy()
             df_subset_temp = df_subset.copy()
-            df_full_temp["subset"] = "All"
+            prim_temp["subset"] = "PRS"
             df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([df_full_temp, df_subset_temp])
-            cluster_p = chi2_test_p(combined["predicted_label"], combined["subset"])
+            combined = pd.concat([prim_temp, df_subset_temp])
+            cluster_chi2, cluster_p = chi2_test_stat_p(
+                combined["predicted_label"], combined["subset"]
+            )
 
-        row = {"Characteristic": "Cluster assignment, n (%)"}
-        row["All Participants"] = ""
+        row = {"Characteristic": "Cluster assignment, n (%)", primary_col: ""}
         if comparing:
             row["Lipid Subset"] = ""
-            row["p-value"] = f"{cluster_p:.3f}" if not np.isnan(cluster_p) else "—"
+            row["p-value"] = fmt_chi2(cluster_chi2, cluster_p)
         rows.append(row)
 
-        for cluster in sorted(df_full["predicted_label"].dropna().unique()):
+        for cluster in sorted(primary_df["predicted_label"].dropna().unique()):
             label = f"Cluster {cluster}" + (" (Severe)" if cluster == 5 else "")
             row = {"Characteristic": f"  {label}"}
-            row["All Participants"] = format_count_pct(
-                df_full["predicted_label"], cluster, len(df_full)
+            row[primary_col] = format_count_pct(
+                primary_df["predicted_label"], cluster, len(primary_df)
             )
             if comparing:
                 row["Lipid Subset"] = format_count_pct(
@@ -442,9 +432,9 @@ def get_demographics_table(df_full, df_subset=None, group_diagnoses=True):
     # Create DataFrame
     result_df = pd.DataFrame(rows)
 
-    # Clean up p-values (remove 'nan' strings, format)
-    if comparing and "p-value" in result_df.columns:
-        result_df["p-value"] = result_df["p-value"].replace("nan", "—")
+    # Drop any residual None-keyed columns
+    if None in result_df.columns:
+        result_df = result_df.drop(columns=[None])
 
     return result_df
 
