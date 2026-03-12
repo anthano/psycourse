@@ -1,7 +1,14 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from psycourse.config import BLD_DATA, BLD_RESULTS, SRC, WRITING
+from psycourse.config import (
+    BLD_DATA,
+    BLD_RESULTS,
+    PLOT_COMBINED_LIP,
+    PLOT_COMBINED_PRS,
+    SRC,
+    WRITING,
+)
 from psycourse.plots.descriptive_plots import plot_stacked_histograms
 
 products = {
@@ -21,11 +28,11 @@ def task_plot_stacked_histograms(
     df = pd.read_pickle(multimodal_data_path)
 
     # Generate the stacked histograms
-    fig = plot_stacked_histograms(df, bins=20)
+    fig = plot_stacked_histograms(
+        df, lipid_color=PLOT_COMBINED_LIP, prs_color=PLOT_COMBINED_PRS, bins=20
+    )
 
     # Save the figure
     fig.savefig(produces["plots"], bbox_inches="tight")
-    plt.close(fig)
-
     fig.savefig(produces["plots_for_writing"], bbox_inches="tight")
     plt.close(fig)
