@@ -20,12 +20,12 @@ WRITING = Path("/Users/anojat/Documents/psycourse-writing")
 # PRS figures
 PLOT_PRS_FDR = "#c51b7d"  # FDR < 0.05
 PLOT_PRS_NOM = "#e9a3c9"  # p < 0.05, FDR ≥ 0.05
-PLOT_PRS_NS = "#fde0ef"  # p ≥ 0.05
+PLOT_PRS_NS = "#e8e8e8"  # p ≥ 0.05
 
 # Lipid figures
 PLOT_LIP_FDR = "#4d9221"  # FDR < 0.05
 PLOT_LIP_NOM = "#a1d76a"  # p < 0.05, FDR ≥ 0.05
-PLOT_LIP_NS = "#e6f5d0"  # p ≥ 0.05
+PLOT_LIP_NS = "#e8e8e8"  # p ≥ 0.05
 
 
 # Combined figures (PRS + lipid together)
