@@ -70,7 +70,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_prs,
         width=bar_w,
         color=_COLOR_PRS,
-        edgecolor="white",
+        edgecolor="black",
         linewidth=0.5,
         zorder=3,
     )
@@ -81,7 +81,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_lip,
         width=bar_w,
         color=_COLOR_LIP,
-        edgecolor="white",
+        edgecolor="black",
         linewidth=0.5,
         zorder=3,
     )
@@ -92,7 +92,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_prs,
         width=bar_w,
         color=_COLOR_PRS,
-        edgecolor="white",
+        edgecolor="black",
         linewidth=0.5,
         zorder=3,
     )
@@ -102,7 +102,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         width=bar_w,
         bottom=dr2_prs,
         color=_COLOR_LIP,
-        edgecolor="white",
+        edgecolor="black",
         linewidth=0.5,
         zorder=3,
     )
@@ -151,10 +151,16 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     # ── Legend ────────────────────────────────────────────────────────────────
     handles = [
         mpatches.Patch(
-            facecolor=_COLOR_PRS, edgecolor="none", label="PRS contribution"
+            facecolor=_COLOR_PRS,
+            edgecolor="black",
+            linewidth=0.5,
+            label="PRS contribution",
         ),
         mpatches.Patch(
-            facecolor=_COLOR_LIP, edgecolor="none", label="Lipid contribution"
+            facecolor=_COLOR_LIP,
+            edgecolor="black",
+            linewidth=0.5,
+            label="Lipid contribution",
         ),
     ]
     ax.legend(

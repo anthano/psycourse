@@ -12,26 +12,26 @@ BLD_RESULTS = BLD / "results"
 WRITING = Path("/Users/anojat/Documents/psycourse-writing")
 
 ###############################################################################
-# Plot design — edit here to change visuals project-wide
+# Projectwise Plot design
 ###############################################################################
 
 # --- Significance tier colors ------------------------------------------------
 
 # PRS figures
-PLOT_PRS_FDR = "#6e2490"  # FDR < 0.05
-PLOT_PRS_NOM = "#b87ac8"  # p < 0.05, FDR ≥ 0.05
-PLOT_PRS_NS = "#f4edf6"  # p ≥ 0.05
+PLOT_PRS_FDR = "#c51b7d"  # FDR < 0.05
+PLOT_PRS_NOM = "#e9a3c9"  # p < 0.05, FDR ≥ 0.05
+PLOT_PRS_NS = "#fde0ef"  # p ≥ 0.05
 
 # Lipid figures
-PLOT_LIP_FDR = "#0e7a56"  # FDR < 0.05
-PLOT_LIP_NOM = "#52c49a"  # p < 0.05, FDR ≥ 0.05
-PLOT_LIP_NS = "#e8f8f2"  # p ≥ 0.05
+PLOT_LIP_FDR = "#4d9221"  # FDR < 0.05
+PLOT_LIP_NOM = "#a1d76a"  # p < 0.05, FDR ≥ 0.05
+PLOT_LIP_NS = "#e6f5d0"  # p ≥ 0.05
 
 
 # Combined figures (PRS + lipid together)
-PLOT_COMBINED_PRS = "#b87ac8"
-PLOT_COMBINED_LIP = "#52c49a"
-PLOT_COMBINED_SHARED = "#f4a261"
+PLOT_COMBINED_PRS = "#e9a3c9"
+PLOT_COMBINED_LIP = "#a1d76a"
+PLOT_COMBINED_SHARED = "#6873e8"
 
 # --- Geometry ----------------------------------------------------------------
 

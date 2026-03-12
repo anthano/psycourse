@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot_stacked_histograms(df, bins=20):
+def plot_stacked_histograms(df, lipid_color, prs_color, bins=20):
     """
     Plot two histograms of predicted probability of severe psychosis cluster:
     1. Total sample
@@ -11,18 +11,24 @@ def plot_stacked_histograms(df, bins=20):
     Args:
         df (pd.DataFrame): DataFrame containing the full multimodal dataset.
         bins (int): Number of bins for the histograms.
+        lipid_color (str): Color for the lipids subsample histogram.
+        prs_color (str): Color for the total sample histogram.
 
     Returns:
         A figure with two stacked histograms.
     """
-    # --- First dataset (total sample) ---
+    # --- First dataset (PRS sample) ---
+    df = df.copy()
+    prs_columns = [col for col in df.columns if col.endswith("_PRS")]
+    df = df.dropna(subset=prs_columns, how="all")
+
     fig, axes = plt.subplots(2, sharey=False)
 
-    df["prob_class_5"].hist(bins=bins, ax=axes[0], color="#F39C12")
+    df["prob_class_5"].hist(bins=bins, ax=axes[0], color=prs_color)
     axes[0].set_xlabel("Predicted probability of severe psychosis cluster")
     axes[0].set_ylabel("Count")
     axes[0].grid(False)
-    axes[0].set_title("Total sample")
+    axes[0].set_title("PRS Sample")
 
     # --- Second dataset (lipids subsample) ---
     data = df.copy()
@@ -34,11 +40,11 @@ def plot_stacked_histograms(df, bins=20):
     data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
     analysis_data = data_with_lipids[relevant_cols].dropna().copy()
 
-    analysis_data["prob_class_5"].hist(bins=bins, ax=axes[1], color="#7E1E9C")
+    analysis_data["prob_class_5"].hist(bins=bins, ax=axes[1], color=lipid_color)
     axes[1].set_xlabel("Predicted probability of severe psychosis cluster")
     axes[1].set_ylabel("Count")
     axes[1].grid(False)
-    axes[1].set_title("Lipids subsample")
+    axes[1].set_title("Lipids Sample")
 
     plt.tight_layout()
 

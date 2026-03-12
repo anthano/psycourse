@@ -382,9 +382,9 @@ def get_demographics_table(df_full, df_subset=None, df_prs=None, group_diagnoses
     # === SECTION: SEVERE PSYCHOSIS SUBTYPE ===
     rows.append(section_row("**Severe Psychosis Subtype**"))
 
-    # Cluster 5 probability
+    # Severe psychosis subtype probability
     if "prob_class_5" in primary_df.columns:
-        row = {"Characteristic": "Cluster 5 probability, mean (SD)"}
+        row = {"Characteristic": "Severe psychosis subtype probability, mean (SD)"}
         row[primary_col] = (
             f"{primary_df['prob_class_5'].mean():.3f} "
             f"({primary_df['prob_class_5'].std():.3f})"
@@ -397,37 +397,6 @@ def get_demographics_table(df_full, df_subset=None, df_prs=None, group_diagnoses
             t, p = t_test_stat_p(primary_df["prob_class_5"], df_subset["prob_class_5"])
             row["p-value"] = fmt_t(t, p)
         rows.append(row)
-
-    # Cluster assignments
-    if "predicted_label" in primary_df.columns:
-        if comparing:
-            prim_temp = primary_df.copy()
-            df_subset_temp = df_subset.copy()
-            prim_temp["subset"] = "PRS"
-            df_subset_temp["subset"] = "Lipid"
-            combined = pd.concat([prim_temp, df_subset_temp])
-            cluster_chi2, cluster_p = chi2_test_stat_p(
-                combined["predicted_label"], combined["subset"]
-            )
-
-        row = {"Characteristic": "Cluster assignment, n (%)", primary_col: ""}
-        if comparing:
-            row["Lipid Subset"] = ""
-            row["p-value"] = fmt_chi2(cluster_chi2, cluster_p)
-        rows.append(row)
-
-        for cluster in sorted(primary_df["predicted_label"].dropna().unique()):
-            label = f"Cluster {cluster}" + (" (Severe)" if cluster == 5 else "")
-            row = {"Characteristic": f"  {label}"}
-            row[primary_col] = format_count_pct(
-                primary_df["predicted_label"], cluster, len(primary_df)
-            )
-            if comparing:
-                row["Lipid Subset"] = format_count_pct(
-                    df_subset["predicted_label"], cluster, len(df_subset)
-                )
-                row["p-value"] = ""
-            rows.append(row)
 
     # Create DataFrame
     result_df = pd.DataFrame(rows)

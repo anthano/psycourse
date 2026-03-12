@@ -75,7 +75,15 @@ def plot_cca_main(
         )
 
     # --- Panel A: U1 vs V1 ---
-    ax_uv.scatter(u, v, s=25, alpha=0.6, color=PLOT_COMBINED_SHARED, edgecolors="none")
+    ax_uv.scatter(
+        u,
+        v,
+        s=25,
+        alpha=0.6,
+        color=PLOT_COMBINED_SHARED,
+        edgecolors="black",
+        linewidth=0.5,
+    )
     a, b = _ols_line(u, v)
     xx = np.linspace(np.nanmin(u), np.nanmax(u), 200)
     ax_uv.plot(xx, a + b * xx, color=dark_gray, linewidth=2, alpha=0.8)
@@ -93,7 +101,13 @@ def plot_cca_main(
 
     # --- Panel B: Severity ~ V1 ---
     ax_uy.scatter(
-        v, y_plot, s=25, alpha=0.6, color=PLOT_COMBINED_LIP, edgecolors="none"
+        v,
+        y_plot,
+        s=25,
+        alpha=0.6,
+        color=PLOT_COMBINED_LIP,
+        edgecolors="black",
+        linewidth=0.5,
     )
     a, b = _ols_line(v, y)
     xx = np.linspace(np.nanmin(v), np.nanmax(v), 200)
@@ -120,6 +134,8 @@ def plot_cca_main(
             prs_top.to_numpy()[::-1],
             color=colors[::-1],
             alpha=0.8,
+            edgecolor="black",
+            linewidth=0.5,
         )
         ax_prs.axvline(0, color=dark_gray, linewidth=1.5, alpha=0.8)
         ax_prs.set_title("PRS loadings", fontsize=11, pad=10)
@@ -140,6 +156,8 @@ def plot_cca_main(
             lip_top.to_numpy()[::-1],
             color=colors[::-1],
             alpha=0.8,
+            edgecolor="black",
+            linewidth=0.5,
         )
         ax_lip.axvline(0, color=dark_gray, linewidth=1.5, alpha=0.8)
         ax_lip.set_title("Lipid-class loadings", fontsize=11, pad=10)
