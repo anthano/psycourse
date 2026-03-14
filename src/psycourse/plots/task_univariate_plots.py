@@ -22,6 +22,9 @@ UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR = (
     BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
 )
 UNIVARIATE_LIPID_PANSS_DIR = UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / "panss"
+UNIVARIATE_LIPID_MED_ADJ_DIR = (
+    UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / "medication_adjusted"
+)
 BLD_PLOTS_DIR = BLD_RESULTS / "plots" / "univariate_analysis"
 WRITING_PLOTS_DIR = WRITING / "plots" / "univariate_analysis"
 BLD_ENRICHMENT_PLOT_DIR = BLD_RESULTS / "plots" / "enrichment_analysis"
@@ -459,6 +462,160 @@ def task_plot_sensitivity_combined_panss(
             panel_leg.remove()
 
     # Single shared legend at the bottom of the figure
+    if leg_handles:
+        fig.legend(
+            leg_handles,
+            leg_labels,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 0.01),
+            ncol=len(leg_handles),
+            frameon=True,
+            fontsize=11,
+        )
+
+    for path in [bld_plots_dir_output, writing_plots_dir_output]:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ============================================================================
+# MEDICATION-ADJUSTED LIPID REGRESSION TASKS
+# ============================================================================
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_antidepressants(
+    lipid_results_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_antidepressants.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_antidepressants.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_antidepressants.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_antipsychotics(
+    lipid_results_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_antipsychotics.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_antipsychotics.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_antipsychotics.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_tranquilizers(
+    lipid_results_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_tranquilizers.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_tranquilizers.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_tranquilizers.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_univariate_lipid_regression_cov_mood_stabilizers(
+    lipid_results_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_mood_stabilizers.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_mood_stabilizers.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "univariate_lipid_regression_plot_cov_mood_stabilizers.png",
+):
+    lipid_results = pd.read_pickle(lipid_results_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+    fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
+    plt.close()
+
+
+@task
+def task_plot_sensitivity_combined_medication_adjusted(
+    lip_antidep_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_antidepressants.pkl",
+    lip_antipsych_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_antipsychotics.pkl",
+    lip_tranq_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_tranquilizers.pkl",
+    lip_mood_path=UNIVARIATE_LIPID_MED_ADJ_DIR
+    / "univariate_lipid_results_top20_cov_mood_stabilizers.pkl",
+    annotation_df_path=ANNOTATION_DF_PATH,
+    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
+    / "sensitivity_combined_medication_adjusted.svg",
+    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
+    / "sensitivity_combined_medication_adjusted.svg",
+):
+    """2×2 forest plot: each medication class controlled individually."""
+    lip_antidep = pd.read_pickle(lip_antidep_path)
+    lip_antipsych = pd.read_pickle(lip_antipsych_path)
+    lip_tranq = pd.read_pickle(lip_tranq_path)
+    lip_mood = pd.read_pickle(lip_mood_path)
+    annotation_df = pd.read_pickle(annotation_df_path)
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 13))
+    fig.subplots_adjust(
+        left=0.18,
+        right=0.98,
+        top=0.95,
+        bottom=0.09,
+        hspace=0.15,
+        wspace=0.48,
+    )
+
+    models = [
+        (lip_antidep, "+ Antidepressants", axes[0, 0], "A"),
+        (lip_antipsych, "+ Antipsychotics", axes[0, 1], "B"),
+        (lip_tranq, "+ Tranquilizers", axes[1, 0], "C"),
+        (lip_mood, "+ Mood stabilizers", axes[1, 1], "D"),
+    ]
+
+    leg_handles, leg_labels = [], []
+    for i, (df, title, ax, label) in enumerate(models):
+        plot_univariate_lipid_regression(df, annotation_df, ax=ax)
+        ax.set_title(title, fontsize=11, pad=6)
+        ax.text(
+            -0.15,
+            1.04,
+            label,
+            transform=ax.transAxes,
+            fontsize=13,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+        panel_leg = ax.get_legend()
+        if panel_leg:
+            if i == 0:
+                leg_handles = panel_leg.legend_handles
+                leg_labels = [t.get_text() for t in panel_leg.get_texts()]
+            panel_leg.remove()
+
     if leg_handles:
         fig.legend(
             leg_handles,

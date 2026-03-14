@@ -6,14 +6,18 @@ from psycourse.data_analysis.univariate_analysis import (
     lipid_prs_regression,
     prs_cv_delta_mse,
     univariate_lipid_regression,
+    univariate_lipid_regression_cov_antidepressants,
+    univariate_lipid_regression_cov_antipsychotics,
     univariate_lipid_regression_cov_diagnosis,
     univariate_lipid_regression_cov_med,
     univariate_lipid_regression_cov_med_and_diag,
+    univariate_lipid_regression_cov_mood_stabilizers,
     univariate_lipid_regression_cov_panss,
     univariate_lipid_regression_cov_panss_gen,
     univariate_lipid_regression_cov_panss_neg,
     univariate_lipid_regression_cov_panss_pos_neg,
     univariate_lipid_regression_cov_panss_total,
+    univariate_lipid_regression_cov_tranquilizers,
     univariate_prs_ancova,
     univariate_prs_regression,
     univariate_prs_regression_cov_bmi,
@@ -25,6 +29,9 @@ UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
 )
 UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR = (
     BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
+)
+UNIVARIATE_LIPID_MED_ADJ_RESULTS_DIR = (
+    BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid" / "medication_adjusted"
 )
 
 # ======================================================================================
@@ -242,6 +249,45 @@ def task_univariate_lipid_regression_cov_med_and_diag(
     top20_lipids.to_pickle(produces["top20_lipids"])
     univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
 
+
+# ======================================================================================
+# MEDICATION-ADJUSTED (one medication class at a time)
+# ======================================================================================
+
+_MED_VARIANTS = {
+    "antidepressants": univariate_lipid_regression_cov_antidepressants,
+    "antipsychotics": univariate_lipid_regression_cov_antipsychotics,
+    "tranquilizers": univariate_lipid_regression_cov_tranquilizers,
+    "mood_stabilizers": univariate_lipid_regression_cov_mood_stabilizers,
+}
+
+for _med_name, _med_fn in _MED_VARIANTS.items():
+    _produces = {
+        "n_subset_dict": UNIVARIATE_LIPID_MED_ADJ_RESULTS_DIR
+        / f"n_subset_dict_cov_{_med_name}.pkl",
+        "top20_lipids": UNIVARIATE_LIPID_MED_ADJ_RESULTS_DIR
+        / f"univariate_lipid_results_top20_cov_{_med_name}.pkl",
+        "univariate_lipid_results": UNIVARIATE_LIPID_MED_ADJ_RESULTS_DIR
+        / f"univariate_lipid_results_cov_{_med_name}.pkl",
+    }
+
+    def _make_task(fn, prods):
+        def task_fn(
+            script_path=SRC / "data_analysis" / "univariate_analysis.py",
+            multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+            produces=prods,
+        ):
+            data = pd.read_pickle(multimodal_df_path)
+            n_subset_dict, top20_lipids, univariate_lipid_results = fn(data)
+            pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
+            top20_lipids.to_pickle(produces["top20_lipids"])
+            univariate_lipid_results.to_pickle(produces["univariate_lipid_results"])
+
+        return task_fn
+
+    globals()[f"task_univariate_lipid_regression_cov_{_med_name}"] = _make_task(
+        _med_fn, _produces
+    )
 
 # ======================================================================================
 univariate_lipid_regression_cov_panss_produces = {
