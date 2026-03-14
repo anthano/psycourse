@@ -13,6 +13,7 @@ from psycourse.plots.lipid_enrichment_plot import (
 
 ANNOT_DF_PATH = BLD_DATA / "cleaned_lipid_class_data.pkl"
 LIPID_RESULTS_PATH = BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
+MED_ADJ_RESULTS_PATH = LIPID_RESULTS_PATH / "medication_adjusted"
 PLOT_PATH = BLD_RESULTS / "plots" / "enrichment_analysis"
 WRITING_PLOT_PATH = WRITING / "plots" / "enrichment_analysis"
 
@@ -135,6 +136,145 @@ def task_lipid_coef_distribution_combined(
 
         plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
         ax.set_ylabel("")  # ← strip individual labels
+
+        ax.text(
+            -0.08,
+            1.18,
+            panel_label,
+            transform=ax.transAxes,
+            fontsize=14,
+            fontweight="bold",
+            va="bottom",
+            ha="left",
+        )
+        ax.set_title(covariate_label, loc="left", fontsize=11, pad=4)
+
+    fig.supylabel(
+        "Coefficient (lipid X severe psychosis subtype probability)",
+        fontsize=10,
+        x=0.02,
+    )
+
+    for path in produces:
+        fig.savefig(path, bbox_inches="tight")
+    plt.close()
+
+
+# ======================================================================================
+# MEDICATION-ADJUSTED ENRICHMENT PLOTS (one medication class at a time)
+# ======================================================================================
+
+LIPID_PLOT_VARIANTS_MED_ADJ = {
+    "cov_antidepressants": {
+        "results_df": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_antidepressants.pkl",
+        "enrichment_df": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_antidepressants.pkl",
+    },
+    "cov_antipsychotics": {
+        "results_df": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_antipsychotics.pkl",
+        "enrichment_df": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_antipsychotics.pkl",
+    },
+    "cov_tranquilizers": {
+        "results_df": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_tranquilizers.pkl",
+        "enrichment_df": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_tranquilizers.pkl",
+    },
+    "cov_mood_stabilizers": {
+        "results_df": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_mood_stabilizers.pkl",
+        "enrichment_df": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_mood_stabilizers.pkl",
+    },
+}
+
+for variant, files in LIPID_PLOT_VARIANTS_MED_ADJ.items():
+    enrichment_df_path = files["enrichment_df"]
+    results_df_path = files["results_df"]
+
+    @pytask.task(
+        id=f"{variant}_strength_plot",
+        kwargs={
+            "variant": variant,
+            "enrichment_results_df_path": enrichment_df_path,
+            "produces": dual_output(f"lipid_enrichment_strength_plot_{variant}.svg"),
+        },
+    )
+    def task_lipid_enrichment_strength_plot_med_adj(
+        enrichment_results_df_path: Path,
+        produces: Annotated[list[Path], pytask.Product],
+        variant: str,
+    ):
+        df = pd.read_pickle(enrichment_results_df_path)
+        fig, _ = enrichment_strength_plot(df, variant=variant)
+        for path in produces:
+            fig.savefig(path)
+
+    @pytask.task(
+        id=f"{variant}_distribution_plot",
+        kwargs={
+            "variant": variant,
+            "results_df_path": results_df_path,
+            "annot_df_path": ANNOT_DF_PATH,
+            "enrichment_df_path": enrichment_df_path,
+            "produces": dual_output(f"lipid_enrichment_bp_plot_{variant}.svg"),
+        },
+    )
+    def task_lipid_coef_distribution_plot_med_adj(
+        results_df_path: Path,
+        annot_df_path: Path,
+        enrichment_df_path: Path,
+        produces: Annotated[list[Path], pytask.Product],
+        variant: str,
+    ):
+        results_df = pd.read_pickle(results_df_path)
+        annot_df = pd.read_pickle(annot_df_path)
+        enrich_df = pd.read_pickle(enrichment_df_path)
+        fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df)
+        for path in produces:
+            fig.savefig(path, bbox_inches="tight")
+
+
+COMBINED_VARIANTS_MED_ADJ = [
+    ("cov_antidepressants", "A", "Covariate: antidepressants"),
+    ("cov_antipsychotics", "B", "Covariate: antipsychotics"),
+    ("cov_tranquilizers", "C", "Covariate: tranquilizers"),
+    ("cov_mood_stabilizers", "D", "Covariate: mood stabilizers"),
+]
+
+
+@pytask.task(
+    id="combined_bp_plot_med_adj",
+    kwargs={
+        "produces": dual_output("lipid_enrichment_bp_plot_combined_med_adj.svg"),
+    },
+)
+def task_lipid_coef_distribution_combined_med_adj(
+    produces: Annotated[list[Path], pytask.Product],
+):
+    """Combined 4-panel enrichment bp plot, one medication class per panel."""
+    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+
+    fig, axes = plt.subplots(
+        nrows=4,
+        ncols=1,
+        figsize=(9, 12),
+        constrained_layout=False,
+    )
+    fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
+
+    for ax, (variant, panel_label, covariate_label) in zip(
+        axes, COMBINED_VARIANTS_MED_ADJ, strict=False
+    ):
+        files = LIPID_PLOT_VARIANTS_MED_ADJ[variant]
+        results_df = pd.read_pickle(files["results_df"])
+        enrich_df = pd.read_pickle(files["enrichment_df"])
+
+        plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
+        ax.set_ylabel("")
 
         ax.text(
             -0.08,

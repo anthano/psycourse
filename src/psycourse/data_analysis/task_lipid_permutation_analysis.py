@@ -11,6 +11,7 @@ from psycourse.data_analysis.lipid_permutation_analysis import (
 )
 
 REGRESSION_RESULTS_PATH = BLD_RESULTS / "univariate" / "continuous_analysis" / "lipid"
+MED_ADJ_RESULTS_PATH = REGRESSION_RESULTS_PATH / "medication_adjusted"
 
 LIPID_ENRICHMENT_INPUTS = {
     "default": {
@@ -105,6 +106,30 @@ LIPID_ENRICHMENT_INPUTS = {
         "produces": REGRESSION_RESULTS_PATH
         / "panss"
         / "lipid_enrichment_results_panss_total_score.pkl",
+    },
+    "cov_antidepressants": {
+        "regression_results_df_path": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_antidepressants.pkl",
+        "produces": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_antidepressants.pkl",
+    },
+    "cov_antipsychotics": {
+        "regression_results_df_path": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_antipsychotics.pkl",
+        "produces": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_antipsychotics.pkl",
+    },
+    "cov_tranquilizers": {
+        "regression_results_df_path": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_tranquilizers.pkl",
+        "produces": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_tranquilizers.pkl",
+    },
+    "cov_mood_stabilizers": {
+        "regression_results_df_path": MED_ADJ_RESULTS_PATH
+        / "univariate_lipid_results_cov_mood_stabilizers.pkl",
+        "produces": MED_ADJ_RESULTS_PATH
+        / "lipid_enrichment_results_cov_mood_stabilizers.pkl",
     },
 }
 

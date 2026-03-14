@@ -646,6 +646,90 @@ def univariate_lipid_regression_cov_med_and_diag(multimodal_df):
     return n_subset_lipid_dict, top20, results_df
 
 
+def _univariate_lipid_regression_extra_covs(multimodal_df, extra_covs):
+    """
+    Helper: standard lipid regression covariates plus one extra covariate list.
+
+    Standard covariates: age, sex, bmi, duration_illness, smoker.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing multimodal data.
+        extra_covs (list[str]): Additional covariate column names to add.
+    Returns:
+        n_subset_lipid_dict (dict): n per lipid.
+        top20 (pd.DataFrame): Top 20 lipids by FDR.
+        results_df (pd.DataFrame): Full results.
+    """
+    lipid_columns = [col for col in multimodal_df.columns if col.startswith("gpeak")]
+    records = []
+    n_subset_lipid_dict = {}
+    standard_cols = ["prob_class_5", "age", "sex", "bmi", "duration_illness", "smoker"]
+
+    for lipid in lipid_columns:
+        subset = multimodal_df[[lipid] + standard_cols + extra_covs].dropna()
+        n_subset_lipid_dict[lipid] = len(subset)
+
+        extra_formula = " + ".join(extra_covs)
+        formula = (
+            f"prob_class_5 ~ {lipid} + age + C(sex) + bmi + "
+            f"duration_illness + C(smoker) + {extra_formula}"
+        )
+
+        model = smf.ols(formula, data=subset)
+        result = model.fit(cov_type="HC3")
+        coef = result.params.get(lipid, np.nan)
+        se = result.bse.get(lipid, np.nan)
+        pval = result.pvalues.get(lipid, np.nan)
+        ci_low, ci_high = result.conf_int().loc[lipid].tolist()
+
+        records.append(
+            {
+                "lipid": lipid,
+                "coef": coef,
+                "pval": pval,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+            }
+        )
+
+    results_df = pd.DataFrame(records).set_index("lipid")
+    results_df["FDR"] = multipletests(results_df["pval"], method="fdr_bh")[1]
+    results_df["log10_FDR"] = -np.log10(
+        np.clip(results_df["FDR"], np.finfo(float).tiny, None)
+    )
+    top20 = results_df.nsmallest(20, "FDR")
+    return n_subset_lipid_dict, top20, results_df
+
+
+def univariate_lipid_regression_cov_antidepressants(multimodal_df):
+    """Standard covariates + antidepressants_count."""
+    return _univariate_lipid_regression_extra_covs(
+        multimodal_df, ["antidepressants_count"]
+    )
+
+
+def univariate_lipid_regression_cov_antipsychotics(multimodal_df):
+    """Standard covariates + antipsychotics_count."""
+    return _univariate_lipid_regression_extra_covs(
+        multimodal_df, ["antipsychotics_count"]
+    )
+
+
+def univariate_lipid_regression_cov_tranquilizers(multimodal_df):
+    """Standard covariates + tranquilizers_count."""
+    return _univariate_lipid_regression_extra_covs(
+        multimodal_df, ["tranquilizers_count"]
+    )
+
+
+def univariate_lipid_regression_cov_mood_stabilizers(multimodal_df):
+    """Standard covariates + mood_stabilizers_count."""
+    return _univariate_lipid_regression_extra_covs(
+        multimodal_df, ["mood_stabilizers_count"]
+    )
+
+
 def univariate_lipid_regression_cov_panss(multimodal_df):
     """
     Perform univariate regression analysis for lipid intensity values against
