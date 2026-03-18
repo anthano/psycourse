@@ -13,6 +13,7 @@ from psycourse.descriptive_stats.descriptive_tables import (
 DEMOGRAPHICS_INPUT_PATH = {
     "df": BLD_DATA / "multimodal_complete_df.pkl",
     "lipid_df": BLD_DATA / "multimodal_lipid_subset_df.pkl",
+    "prs_df": BLD_DATA / "multimodal_prs_subset_df.pkl",
 }
 
 DEMOGRAPHICS_OUTPUT_PATH = {
@@ -20,24 +21,6 @@ DEMOGRAPHICS_OUTPUT_PATH = {
     "csv": BLD_RESULTS / "descriptive_stats" / "demographics.csv",
     "md": WRITING / "tables" / "demographics.md",
 }
-
-# Columns added from cleaned_prs_data; any non-null row in these = has PRS data
-PRS_COLS = [
-    "ADHD_PRS",
-    "ASD_PRS",
-    "Education_PRS",
-    "SCZ_PRS",
-    "Agreeableness_PRS",
-    "Alzheimer_PRS",
-    "Conscientiousness_PRS",
-    "Extraversion_PRS",
-    "MDD_PRS",
-    "Neuroticism_PRS",
-    "Openness_PRS",
-    "SleepDurationLong_PRS",
-    "SleepDurationShort_PRS",
-    "BD_PRS",
-]
 
 
 def task_get_demographics_table(
@@ -47,14 +30,7 @@ def task_get_demographics_table(
 ):
     df = pd.read_pickle(DEMOGRAPHICS_INPUT_PATH["df"])
     lipid_df = pd.read_pickle(DEMOGRAPHICS_INPUT_PATH["lipid_df"])
-
-    # PRS subset: rows that have at least one non-null PRS value
-    prs_cols_present = [c for c in PRS_COLS if c in df.columns]
-    prs_df = df.dropna(subset=prs_cols_present, how="all")
-    assert len(prs_df) == 1190, (
-        f"Expected 1190 participants in PRS subset, got {len(prs_df)}. "
-        "Check PRS column names or data."
-    )
+    prs_df = pd.read_pickle(DEMOGRAPHICS_INPUT_PATH["prs_df"])
 
     demographics_table = get_demographics_table(df, df_subset=lipid_df, df_prs=prs_df)
 

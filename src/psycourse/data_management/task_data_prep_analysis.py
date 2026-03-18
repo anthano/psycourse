@@ -3,6 +3,37 @@ import pandas as pd
 from psycourse.config import BLD_DATA, SRC
 from psycourse.data_management.data_prep_analysis import merge_multimodal_complete_df
 
+# PRS columns present in multimodal_complete_df (from clean_prs_data).
+# A participant has PRS data if any of these is non-null.
+PRS_COLS = [
+    "ADHD_PRS",
+    "ASD_PRS",
+    "Education_PRS",
+    "SCZ_PRS",
+    "Agreeableness_PRS",
+    "Alzheimer_PRS",
+    "Conscientiousness_PRS",
+    "Extraversion_PRS",
+    "MDD_PRS",
+    "Neuroticism_PRS",
+    "Openness_PRS",
+    "SleepDurationLong_PRS",
+    "SleepDurationShort_PRS",
+    "BD_PRS",
+]
+
+
+def task_create_prs_subset_df(
+    script_path=SRC / "data_management" / "task_data_prep_analysis.py",
+    multimodal_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=BLD_DATA / "multimodal_prs_subset_df.pkl",
+):
+    """Filter the full multimodal dataframe to participants with PRS data."""
+    df = pd.read_pickle(multimodal_path)
+    prs_cols_present = [c for c in PRS_COLS if c in df.columns]
+    prs_df = df.dropna(subset=prs_cols_present, how="all")
+    prs_df.to_pickle(produces)
+
 
 def task_merge_multimodal_complete_df(
     script_path=SRC / "data_management" / "data_prep_analysis.py",
