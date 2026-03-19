@@ -4,12 +4,6 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 from psycourse.config import (
-    PLOT_COMBINED_LIP as _COLOR_LIP,
-)
-from psycourse.config import (
-    PLOT_COMBINED_PRS as _COLOR_PRS,
-)
-from psycourse.config import (
     PLOT_GRID_DARK as _GRID,
 )
 from psycourse.config import (
@@ -55,21 +49,22 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     p_lip = results["p_perm_dR2_lip"]
     p_joint = results["p_perm_dR2_joint"]
 
+    # ── Colours (match bar colours used below) ────────────────────────────────
+    _C_PRS = "#C8D4F2"  # light blue  – PRS contribution
+    _C_LIP = "#4572E1"  # dark blue   – Lipid contribution
+
     # ── Figure / axes ─────────────────────────────────────────────────────────
-    fig, ax = plt.subplots(figsize=(3.5, 3.5))
-    # Minimum display height so the shared strip is always visible even when
-    # the true shared variance is near zero. Computed after figsize is fixed.
-    _min_shared_display = dr2_joint * 0.04  # 4 % of total bar height
+    fig, ax = plt.subplots(figsize=(3.2, 2.8))
     fig.patch.set_facecolor("white")
 
-    bar_w = 0.50
+    bar_w = 0.65  # wider bars → less gap between them
 
     # ── PRS-alone bar ─────────────────────────────────────────────────────────
     ax.bar(
         0,
         dr2_prs,
         width=bar_w,
-        color=_COLOR_PRS,
+        color=_C_PRS,
         edgecolor="black",
         linewidth=0.5,
         zorder=3,
@@ -80,18 +75,18 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         1,
         dr2_lip,
         width=bar_w,
-        color=_COLOR_LIP,
+        color=_C_LIP,
         edgecolor="black",
         linewidth=0.5,
         zorder=3,
     )
 
-    # ── PRS + Lipids jointly: PRS (bottom) + shared (middle) + lipid (top) ───
+    # ── PRS + Lipids jointly: PRS (bottom) + lipid (top) ─────────────────────
     ax.bar(
         2,
         dr2_prs,
         width=bar_w,
-        color=_COLOR_PRS,
+        color=_C_PRS,
         edgecolor="black",
         linewidth=0.5,
         zorder=3,
@@ -101,7 +96,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_lip,
         width=bar_w,
         bottom=dr2_prs,
-        color=_COLOR_LIP,
+        color=_C_LIP,
         edgecolor="black",
         linewidth=0.5,
         zorder=3,
@@ -129,7 +124,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         )
 
     # ── Axes formatting ───────────────────────────────────────────────────────
-    ax.set_ylim(0, y_top * 1.22)
+    ax.set_ylim(0, y_top * 1.15)
     ax.set_xlim(-0.55, 2.55)
     ax.set_xticks([0, 1, 2])
     ax.set_xticklabels(
@@ -151,13 +146,13 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     # ── Legend ────────────────────────────────────────────────────────────────
     handles = [
         mpatches.Patch(
-            facecolor=_COLOR_PRS,
+            facecolor=_C_PRS,
             edgecolor="black",
             linewidth=0.5,
             label="PRS contribution",
         ),
         mpatches.Patch(
-            facecolor=_COLOR_LIP,
+            facecolor=_C_LIP,
             edgecolor="black",
             linewidth=0.5,
             label="Lipid contribution",
@@ -168,10 +163,11 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         fontsize=7,
         frameon=False,
         loc="upper left",
+        bbox_to_anchor=(0, 0.78),  # moved down from top
         handlelength=1.4,
         handleheight=1.0,
         labelspacing=0.4,
     )
 
-    fig.tight_layout()
+    fig.tight_layout(pad=0.4)
     return fig

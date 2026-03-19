@@ -329,8 +329,148 @@ def make_r2_table(results: dict) -> pd.DataFrame:
 
 
 ########################################################################################
+# Individual Predictor ΔR² Table
+########################################################################################
+
+
+def individual_predictor_r2_table(
+    df: pd.DataFrame,
+    prs_predictors: list[str],
+    lipid_predictors: list[str],
+    outcome_col: str = "prob_class_5",
+    prs_covariate_cols: list[str] | None = None,
+    lipid_covariate_cols: list[str] | None = None,
+    n_permutations: int = 20_000,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """
+    Compute individual ΔR² and permutation p-values for each predictor using the
+    residualized approach, consistent with ``incremental_r2_decomposition``.
+
+    For each predictor the procedure is:
+      1. Restrict the sample to rows with non-missing outcome and covariates
+         (median-impute any remaining predictor missings, as in the main analysis).
+      2. Residualize both the outcome and the predictor against the block-specific
+         covariate set (PRS covariates for PRS predictors; lipid covariates for
+         lipid predictors).
+      3. Fit M0 (intercept only) and M1 (intercept + residualized predictor) on the
+         residualized outcome.
+      4. ΔR² = R²(M1) − R²(M0).
+      5. Permutation p-value: permute the residualized outcome 20 000 times and
+         record the proportion of null ΔR² values ≥ observed ΔR².
+
+    Args:
+        df: DataFrame containing all variables (use the lipid-subset frame so
+            sample composition matches the main incremental R² analysis).
+        prs_predictors: Individual PRS column names to test (e.g. SCZ_PRS, BD_PRS,
+            Education_PRS).
+        lipid_predictors: Individual lipid class column names to test (the enriched
+            lipid class scores).
+        outcome_col: Continuous severity outcome column.
+        prs_covariate_cols: Covariates for PRS residualization.
+            Defaults to age, sex, pc1–pc5.
+        lipid_covariate_cols: Covariates for lipid residualization.
+            Defaults to sex, bmi, duration_illness, smoker.
+        n_permutations: Number of permutations for p-value estimation.
+        random_state: Random seed for reproducibility.
+
+    Returns:
+        pd.DataFrame with columns: predictor, type, dR2, p_permutation.
+    """
+    if prs_covariate_cols is None:
+        prs_covariate_cols = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+    if lipid_covariate_cols is None:
+        lipid_covariate_cols = ["sex", "bmi", "duration_illness", "smoker"]
+
+    rows = []
+
+    for pred in prs_predictors:
+        row = _single_predictor_r2(
+            df=df,
+            predictor_col=pred,
+            predictor_type="PRS",
+            outcome_col=outcome_col,
+            covariate_cols=prs_covariate_cols,
+            n_permutations=n_permutations,
+            random_state=random_state,
+        )
+        rows.append(row)
+
+    for pred in lipid_predictors:
+        row = _single_predictor_r2(
+            df=df,
+            predictor_col=pred,
+            predictor_type="Lipid",
+            outcome_col=outcome_col,
+            covariate_cols=lipid_covariate_cols,
+            n_permutations=n_permutations,
+            random_state=random_state,
+        )
+        rows.append(row)
+
+    return pd.DataFrame(rows, columns=["predictor", "type", "dR2", "p_permutation"])
+
+
+########################################################################################
 # HELPER FUNCTIONS
 ########################################################################################
+
+
+def _single_predictor_r2(
+    df: pd.DataFrame,
+    predictor_col: str,
+    predictor_type: str,
+    outcome_col: str,
+    covariate_cols: list[str],
+    n_permutations: int,
+    random_state: int,
+) -> tuple:
+    """
+    Compute ΔR² and permutation p-value for a single residualized predictor.
+
+    Returns a tuple (predictor_col, predictor_type, dR2, p_permutation).
+    """
+    cov_cols = [c for c in covariate_cols if c in df.columns]
+
+    if predictor_col not in df.columns:
+        return (predictor_col, predictor_type, np.nan, np.nan)
+
+    all_cols = [outcome_col] + cov_cols + [predictor_col]
+    df_model = df[all_cols].copy().dropna(subset=[outcome_col] + cov_cols)
+
+    # Median-impute predictor missings (consistent with main analysis)
+    df_model[predictor_col] = df_model[predictor_col].fillna(
+        df_model[predictor_col].median()
+    )
+
+    X_cov = add_constant(
+        pd.get_dummies(df_model[cov_cols], drop_first=True).astype(float).to_numpy()
+    )
+
+    y_raw = df_model[outcome_col].to_numpy(float)
+    x_raw = df_model[predictor_col].to_numpy(float).reshape(-1, 1)
+
+    # Residualize outcome and predictor against the same covariate set
+    y = _residualize(y_raw, X_cov)
+    x = _residualize(x_raw, X_cov)
+
+    X_m0 = np.ones((len(y), 1))
+    X_m1 = add_constant(x)
+
+    r2_m0 = _ols_r2(y, X_m0)
+    r2_m1 = _ols_r2(y, X_m1)
+    dr2 = r2_m1 - r2_m0
+
+    # Permutation test — permute the residualized outcome
+    rng = np.random.default_rng(random_state)
+    null_dr2 = np.zeros(n_permutations)
+    for i in range(n_permutations):
+        y_perm = y[rng.permutation(len(y))]
+        null_dr2[i] = _ols_r2(y_perm, X_m1) - _ols_r2(y_perm, X_m0)
+
+    p_perm = _perm_pvalue(dr2, null_dr2)
+
+    return (predictor_col, predictor_type, round(dr2, 6), round(p_perm, 4))
 
 
 def _residualize(X_target: np.ndarray, X_cov: np.ndarray) -> np.ndarray:
