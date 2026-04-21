@@ -22,6 +22,7 @@ _LPAN = _LIP / "panss"
 _PPAN = _PRS / "panss"
 _DESC = BLD_RESULTS / "descriptive_stats"
 _MED = BLD_RESULTS / "mediation_analysis"
+_R2 = BLD_RESULTS / "incremental_r2"
 _TAB = BLD_RESULTS / "tables"
 
 # ── Table-of-contents definition ──────────────────────────────────────────────
@@ -50,200 +51,178 @@ _TOC_ROWS = [
         "(standard covariates: age, sex, ancestry PCs)",
         "PRS ~ Subtype Probability",
     ),
+    # ── Lipid Species ~ Subtype Probability (PANSS as covariate, sensitivity) ──
     (
-        "06_prs_cov_bmi",
-        "PRS ~ subtype probability: sensitivity analysis additionally "
-        "controlling for BMI",
-        "PRS ~ Subtype Probability",
-    ),
-    (
-        "07_prs_cov_diag",
-        "PRS ~ subtype probability: sensitivity analysis additionally "
-        "controlling for psychiatric diagnosis",
-        "PRS ~ Subtype Probability",
-    ),
-    # ── Lipid ~ Subtype Probability (PANSS as covariate, sensitivity) ──────────
-    (
-        "08_lip_std",
-        "Full-lipidome associations with severe psychosis subtype probability "
+        "06_lip_std",
+        "Lipid Species associations with severe psychosis subtype probability "
         "(standard covariates: sex, BMI, illness duration, smoking status)",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "09_lip_cov_diag",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "07_lip_cov_diag",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for psychiatric diagnosis",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "10_lip_cov_med",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "08_lip_cov_med",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for antipsychotic medication",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "11_lip_cov_med_diag",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "09_lip_cov_med_diag",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for medication and diagnosis",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "12_lip_cov_panss_pos",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "10_lip_cov_panss_pos",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for PANSS Positive subscale score",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "13_lip_cov_panss_neg",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "11_lip_cov_panss_neg",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for PANSS Negative subscale score",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "14_lip_cov_panss_gen",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "12_lip_cov_panss_gen",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for PANSS General Psychopathology subscale score",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     (
-        "15_lip_cov_panss_tot",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
+        "13_lip_cov_panss_tot",
+        "Lipid Species ~ subtype probability: sensitivity additionally controlling "
         "for PANSS Total Score",
-        "Lipid ~ Subtype Probability",
-    ),
-    (
-        "16_lip_cov_panss_both",
-        "Lipid ~ subtype probability: sensitivity additionally controlling "
-        "for PANSS Positive and Negative subscale scores jointly",
-        "Lipid ~ Subtype Probability",
+        "Lipid Species ~ Subtype Probability",
     ),
     # ── Lipid Class Enrichment (PANSS as covariate, sensitivity) ───────────────
     (
-        "17_enrich_std",
+        "14_enrich_std",
         "Lipid class enrichment analysis for severe psychosis subtype "
         "probability (standard covariates; permutation-based enrichment scores)",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "18_enrich_cov_diag",
+        "15_enrich_cov_diag",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for psychiatric diagnosis",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "19_enrich_cov_med",
+        "16_enrich_cov_med",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for antipsychotic medication",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "20_enrich_cov_med_diag",
+        "17_enrich_cov_med_diag",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for medication and diagnosis",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "21_enrich_cov_panss_pos",
+        "18_enrich_cov_panss_pos",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for PANSS Positive subscale score",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "22_enrich_cov_panss_neg",
+        "19_enrich_cov_panss_neg",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for PANSS Negative subscale score",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "23_enrich_cov_panss_gen",
+        "20_enrich_cov_panss_gen",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for PANSS General Psychopathology subscale score",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "24_enrich_cov_panss_tot",
+        "21_enrich_cov_panss_tot",
         "Lipid class enrichment: sensitivity additionally controlling "
         "for PANSS Total Score",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "25_enrich_cov_panss_both",
+        "22_enrich_cov_panss_tot",
         "Lipid class enrichment: sensitivity additionally controlling "
-        "for PANSS Positive and Negative subscale scores jointly",
+        "for PANSS Total Score",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     # ── PRS ~ PANSS subscales as outcome ────────────────────────────────────────
     (
-        "26_prs_panss_std",
+        "22_prs_panss_std",
         "PRS associations with PANSS subscale scores as continuous outcomes "
         "(standard covariates; all four subscales stacked — see "
         "'panss_outcome' column: "
         "PANSS Positive, Negative, General, Total Score)",
         "PRS ~ PANSS Subscales as Outcome",
     ),
-    (
-        "27_prs_panss_cov_bmi",
-        "PRS ~ PANSS subscales as outcome: sensitivity additionally controlling "
-        "for BMI (all four subscales stacked)",
-        "PRS ~ PANSS Subscales as Outcome",
-    ),
-    (
-        "28_prs_panss_cov_diag",
-        "PRS ~ PANSS subscales as outcome: sensitivity additionally controlling "
-        "for psychiatric diagnosis (all four subscales stacked)",
-        "PRS ~ PANSS Subscales as Outcome",
-    ),
     # ── Lipid (Top 20) ~ PANSS subscales as outcome ────────────────────────────
     (
-        "29_lip_panss_std",
+        "23_lip_panss_std",
         "Top-20 lipid associations with PANSS subscale scores as continuous "
         "outcomes (standard covariates; all four subscales stacked — see "
         "'panss_outcome' column)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "30_lip_panss_cov_med",
+        "24_lip_panss_cov_med",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for antipsychotic medication (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "31_lip_panss_cov_diag",
+        "25_lip_panss_cov_diag",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for psychiatric diagnosis (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "32_lip_panss_cov_med_diag",
+        "26_lip_panss_cov_med_diag",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for medication and diagnosis (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     # ── Lipid Enrichment ~ PANSS subscales as outcome ──────────────────────────
     (
-        "33_enrich_panss_std",
+        "27_enrich_panss_std",
         "Lipid class enrichment with PANSS subscale scores as outcomes "
         "(standard covariates; all available subscales stacked — see "
         "'panss_outcome' column: Positive, Negative, General, Total Score)",
         "Lipid Class Enrichment ~ PANSS as Outcome",
     ),
+    # ── Incremental R² ─────────────────────────────────────────────────────────
     (
-        "34_enrich_panss_cov_med",
-        "Lipid class enrichment ~ PANSS subscales as outcome: sensitivity "
-        "additionally controlling for medication "
-        "(PANSS Positive and Negative subscales only)",
-        "Lipid Class Enrichment ~ PANSS as Outcome",
+        "28_r2_incremental",
+        "Incremental R² decomposition: variance in severe psychosis subtype "
+        "probability explained by PRS block and lipid class block "
+        "(permutation-based p-values; 20 000 permutations)",
+        "Incremental R²",
+    ),
+    (
+        "29_r2_individual",
+        "Individual predictor ΔR²: unique variance explained by each "
+        "significant PRS and each enriched lipid class score "
+        "(permutation-based p-values; 20 000 permutations)",
+        "Incremental R²",
     ),
     # ── Mediation ──────────────────────────────────────────────────────────────
     (
-        "35_mediation",
+        "30_mediation",
         "Mediation analysis results: indirect effects of PRS on severe "
         "psychosis subtype probability via lipid species",
         "Mediation Analysis",
     ),
     # ── CCA ────────────────────────────────────────────────────────────────────
     (
-        "36_cca_loadings",
+        "31_cca_loadings",
         "Full CCA canonical loadings for the first canonical variate: "
         "PRS block (13 polygenic scores) and lipid class block (16 lipid classes). "
         "The 'block' column identifies the input block; 'variable' is the "
@@ -369,8 +348,6 @@ def _write_toc_docx(path: Path) -> None:
             "n_prs": _DESC / "n_per_analysis_prs.pkl",
             # ── PRS ~ Subtype Probability ───────────────────────────────────────
             "prs_std": _PRS / "univariate_prs_results_standard_cov.pkl",
-            "prs_cov_bmi": _PRS / "univariate_prs_results_cov_bmi.pkl",
-            "prs_cov_diag": _PRS / "univariate_prs_results_cov_diagnosis.pkl",
             # ── Lipid ~ Subtype Probability (PANSS sensitivity) ────────────────
             "lip_std": _LIP / "univariate_lipid_results.pkl",
             "lip_cov_diag": _LIP / "univariate_lipid_results_cov_diagnosis.pkl",
@@ -381,7 +358,6 @@ def _write_toc_docx(path: Path) -> None:
             "lip_cov_panss_gen": _LIP / "univariate_lipid_results_cov_panss_gen.pkl",
             "lip_cov_panss_tot": _LIP
             / "univariate_lipid_results_cov_panss_total_score.pkl",
-            "lip_cov_panss_both": _LIP / "univariate_lipid_results_cov_panss_both.pkl",
             # ── Lipid Class Enrichment (PANSS sensitivity) ─────────────────────
             "enrich_std": _LIP / "lipid_enrichment_results.pkl",
             "enrich_cov_diag": _LIP / "lipid_enrichment_results_cov_diagnosis.pkl",
@@ -393,8 +369,6 @@ def _write_toc_docx(path: Path) -> None:
             "enrich_cov_panss_gen": _LIP / "lipid_enrichment_results_cov_panss_gen.pkl",
             "enrich_cov_panss_tot": _LIP
             / "lipid_enrichment_results_cov_panss_total_score.pkl",
-            "enrich_cov_panss_both": _LIP
-            / "lipid_enrichment_results_cov_panss_both.pkl",
             # ── PRS ~ PANSS subscales (individual files for each subscale) ─────
             "prs_panss_std__pos": _PPAN
             / "univariate_prs_results_panss_standard_cov_panss_sum_pos.pkl",
@@ -404,22 +378,6 @@ def _write_toc_docx(path: Path) -> None:
             / "univariate_prs_results_panss_standard_cov_panss_sum_gen.pkl",
             "prs_panss_std__tot": _PPAN
             / "univariate_prs_results_panss_standard_cov_panss_total_score.pkl",
-            "prs_panss_bmi__pos": _PPAN
-            / "univariate_prs_results_panss_cov_bmi_panss_sum_pos.pkl",
-            "prs_panss_bmi__neg": _PPAN
-            / "univariate_prs_results_panss_cov_bmi_panss_sum_neg.pkl",
-            "prs_panss_bmi__gen": _PPAN
-            / "univariate_prs_results_panss_cov_bmi_panss_sum_gen.pkl",
-            "prs_panss_bmi__tot": _PPAN
-            / "univariate_prs_results_panss_cov_bmi_panss_total_score.pkl",
-            "prs_panss_diag__pos": _PPAN
-            / "univariate_prs_results_panss_cov_diagnosis_panss_sum_pos.pkl",
-            "prs_panss_diag__neg": _PPAN
-            / "univariate_prs_results_panss_cov_diagnosis_panss_sum_neg.pkl",
-            "prs_panss_diag__gen": _PPAN
-            / "univariate_prs_results_panss_cov_diagnosis_panss_sum_gen.pkl",
-            "prs_panss_diag__tot": _PPAN
-            / "univariate_prs_results_panss_cov_diagnosis_panss_total_score.pkl",
             # ── Lipid (Top 20) ~ PANSS subscales ──────────────────────────────
             "lip_panss_std__pos": _LPAN
             / "univariate_lipid_results_top20_standard_panss_sum_pos.pkl",
@@ -461,10 +419,9 @@ def _write_toc_docx(path: Path) -> None:
             "enrich_panss_std__gen": _LPAN / "lipid_enrichment_results_panss_gen.pkl",
             "enrich_panss_std__tot": _LPAN
             / "lipid_enrichment_results_panss_total_score.pkl",
-            "enrich_panss_med__pos": _LPAN
-            / "lipid_enrichment_results_cov_med_panss_sum_pos.pkl",
-            "enrich_panss_med__neg": _LPAN
-            / "lipid_enrichment_results_cov_med_panss_sum_neg.pkl",
+            # ── Incremental R² ─────────────────────────────────────────────────
+            "r2_incremental": _R2 / "incremental_r2_table.pkl",
+            "r2_individual": _R2 / "individual_predictor_r2.pkl",
             # ── Mediation ──────────────────────────────────────────────────────
             "mediation": _MED / "mediation_analysis_results.pkl",
             # ── CCA ────────────────────────────────────────────────────────────
@@ -506,41 +463,35 @@ def task_export_all_supplementary_tables(depends_on, produces):
 
         # ── PRS ~ Subtype Probability ───────────────────────────────────────────
         load("prs_std").to_excel(writer, sheet_name="05_prs_std")
-        load("prs_cov_bmi").to_excel(writer, sheet_name="06_prs_cov_bmi")
-        load("prs_cov_diag").to_excel(writer, sheet_name="07_prs_cov_diag")
 
         # ── Lipid ~ Subtype Probability (PANSS sensitivity) ────────────────────
-        load("lip_std").to_excel(writer, sheet_name="08_lip_std")
-        load("lip_cov_diag").to_excel(writer, sheet_name="09_lip_cov_diag")
-        load("lip_cov_med").to_excel(writer, sheet_name="10_lip_cov_med")
-        load("lip_cov_med_diag").to_excel(writer, sheet_name="11_lip_cov_med_diag")
-        load("lip_cov_panss_pos").to_excel(writer, sheet_name="12_lip_cov_panss_pos")
-        load("lip_cov_panss_neg").to_excel(writer, sheet_name="13_lip_cov_panss_neg")
-        load("lip_cov_panss_gen").to_excel(writer, sheet_name="14_lip_cov_panss_gen")
-        load("lip_cov_panss_tot").to_excel(writer, sheet_name="15_lip_cov_panss_tot")
-        load("lip_cov_panss_both").to_excel(writer, sheet_name="16_lip_cov_panss_both")
+        load("lip_std").to_excel(writer, sheet_name="06_lip_std")
+        load("lip_cov_diag").to_excel(writer, sheet_name="07_lip_cov_diag")
+        load("lip_cov_med").to_excel(writer, sheet_name="08_lip_cov_med")
+        load("lip_cov_med_diag").to_excel(writer, sheet_name="09_lip_cov_med_diag")
+        load("lip_cov_panss_pos").to_excel(writer, sheet_name="10_lip_cov_panss_pos")
+        load("lip_cov_panss_neg").to_excel(writer, sheet_name="11_lip_cov_panss_neg")
+        load("lip_cov_panss_gen").to_excel(writer, sheet_name="12_lip_cov_panss_gen")
+        load("lip_cov_panss_tot").to_excel(writer, sheet_name="13_lip_cov_panss_tot")
 
         # ── Lipid Class Enrichment (PANSS sensitivity) ─────────────────────────
-        load("enrich_std").to_excel(writer, sheet_name="17_enrich_std")
-        load("enrich_cov_diag").to_excel(writer, sheet_name="18_enrich_cov_diag")
-        load("enrich_cov_med").to_excel(writer, sheet_name="19_enrich_cov_med")
+        load("enrich_std").to_excel(writer, sheet_name="14_enrich_std")
+        load("enrich_cov_diag").to_excel(writer, sheet_name="15_enrich_cov_diag")
+        load("enrich_cov_med").to_excel(writer, sheet_name="16_enrich_cov_med")
         load("enrich_cov_med_diag").to_excel(
-            writer, sheet_name="20_enrich_cov_med_diag"
+            writer, sheet_name="17_enrich_cov_med_diag"
         )
         load("enrich_cov_panss_pos").to_excel(
-            writer, sheet_name="21_enrich_cov_panss_pos"
+            writer, sheet_name="18_enrich_cov_panss_pos"
         )
         load("enrich_cov_panss_neg").to_excel(
-            writer, sheet_name="22_enrich_cov_panss_neg"
+            writer, sheet_name="19_enrich_cov_panss_neg"
         )
         load("enrich_cov_panss_gen").to_excel(
-            writer, sheet_name="23_enrich_cov_panss_gen"
+            writer, sheet_name="20_enrich_cov_panss_gen"
         )
         load("enrich_cov_panss_tot").to_excel(
-            writer, sheet_name="24_enrich_cov_panss_tot"
-        )
-        load("enrich_cov_panss_both").to_excel(
-            writer, sheet_name="25_enrich_cov_panss_both"
+            writer, sheet_name="21_enrich_cov_panss_tot"
         )
 
         # ── PRS ~ PANSS subscales (stacked, one sheet per covariate model) ──────
@@ -552,27 +503,21 @@ def task_export_all_supplementary_tables(depends_on, produces):
         ]
         stack_panss(
             [(lbl, f"prs_panss_std{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="26_prs_panss_std")
-        stack_panss(
-            [(lbl, f"prs_panss_bmi{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="27_prs_panss_cov_bmi")
-        stack_panss(
-            [(lbl, f"prs_panss_diag{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="28_prs_panss_cov_diag")
+        ).to_excel(writer, sheet_name="22_prs_panss_std")
 
         # ── Lipid (Top 20) ~ PANSS subscales (stacked) ─────────────────────────
         stack_panss(
             [(lbl, f"lip_panss_std{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="29_lip_panss_std")
+        ).to_excel(writer, sheet_name="23_lip_panss_std")
         stack_panss(
             [(lbl, f"lip_panss_med{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="30_lip_panss_cov_med")
+        ).to_excel(writer, sheet_name="24_lip_panss_cov_med")
         stack_panss(
             [(lbl, f"lip_panss_diag{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="31_lip_panss_cov_diag")
+        ).to_excel(writer, sheet_name="25_lip_panss_cov_diag")
         stack_panss(
             [(lbl, f"lip_panss_med_diag{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="32_lip_panss_cov_med_diag")
+        ).to_excel(writer, sheet_name="26_lip_panss_cov_med_diag")
 
         # ── Lipid Enrichment ~ PANSS subscales (stacked) ───────────────────────
         stack_panss(
@@ -582,16 +527,14 @@ def task_export_all_supplementary_tables(depends_on, produces):
                 ("PANSS General", "enrich_panss_std__gen"),
                 ("PANSS Total Score", "enrich_panss_std__tot"),
             ]
-        ).to_excel(writer, sheet_name="33_enrich_panss_std")
-        stack_panss(
-            [
-                ("PANSS Positive", "enrich_panss_med__pos"),
-                ("PANSS Negative", "enrich_panss_med__neg"),
-            ]
-        ).to_excel(writer, sheet_name="34_enrich_panss_cov_med")
+        ).to_excel(writer, sheet_name="27_enrich_panss_std")
+
+        # ── Incremental R² ─────────────────────────────────────────────────────
+        load("r2_incremental").to_excel(writer, sheet_name="28_r2_incremental")
+        load("r2_individual").to_excel(writer, sheet_name="29_r2_individual")
 
         # ── Mediation ──────────────────────────────────────────────────────────
-        load("mediation").to_excel(writer, sheet_name="35_mediation")
+        load("mediation").to_excel(writer, sheet_name="30_mediation")
 
         # ── CCA canonical loadings ──────────────────────────────────────────────
         cca_res = load("cca_results")
@@ -610,7 +553,7 @@ def task_export_all_supplementary_tables(depends_on, produces):
         )
         lip_df.insert(0, "block", "Lipid class")
         cca_df = pd.concat([prs_df, lip_df], ignore_index=True)
-        cca_df.to_excel(writer, sheet_name="36_cca_loadings", index=False)
+        cca_df.to_excel(writer, sheet_name="31_cca_loadings", index=False)
 
     # ── Write TOC docx ─────────────────────────────────────────────────────────
     _write_toc_docx(produces["toc_docx"])

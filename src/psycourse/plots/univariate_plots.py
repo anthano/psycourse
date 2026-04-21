@@ -468,10 +468,27 @@ def plot_corr_matrix_prs(multimodal_df):
     """
     prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
     prs_df = multimodal_df[prs_columns]
-    top20_df_corr_matrix = prs_df.corr()
+
+    # Rename labels: Education PRS -> EA-PRS, Lipid_Edu_PRS -> Lipid-EA-PRS,
+    # replace all remaining underscores with hyphens
+    def _rename_prs(name: str) -> str:
+        if name == "Education_PRS":
+            return "EA-PRS"
+        if name == "Lipid_Edu_PRS":
+            return "Lipid-EA-PRS"
+        return name.replace("_", "-")
+
+    prs_df = prs_df.rename(columns=_rename_prs)
+
+    corr_matrix = prs_df.corr()
+
+    # Keep only the lower triangle (mask the upper half)
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
+
     plt.figure(figsize=(12, 10))
     sns.heatmap(
-        top20_df_corr_matrix,
+        corr_matrix,
+        mask=mask,
         annot=True,
         fmt=".2f",
         cmap="coolwarm",

@@ -20,8 +20,6 @@ from psycourse.data_analysis.univariate_analysis import (
     univariate_lipid_regression_cov_tranquilizers,
     univariate_prs_ancova,
     univariate_prs_regression,
-    univariate_prs_regression_cov_bmi,
-    univariate_prs_regression_cov_diagnosis,
 )
 
 UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
@@ -55,52 +53,6 @@ def task_univariate_prs_regression(
     univariate_prs_results, n_subset_dict = univariate_prs_regression(data)
     univariate_prs_results.to_pickle(univariate_prs_products["univariate_prs_results"])
     pd.to_pickle(n_subset_dict, univariate_prs_products["n_subset_dict"])
-
-
-# ======================================================================================
-univariate_prs_products_cov_bmi = {
-    "univariate_prs_results": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "univariate_prs_results_cov_bmi.pkl",
-    "n_subset_dict": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "n_subset_dict_cov_bmi.pkl",
-}
-
-
-def task_univariate_prs_regression_cov_bmi(
-    script_path=SRC / "data_analysis" / "univariate_analysis.py",
-    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
-    produces=univariate_prs_products_cov_bmi,
-):
-    data = pd.read_pickle(multimodal_df_path)
-    univariate_prs_results, n_subset_dict = univariate_prs_regression_cov_bmi(data)
-    univariate_prs_results.to_pickle(
-        univariate_prs_products_cov_bmi["univariate_prs_results"]
-    )
-    pd.to_pickle(n_subset_dict, univariate_prs_products_cov_bmi["n_subset_dict"])
-
-
-# =====================================================================================
-univariate_prs_products_cov_diagnosis = {
-    "univariate_prs_results": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "univariate_prs_results_cov_diagnosis.pkl",
-    "n_subset_dict": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "n_subset_dict_cov_diagnosis.pkl",
-}
-
-
-def task_univariate_prs_regression_cov_diagnosis(
-    script_path=SRC / "data_analysis" / "univariate_analysis.py",
-    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
-    produces=univariate_prs_products_cov_diagnosis,
-):
-    data = pd.read_pickle(multimodal_df_path)
-    univariate_prs_results, n_subset_dict = univariate_prs_regression_cov_diagnosis(
-        data
-    )
-    univariate_prs_results.to_pickle(
-        univariate_prs_products_cov_diagnosis["univariate_prs_results"]
-    )
-    pd.to_pickle(n_subset_dict, univariate_prs_products_cov_diagnosis["n_subset_dict"])
 
 
 # ======================================================================================

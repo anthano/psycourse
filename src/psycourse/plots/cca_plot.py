@@ -51,7 +51,7 @@ def plot_cca_main(
     y_label = "Severe psychosis probability"
 
     fig = plt.figure(figsize=figsize, layout="constrained")
-    gs = GridSpec(2, 2, figure=fig, hspace=0.35, wspace=0.2)
+    gs = GridSpec(2, 2, figure=fig, hspace=0.15, wspace=0.2)
 
     ax_uv = fig.add_subplot(gs[0, 0])
     ax_uy = fig.add_subplot(gs[0, 1])
