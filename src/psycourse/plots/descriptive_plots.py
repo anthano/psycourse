@@ -24,7 +24,7 @@ def plot_stacked_histograms(df, lipid_color, prs_color, bins=20):
 
     fig, axes = plt.subplots(2, sharey=False)
 
-    df["prob_class_5"].hist(bins=bins, ax=axes[0], color=prs_color)
+    df["prob_class_5"].hist(bins=bins, ax=axes[0], color="#C8D4F2")
     axes[0].set_xlabel("Predicted probability of severe psychosis cluster")
     axes[0].set_ylabel("Count")
     axes[0].grid(False)
@@ -40,7 +40,7 @@ def plot_stacked_histograms(df, lipid_color, prs_color, bins=20):
     data_with_lipids = data[~data[lipid_features].isna().all(axis=1)]
     analysis_data = data_with_lipids[relevant_cols].dropna().copy()
 
-    analysis_data["prob_class_5"].hist(bins=bins, ax=axes[1], color=lipid_color)
+    analysis_data["prob_class_5"].hist(bins=bins, ax=axes[1], color="#4572E1")
     axes[1].set_xlabel("Predicted probability of severe psychosis cluster")
     axes[1].set_ylabel("Count")
     axes[1].grid(False)
