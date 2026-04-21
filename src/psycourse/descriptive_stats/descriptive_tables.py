@@ -400,32 +400,33 @@ def create_lipid_table(cleaned_lipid_class_data):
 
 def get_participants_per_analysis(
     standard_cov_dict,
-    added_cov_1_dict,
-    added_cov_2_dict,
-    cov_1_name="added_cov_1",
-    cov_2_name="added_cov_2",
+    *added_cov_dicts,
+    covariate_names=None,
 ):
     """Takes the n_subset dicts from the regression analysis and puts them into a df.
 
     Args:
         standard_cov_dict (dict): dict with predictor (PRS or lipid) as key and
             n of individuals as value.
-        added_cov_1_dict (dict): dict with predictor as key and n of individuals
-            as value (first additional covariate set).
-        added_cov_2_dict (dict): dict with predictor as key and n of individuals
-            as value (second additional covariate set).
-        cov_1_name (str): Name for first additional covariate set column.
-        cov_2_name (str): Name for second additional covariate set column.
+        *added_cov_dicts (dict): Optional dictionaries with predictor as key and
+            n of individuals as value for additional covariate sets.
+        covariate_names (list[str] | None): Optional names for additional
+            covariate columns. If omitted, generic names are used.
 
     Returns:
         pd.DataFrame: Dataframe with predictors as rows and covariate sets as columns.
     """
+    if covariate_names is None:
+        covariate_names = [
+            f"added_cov_{idx}" for idx in range(1, len(added_cov_dicts) + 1)
+        ]
+    elif len(covariate_names) != len(added_cov_dicts):
+        raise ValueError(
+            "Length mismatch: covariate_names must match number of added_cov_dicts."
+        )
 
-    dicts_dict = {
-        "standard_cov": standard_cov_dict,
-        cov_1_name: added_cov_1_dict,
-        cov_2_name: added_cov_2_dict,
-    }
+    dicts_dict = {"standard_cov": standard_cov_dict}
+    dicts_dict.update(dict(zip(covariate_names, added_cov_dicts, strict=False)))
 
     n_per_analysis_df = pd.DataFrame(dicts_dict)
 

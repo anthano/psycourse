@@ -9,7 +9,6 @@ BLD_DATA = BLD / "data"
 BLD_MODELS = BLD / "models"
 BLD_RESULTS = BLD / "results"
 
-WRITING = Path("/Users/anojat/Documents/psycourse-writing")
 
 ###############################################################################
 # Projectwise Plot design
