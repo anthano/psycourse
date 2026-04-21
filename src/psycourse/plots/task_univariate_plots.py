@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pytask import Product, task
 
-from psycourse.config import BLD_DATA, BLD_RESULTS, WRITING
+from psycourse.config import BLD_DATA, BLD_RESULTS
 from psycourse.plots.lipid_enrichment_plot import plot_lipid_coef_distributions
 from psycourse.plots.univariate_plots import (
     plot_corr_matrix_lipid_top20,
@@ -26,9 +26,7 @@ UNIVARIATE_LIPID_MED_ADJ_DIR = (
     UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR / "medication_adjusted"
 )
 BLD_PLOTS_DIR = BLD_RESULTS / "plots" / "univariate_analysis"
-WRITING_PLOTS_DIR = WRITING / "plots" / "univariate_analysis"
 BLD_ENRICHMENT_PLOT_DIR = BLD_RESULTS / "plots" / "enrichment_analysis"
-WRITING_ENRICHMENT_PLOT_DIR = WRITING / "plots" / "enrichment_analysis"
 
 ANNOTATION_DF_PATH = BLD_DATA / "cleaned_lipid_class_data.pkl"
 
@@ -45,14 +43,11 @@ def task_plot_univariate_lipid_regression_standard_cov(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_standard_cov.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_standard_cov.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -63,14 +58,11 @@ def task_plot_univariate_lipid_regression_cov_med(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_med.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_med.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -81,14 +73,11 @@ def task_plot_univariate_lipid_regression_cov_diagnosis(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_diagnosis.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_diagnosis.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -99,14 +88,11 @@ def task_plot_univariate_lipid_regression_cov_med_and_diag(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_med_and_diag.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_med_and_diag.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -117,14 +103,11 @@ def task_plot_univariate_lipid_regression_cov_panss(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_panss.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_panss.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -135,14 +118,11 @@ def task_plot_univariate_lipid_regression_cov_panss_neg(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_panss_neg.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_panss_neg.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -153,14 +133,11 @@ def task_plot_univariate_lipid_regression_cov_panss_gen(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_panss_gen.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_panss_gen.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -171,14 +148,11 @@ def task_plot_univariate_lipid_regression_cov_panss_total_score(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_panss_total_score.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_panss_total_score.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -189,14 +163,11 @@ def task_plot_univariate_lipid_regression_cov_panss_both(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_panss_both.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_panss_both.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -211,13 +182,10 @@ def task_plot_univariate_prs_regression_standard_cov(
     / "univariate_prs_results_standard_cov.pkl",
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_regression_plot_standard_cov.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_standard_cov.png",
 ):
     prs_results = pd.read_pickle(prs_results_path)
     fig, ax = plot_univariate_prs_regression(prs_results)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -229,8 +197,6 @@ def task_plot_univariate_prs_lipid_regression_combined_standard_cov(
     / "univariate_lipid_results_top20.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "univariate_prs_lipid_regression_plot_combined_standard_cov.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
     / "univariate_prs_lipid_regression_plot_combined_standard_cov.svg",
 ):
     prs_results = pd.read_pickle(prs_results_path)
@@ -262,40 +228,7 @@ def task_plot_univariate_prs_lipid_regression_combined_standard_cov(
             ha="left",
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
-    plt.close()
-
-
-@task
-def task_plot_univariate_prs_regression_cov_bmi(
-    prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "univariate_prs_results_cov_bmi.pkl",
-    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_bmi.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_bmi.png",
-):
-    prs_results = pd.read_pickle(prs_results_path)
-    fig, ax = plot_univariate_prs_regression(prs_results)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
-    plt.close()
-
-
-@task
-def task_plot_univariate_prs_regression_cov_diagnosis(
-    prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
-    / "univariate_prs_results_cov_diagnosis.pkl",
-    bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_diagnosis.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_prs_regression_plot_cov_diagnosis.png",
-):
-    prs_results = pd.read_pickle(prs_results_path)
-    fig, ax = plot_univariate_prs_regression(prs_results)
-    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -316,8 +249,6 @@ def task_plot_sensitivity_combined_standard_cov(
     / "univariate_lipid_results_top20_cov_med_and_diag.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "sensitivity_combined_standard_cov.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
     / "sensitivity_combined_standard_cov.svg",
 ):
     """Lipid regression sensitivity: standard covariate models.
@@ -386,8 +317,7 @@ def task_plot_sensitivity_combined_standard_cov(
             fontsize=11,
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -403,8 +333,6 @@ def task_plot_sensitivity_combined_panss(
     / "univariate_lipid_results_top20_cov_panss_total_score.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "sensitivity_combined_panss.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
     / "sensitivity_combined_panss.svg",
 ):
     """Lipid regression sensitivity: PANSS subscale covariate models.
@@ -473,8 +401,6 @@ def task_plot_sensitivity_combined_panss(
             fontsize=11,
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -490,14 +416,11 @@ def task_plot_univariate_lipid_regression_cov_antidepressants(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_antidepressants.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_antidepressants.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -508,14 +431,11 @@ def task_plot_univariate_lipid_regression_cov_antipsychotics(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_antipsychotics.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_antipsychotics.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -526,14 +446,11 @@ def task_plot_univariate_lipid_regression_cov_tranquilizers(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_tranquilizers.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_tranquilizers.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -544,14 +461,11 @@ def task_plot_univariate_lipid_regression_cov_mood_stabilizers(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_lipid_regression_plot_cov_mood_stabilizers.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "univariate_lipid_regression_plot_cov_mood_stabilizers.png",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -567,8 +481,6 @@ def task_plot_sensitivity_combined_medication_adjusted(
     / "univariate_lipid_results_top20_cov_mood_stabilizers.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "sensitivity_combined_medication_adjusted.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
     / "sensitivity_combined_medication_adjusted.svg",
 ):
     """2×2 forest plot: each medication class controlled individually."""
@@ -627,8 +539,6 @@ def task_plot_sensitivity_combined_medication_adjusted(
             fontsize=11,
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -645,15 +555,12 @@ def task_plot_corr_matrix_lipid_top20(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_corr_matrix_top20.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_corr_matrix_top20.png",
 ):
     multimodal_df = pd.read_pickle(multimodal_data_path)
     lipid_top20 = pd.read_pickle(top20_lipids_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     plot_corr_matrix_lipid_top20(multimodal_df, lipid_top20, annotation_df)
     plt.savefig(bld_plots_dir_output, bbox_inches="tight")
-    plt.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -662,13 +569,10 @@ def task_plot_corr_matrix_prs(
     multimodal_data_path=BLD_DATA / "multimodal_complete_df.pkl",
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "prs_corr_matrix.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "prs_corr_matrix.png",
 ):
     multimodal_df = pd.read_pickle(multimodal_data_path)
     plot_corr_matrix_prs(multimodal_df)
     plt.savefig(bld_plots_dir_output, bbox_inches="tight")
-    plt.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -678,13 +582,10 @@ def task_plot_prs_cv_delta_mse(
     / "prs_cv_delta_mse_results.pkl",
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "prs_cv_delta_mse_plot.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "prs_cv_delta_mse_plot.png",
 ):
     delta_df = pd.read_pickle(delta_df_path)
     fig, ax = plot_prs_cv_delta_mse(delta_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
-    fig.savefig(writing_plots_dir_output, bbox_inches="tight")
     plt.close()
 
 
@@ -709,15 +610,12 @@ def task_plot_lipid_regression_panss_outcome_pos(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_regression_panss_outcome_pos.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_regression_panss_outcome_pos.svg",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -728,15 +626,12 @@ def task_plot_lipid_regression_panss_outcome_neg(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_regression_panss_outcome_neg.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_regression_panss_outcome_neg.svg",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -747,15 +642,12 @@ def task_plot_lipid_regression_panss_outcome_gen(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_regression_panss_outcome_gen.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_regression_panss_outcome_gen.svg",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -766,15 +658,12 @@ def task_plot_lipid_regression_panss_outcome_tot(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "lipid_regression_panss_outcome_tot.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
-    / "lipid_regression_panss_outcome_tot.svg",
 ):
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -790,16 +679,13 @@ def task_plot_lipid_enrichment_panss_outcome_pos(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
     / "lipid_enrichment_panss_outcome_pos.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
-    / "lipid_enrichment_panss_outcome_pos.svg",
 ):
     results_df = pd.read_pickle(results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     enrich_df = pd.read_pickle(enrich_results_path)
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -812,16 +698,13 @@ def task_plot_lipid_enrichment_panss_outcome_neg(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
     / "lipid_enrichment_panss_outcome_neg.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
-    / "lipid_enrichment_panss_outcome_neg.svg",
 ):
     results_df = pd.read_pickle(results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     enrich_df = pd.read_pickle(enrich_results_path)
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -834,16 +717,13 @@ def task_plot_lipid_enrichment_panss_outcome_gen(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
     / "lipid_enrichment_panss_outcome_gen.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
-    / "lipid_enrichment_panss_outcome_gen.svg",
 ):
     results_df = pd.read_pickle(results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     enrich_df = pd.read_pickle(enrich_results_path)
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -856,16 +736,13 @@ def task_plot_lipid_enrichment_panss_outcome_tot(
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
     / "lipid_enrichment_panss_outcome_tot.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
-    / "lipid_enrichment_panss_outcome_tot.svg",
 ):
     results_df = pd.read_pickle(results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
     enrich_df = pd.read_pickle(enrich_results_path)
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -884,8 +761,6 @@ def task_plot_panss_outcome_lipid_regression_combined(
     / "univariate_lipid_results_top20_standard_panss_total_score.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
-    / "panss_outcome_lipid_regression_combined.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_PLOTS_DIR
     / "panss_outcome_lipid_regression_combined.svg",
 ):
     """Combined lipid regression figure with each PANSS subscale as outcome.
@@ -952,8 +827,7 @@ def task_plot_panss_outcome_lipid_regression_combined(
             fontsize=11,
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -977,8 +851,6 @@ def task_plot_panss_outcome_enrichment_combined(
     / "lipid_enrichment_results_panss_total_score.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_ENRICHMENT_PLOT_DIR
-    / "panss_outcome_enrichment_combined.svg",
-    writing_plots_dir_output: Annotated[Path, Product] = WRITING_ENRICHMENT_PLOT_DIR
     / "panss_outcome_enrichment_combined.svg",
 ):
     """Combined lipid enrichment (boxplot style) with each PANSS subscale as outcome.
@@ -1056,6 +928,5 @@ def task_plot_panss_outcome_enrichment_combined(
             fontsize=11,
         )
 
-    for path in [bld_plots_dir_output, writing_plots_dir_output]:
-        fig.savefig(path, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)

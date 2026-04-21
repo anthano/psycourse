@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 from pytask import task
 
-from psycourse.config import BLD_DATA, BLD_RESULTS, SRC, WRITING
+from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.descriptive_stats.descriptive_tables import (
     create_lipid_table,
     get_demographics_table,
@@ -19,7 +19,7 @@ DEMOGRAPHICS_INPUT_PATH = {
 DEMOGRAPHICS_OUTPUT_PATH = {
     "pkl": BLD_RESULTS / "descriptive_stats" / "demographics.pkl",
     "csv": BLD_RESULTS / "descriptive_stats" / "demographics.csv",
-    "md": WRITING / "tables" / "demographics.md",
+    "md": BLD_RESULTS / "descriptive_stats" / "demographics.md",
 }
 
 
@@ -62,16 +62,6 @@ ANALYSIS_CONFIGS = {
         / "continuous_analysis"
         / "prs"
         / "n_subset_dict_standard_cov.pkl",
-        "diagnosis_cov": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "prs"
-        / "n_subset_dict_cov_diagnosis.pkl",
-        "bmi_cov": BLD_RESULTS
-        / "univariate"
-        / "continuous_analysis"
-        / "prs"
-        / "n_subset_dict_cov_bmi.pkl",
     },
     "lipid": {
         "standard_cov": BLD_RESULTS
@@ -106,11 +96,9 @@ def _create_task(modality):
         "produces": BLD_RESULTS
         / "descriptive_stats"
         / f"n_per_analysis_{modality}.pkl",
-        "cov_1_name": cov_names[0],
-        "cov_2_name": cov_names[1],
         "standard_cov_path": config["standard_cov"],
-        "cov_1_path": config[cov_names[0]],
-        "cov_2_path": config[cov_names[1]],
+        "cov_names": cov_names,
+        "cov_paths": [config[cov_name] for cov_name in cov_names],
     }
 
     return kwargs
@@ -124,31 +112,25 @@ for modality in ["prs", "lipid"]:
         modality,
         depends_on,
         produces,
-        cov_1_name,
-        cov_2_name,
         standard_cov_path,
-        cov_1_path,
-        cov_2_path,
+        cov_names,
+        cov_paths,
     ):
         """Create participant count table for each analysis."""
 
         # Load the dictionaries
         with open(standard_cov_path, "rb") as file:
             standard_cov_dict = pickle.load(file)
-
-        with open(cov_1_path, "rb") as file:
-            cov_1_dict = pickle.load(file)
-
-        with open(cov_2_path, "rb") as file:
-            cov_2_dict = pickle.load(file)
+        covariate_dicts = []
+        for cov_path in cov_paths:
+            with open(cov_path, "rb") as file:
+                covariate_dicts.append(pickle.load(file))
 
         # Create dataframe
         n_per_analysis_df = get_participants_per_analysis(
             standard_cov_dict,
-            cov_1_dict,
-            cov_2_dict,
-            cov_1_name=cov_1_name,
-            cov_2_name=cov_2_name,
+            *covariate_dicts,
+            covariate_names=cov_names,
         )
 
         # Save output

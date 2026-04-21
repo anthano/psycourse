@@ -62,7 +62,7 @@ LIPID_ENRICHMENT_INPUTS = {
     "panss_pos": {
         "regression_results_df_path": REGRESSION_RESULTS_PATH
         / "panss"
-        / "univariate_lipid_results_panss_sum_pos.pkl",
+        / "univariate_lipid_results_standard_panss_sum_pos.pkl",
         "produces": REGRESSION_RESULTS_PATH
         / "panss"
         / "lipid_enrichment_results_panss_sum_pos.pkl",
@@ -78,7 +78,7 @@ LIPID_ENRICHMENT_INPUTS = {
     "panss_neg": {
         "regression_results_df_path": REGRESSION_RESULTS_PATH
         / "panss"
-        / "univariate_lipid_results_panss_sum_neg.pkl",
+        / "univariate_lipid_results_standard_panss_sum_neg.pkl",
         "produces": REGRESSION_RESULTS_PATH
         / "panss"
         / "lipid_enrichment_results_panss_sum_neg.pkl",
