@@ -20,6 +20,7 @@ _LIP = _UNI / "lipid"
 _PRS = _UNI / "prs"
 _LPAN = _LIP / "panss"
 _PPAN = _PRS / "panss"
+_MEDADJ = _LIP / "medication_adjusted"
 _DESC = BLD_RESULTS / "descriptive_stats"
 _MED = BLD_RESULTS / "mediation_analysis"
 _R2 = BLD_RESULTS / "incremental_r2"
@@ -150,14 +151,32 @@ _TOC_ROWS = [
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     (
-        "22_enrich_cov_panss_tot",
+        "22_enrich_cov_antidepressants",
         "Lipid class enrichment: sensitivity additionally controlling "
-        "for PANSS Total Score",
+        "for antidepressant medication",
+        "Lipid Class Enrichment ~ Subtype Probability",
+    ),
+    (
+        "23_enrich_cov_antipsychotics",
+        "Lipid class enrichment: sensitivity additionally controlling "
+        "for antipsychotic medication class",
+        "Lipid Class Enrichment ~ Subtype Probability",
+    ),
+    (
+        "24_enrich_cov_mood_stabilizers",
+        "Lipid class enrichment: sensitivity additionally controlling "
+        "for mood stabilizer medication",
+        "Lipid Class Enrichment ~ Subtype Probability",
+    ),
+    (
+        "25_enrich_cov_tranquilizers",
+        "Lipid class enrichment: sensitivity additionally controlling "
+        "for tranquilizer medication",
         "Lipid Class Enrichment ~ Subtype Probability",
     ),
     # ── PRS ~ PANSS subscales as outcome ────────────────────────────────────────
     (
-        "22_prs_panss_std",
+        "26_prs_panss_std",
         "PRS associations with PANSS subscale scores as continuous outcomes "
         "(standard covariates; all four subscales stacked — see "
         "'panss_outcome' column: "
@@ -166,33 +185,33 @@ _TOC_ROWS = [
     ),
     # ── Lipid (Top 20) ~ PANSS subscales as outcome ────────────────────────────
     (
-        "23_lip_panss_std",
+        "27_lip_panss_std",
         "Top-20 lipid associations with PANSS subscale scores as continuous "
         "outcomes (standard covariates; all four subscales stacked — see "
         "'panss_outcome' column)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "24_lip_panss_cov_med",
+        "28_lip_panss_cov_med",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for antipsychotic medication (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "25_lip_panss_cov_diag",
+        "29_lip_panss_cov_diag",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for psychiatric diagnosis (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     (
-        "26_lip_panss_cov_med_diag",
+        "30_lip_panss_cov_med_diag",
         "Top-20 lipids ~ PANSS subscales as outcome: sensitivity additionally "
         "controlling for medication and diagnosis (all four subscales stacked)",
         "Lipid ~ PANSS Subscales as Outcome",
     ),
     # ── Lipid Enrichment ~ PANSS subscales as outcome ──────────────────────────
     (
-        "27_enrich_panss_std",
+        "31_enrich_panss_std",
         "Lipid class enrichment with PANSS subscale scores as outcomes "
         "(standard covariates; all available subscales stacked — see "
         "'panss_outcome' column: Positive, Negative, General, Total Score)",
@@ -200,14 +219,14 @@ _TOC_ROWS = [
     ),
     # ── Incremental R² ─────────────────────────────────────────────────────────
     (
-        "28_r2_incremental",
+        "32_r2_incremental",
         "Incremental R² decomposition: variance in severe psychosis subtype "
         "probability explained by PRS block and lipid class block "
         "(permutation-based p-values; 20 000 permutations)",
         "Incremental R²",
     ),
     (
-        "29_r2_individual",
+        "33_r2_individual",
         "Individual predictor ΔR²: unique variance explained by each "
         "significant PRS and each enriched lipid class score "
         "(permutation-based p-values; 20 000 permutations)",
@@ -215,14 +234,14 @@ _TOC_ROWS = [
     ),
     # ── Mediation ──────────────────────────────────────────────────────────────
     (
-        "30_mediation",
+        "34_mediation",
         "Mediation analysis results: indirect effects of PRS on severe "
         "psychosis subtype probability via lipid species",
         "Mediation Analysis",
     ),
     # ── CCA ────────────────────────────────────────────────────────────────────
     (
-        "31_cca_loadings",
+        "35_cca_loadings",
         "Full CCA canonical loadings for the first canonical variate: "
         "PRS block (13 polygenic scores) and lipid class block (16 lipid classes). "
         "The 'block' column identifies the input block; 'variable' is the "
@@ -369,7 +388,16 @@ def _write_toc_docx(path: Path) -> None:
             "enrich_cov_panss_gen": _LIP / "lipid_enrichment_results_cov_panss_gen.pkl",
             "enrich_cov_panss_tot": _LIP
             / "lipid_enrichment_results_cov_panss_total_score.pkl",
-            # ── PRS ~ PANSS subscales (individual files for each subscale) ─────
+            # ── Lipid Class Enrichment (medication class sensitivity) ───────────
+            "enrich_cov_antidepressants": _MEDADJ
+            / "lipid_enrichment_results_cov_antidepressants.pkl",
+            "enrich_cov_antipsychotics": _MEDADJ
+            / "lipid_enrichment_results_cov_antipsychotics.pkl",
+            "enrich_cov_mood_stabilizers": _MEDADJ
+            / "lipid_enrichment_results_cov_mood_stabilizers.pkl",
+            "enrich_cov_tranquilizers": _MEDADJ
+            / "lipid_enrichment_results_cov_tranquilizers.pkl",
+            # ── PRS ~ PANSS subscales ──────────────────────────────────────────
             "prs_panss_std__pos": _PPAN
             / "univariate_prs_results_panss_standard_cov_panss_sum_pos.pkl",
             "prs_panss_std__neg": _PPAN
@@ -494,7 +522,21 @@ def task_export_all_supplementary_tables(depends_on, produces):
             writer, sheet_name="21_enrich_cov_panss_tot"
         )
 
-        # ── PRS ~ PANSS subscales (stacked, one sheet per covariate model) ──────
+        # ── Lipid Class Enrichment (medication class sensitivity) ──────────────
+        load("enrich_cov_antidepressants").to_excel(
+            writer, sheet_name="22_enrich_cov_antidepressants"
+        )
+        load("enrich_cov_antipsychotics").to_excel(
+            writer, sheet_name="23_enrich_cov_antipsychotics"
+        )
+        load("enrich_cov_mood_stabilizers").to_excel(
+            writer, sheet_name="24_enrich_cov_mood_stabilizers"
+        )
+        load("enrich_cov_tranquilizers").to_excel(
+            writer, sheet_name="25_enrich_cov_tranquilizers"
+        )
+
+        # ── PRS ~ PANSS subscales (stacked) ────────────────────────────────────
         _PANSS_LABELS = [
             ("PANSS Positive", "__pos"),
             ("PANSS Negative", "__neg"),
@@ -503,21 +545,21 @@ def task_export_all_supplementary_tables(depends_on, produces):
         ]
         stack_panss(
             [(lbl, f"prs_panss_std{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="22_prs_panss_std")
+        ).to_excel(writer, sheet_name="26_prs_panss_std")
 
         # ── Lipid (Top 20) ~ PANSS subscales (stacked) ─────────────────────────
         stack_panss(
             [(lbl, f"lip_panss_std{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="23_lip_panss_std")
+        ).to_excel(writer, sheet_name="27_lip_panss_std")
         stack_panss(
             [(lbl, f"lip_panss_med{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="24_lip_panss_cov_med")
+        ).to_excel(writer, sheet_name="28_lip_panss_cov_med")
         stack_panss(
             [(lbl, f"lip_panss_diag{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="25_lip_panss_cov_diag")
+        ).to_excel(writer, sheet_name="29_lip_panss_cov_diag")
         stack_panss(
             [(lbl, f"lip_panss_med_diag{sfx}") for lbl, sfx in _PANSS_LABELS]
-        ).to_excel(writer, sheet_name="26_lip_panss_cov_med_diag")
+        ).to_excel(writer, sheet_name="30_lip_panss_cov_med_diag")
 
         # ── Lipid Enrichment ~ PANSS subscales (stacked) ───────────────────────
         stack_panss(
@@ -527,14 +569,14 @@ def task_export_all_supplementary_tables(depends_on, produces):
                 ("PANSS General", "enrich_panss_std__gen"),
                 ("PANSS Total Score", "enrich_panss_std__tot"),
             ]
-        ).to_excel(writer, sheet_name="27_enrich_panss_std")
+        ).to_excel(writer, sheet_name="31_enrich_panss_std")
 
         # ── Incremental R² ─────────────────────────────────────────────────────
-        load("r2_incremental").to_excel(writer, sheet_name="28_r2_incremental")
-        load("r2_individual").to_excel(writer, sheet_name="29_r2_individual")
+        load("r2_incremental").to_excel(writer, sheet_name="32_r2_incremental")
+        load("r2_individual").to_excel(writer, sheet_name="33_r2_individual")
 
         # ── Mediation ──────────────────────────────────────────────────────────
-        load("mediation").to_excel(writer, sheet_name="30_mediation")
+        load("mediation").to_excel(writer, sheet_name="34_mediation")
 
         # ── CCA canonical loadings ──────────────────────────────────────────────
         cca_res = load("cca_results")
@@ -553,7 +595,7 @@ def task_export_all_supplementary_tables(depends_on, produces):
         )
         lip_df.insert(0, "block", "Lipid class")
         cca_df = pd.concat([prs_df, lip_df], ignore_index=True)
-        cca_df.to_excel(writer, sheet_name="31_cca_loadings", index=False)
+        cca_df.to_excel(writer, sheet_name="35_cca_loadings", index=False)
 
     # ── Write TOC docx ─────────────────────────────────────────────────────────
     _write_toc_docx(produces["toc_docx"])

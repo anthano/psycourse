@@ -401,6 +401,7 @@ def task_plot_sensitivity_combined_panss(
             fontsize=11,
         )
 
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -539,6 +540,7 @@ def task_plot_sensitivity_combined_medication_adjusted(
             fontsize=11,
         )
 
+    fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     plt.close(fig)
 
 

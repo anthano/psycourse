@@ -13,6 +13,7 @@ from psycourse.data_analysis.univariate_analysis_panss import (
     univariate_lipid_regression_cov_med_and_diag_panss,
     univariate_lipid_regression_cov_med_panss,
     univariate_lipid_regression_panss,
+    univariate_prs_regression_panss,
 )
 
 UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
@@ -42,6 +43,36 @@ def _lipid_products(kind: str, col: str) -> dict[str, Path]:
         "univariate_lipid_results": UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
         / f"univariate_lipid_results_{kind}_{col}.pkl",
     }
+
+
+# ======================================================================================
+# PRS TASKS (one task per PANSS col)
+# ======================================================================================
+
+for col in PANSS_COLUMNS:
+    _prs_output = (
+        UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+        / f"univariate_prs_results_panss_standard_cov_{col}.pkl"
+    )
+
+    @pytask.task(
+        id=f"prs-standard-{col}",
+        kwargs={
+            "col": col,
+            "script_path": SCRIPT_PATH,
+            "multimodal_df_path": MULTIMODAL_DF_PATH,
+            "produces": _prs_output,
+        },
+    )
+    def task_univariate_prs_panss_one(
+        col: str,
+        script_path: Path,
+        multimodal_df_path: Path,
+        produces: Annotated[Path, Product],
+    ) -> None:
+        data = pd.read_pickle(multimodal_df_path)
+        _n_subset_dict, results_df = univariate_prs_regression_panss(data, col)
+        results_df.to_pickle(produces)
 
 
 # ======================================================================================

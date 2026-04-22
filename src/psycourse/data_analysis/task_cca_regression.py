@@ -47,9 +47,10 @@ lipid_cols = [
 
 
 def task_cca_regression(
+    data_path: Path = BLD_DATA / "multimodal_lipid_subset_df.pkl",
     product: Annotated[Path, Product] = RESULTS_DIR / "results.pkl",
 ) -> None:
-    df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
+    df = pd.read_pickle(data_path)
 
     results_dict = cca_regression_analysis(
         df=df, prs_cols=prs_cols, lipid_class_cols=lipid_cols
