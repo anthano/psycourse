@@ -51,10 +51,11 @@ lipid_cols = [
 
 
 def task_incremental_r2_decomposition(
+    data_path: Path = BLD_DATA / "multimodal_lipid_subset_df.pkl",
     results_path: Annotated[Path, Product] = RESULTS_DIR / "incremental_r2_results.pkl",
     table_path: Annotated[Path, Product] = RESULTS_DIR / "incremental_r2_table.pkl",
 ) -> None:
-    df = pd.read_pickle(BLD_DATA / "multimodal_lipid_subset_df.pkl")
+    df = pd.read_pickle(data_path)
 
     results = incremental_r2_decomposition(
         df=df,

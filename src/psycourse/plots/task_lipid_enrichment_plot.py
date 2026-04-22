@@ -109,13 +109,25 @@ COMBINED_VARIANTS = [
 @pytask.task(
     id="combined_bp_plot",
     kwargs={
+        "annot_df_path": ANNOT_DF_PATH,
+        "results_df_paths": [
+            LIPID_RESULTS_PATH / LIPID_PLOT_VARIANTS[v]["results_df"]
+            for v, _, _ in COMBINED_VARIANTS
+        ],
+        "enrichment_df_paths": [
+            LIPID_RESULTS_PATH / LIPID_PLOT_VARIANTS[v]["enrichment_df"]
+            for v, _, _ in COMBINED_VARIANTS
+        ],
         "produces": PLOT_PATH / "lipid_enrichment_bp_plot_combined.svg",
     },
 )
 def task_lipid_coef_distribution_combined(
+    annot_df_path: Path,
+    results_df_paths: list[Path],
+    enrichment_df_paths: list[Path],
     produces: Annotated[Path, pytask.Product],
 ):
-    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+    annot_df = pd.read_pickle(annot_df_path)
 
     fig, axes = plt.subplots(
         nrows=4,
@@ -126,12 +138,11 @@ def task_lipid_coef_distribution_combined(
 
     fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
 
-    for ax, (variant, panel_label, covariate_label) in zip(
-        axes, COMBINED_VARIANTS, strict=False
+    for ax, (_variant, panel_label, covariate_label), results_path, enrich_path in zip(
+        axes, COMBINED_VARIANTS, results_df_paths, enrichment_df_paths, strict=False
     ):
-        files = LIPID_PLOT_VARIANTS[variant]
-        results_df = pd.read_pickle(LIPID_RESULTS_PATH / files["results_df"])
-        enrich_df = pd.read_pickle(LIPID_RESULTS_PATH / files["enrichment_df"])
+        results_df = pd.read_pickle(results_path)
+        enrich_df = pd.read_pickle(enrich_path)
 
         plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
         ax.set_ylabel("")  # ← strip individual labels
@@ -245,14 +256,25 @@ COMBINED_VARIANTS_MED_ADJ = [
 @pytask.task(
     id="combined_bp_plot_med_adj",
     kwargs={
+        "annot_df_path": ANNOT_DF_PATH,
+        "results_df_paths": [
+            LIPID_PLOT_VARIANTS_MED_ADJ[v]["results_df"]
+            for v, _, _ in COMBINED_VARIANTS_MED_ADJ
+        ],
+        "enrichment_df_paths": [
+            LIPID_PLOT_VARIANTS_MED_ADJ[v]["enrichment_df"]
+            for v, _, _ in COMBINED_VARIANTS_MED_ADJ
+        ],
         "produces": PLOT_PATH / "lipid_enrichment_bp_plot_combined_med_adj.svg",
     },
 )
 def task_lipid_coef_distribution_combined_med_adj(
+    annot_df_path: Path,
+    results_df_paths: list[Path],
+    enrichment_df_paths: list[Path],
     produces: Annotated[Path, pytask.Product],
 ):
-    """Combined 4-panel enrichment bp plot, one medication class per panel."""
-    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+    annot_df = pd.read_pickle(annot_df_path)
 
     fig, axes = plt.subplots(
         nrows=4,
@@ -262,12 +284,15 @@ def task_lipid_coef_distribution_combined_med_adj(
     )
     fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
 
-    for ax, (variant, panel_label, covariate_label) in zip(
-        axes, COMBINED_VARIANTS_MED_ADJ, strict=False
+    for ax, (_variant, panel_label, covariate_label), results_path, enrich_path in zip(
+        axes,
+        COMBINED_VARIANTS_MED_ADJ,
+        results_df_paths,
+        enrichment_df_paths,
+        strict=False,
     ):
-        files = LIPID_PLOT_VARIANTS_MED_ADJ[variant]
-        results_df = pd.read_pickle(files["results_df"])
-        enrich_df = pd.read_pickle(files["enrichment_df"])
+        results_df = pd.read_pickle(results_path)
+        enrich_df = pd.read_pickle(enrich_path)
 
         plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
         ax.set_ylabel("")
@@ -326,29 +351,44 @@ COMBINED_VARIANTS_COV_PANSS = [
 @pytask.task(
     id="combined_bp_plot_cov_panss",
     kwargs={
+        "annot_df_path": ANNOT_DF_PATH,
+        "results_df_paths": [
+            LIPID_RESULTS_PATH / LIPID_PLOT_VARIANTS_COV_PANSS[v]["results_df"]
+            for v, _, _ in COMBINED_VARIANTS_COV_PANSS
+        ],
+        "enrichment_df_paths": [
+            LIPID_RESULTS_PATH / LIPID_PLOT_VARIANTS_COV_PANSS[v]["enrichment_df"]
+            for v, _, _ in COMBINED_VARIANTS_COV_PANSS
+        ],
         "produces": PLOT_PATH / "lipid_enrichment_bp_plot_combined_cov_panss.svg",
     },
 )
 def task_lipid_coef_distribution_combined_cov_panss(
+    annot_df_path: Path,
+    results_df_paths: list[Path],
+    enrichment_df_paths: list[Path],
     produces: Annotated[Path, pytask.Product],
 ):
-    annot_df = pd.read_pickle(ANNOT_DF_PATH)
+    annot_df = pd.read_pickle(annot_df_path)
 
     fig, axes = plt.subplots(
         nrows=4,
         ncols=1,
         figsize=(11.69, 8.27),
-        constrained_layout=False,  # ← changed
+        constrained_layout=False,
     )
 
     fig.subplots_adjust(left=0.18, right=0.97, top=0.97, bottom=0.05, hspace=0.5)
 
-    for ax, (variant, panel_label, covariate_label) in zip(
-        axes, COMBINED_VARIANTS_COV_PANSS, strict=False
+    for ax, (_variant, panel_label, covariate_label), results_path, enrich_path in zip(
+        axes,
+        COMBINED_VARIANTS_COV_PANSS,
+        results_df_paths,
+        enrichment_df_paths,
+        strict=False,
     ):
-        files = LIPID_PLOT_VARIANTS_COV_PANSS[variant]
-        results_df = pd.read_pickle(LIPID_RESULTS_PATH / files["results_df"])
-        enrich_df = pd.read_pickle(LIPID_RESULTS_PATH / files["enrichment_df"])
+        results_df = pd.read_pickle(results_path)
+        enrich_df = pd.read_pickle(enrich_path)
 
         plot_lipid_coef_distributions(results_df, annot_df, enrich_df, ax=ax)
         ax.set_ylabel("")  # ← strip individual labels

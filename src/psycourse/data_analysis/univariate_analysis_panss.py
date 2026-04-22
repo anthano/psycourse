@@ -4,6 +4,52 @@ import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 
 ########################################################################################
+# PRS
+########################################################################################
+
+
+def univariate_prs_regression_panss(multimodal_df, panss_column):
+    """
+    Univariate GLMs of each PRS on the specified PANSS subscale score as outcome,
+    adjusted for standard covariates (age, sex, ancestry PCs 1-5).
+    Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
+    """
+    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    rows = []
+    n_subset_dict = {}
+
+    for prs in prs_columns:
+        cols = [prs, panss_column, "age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+        subset = multimodal_df[cols].dropna()
+        n_subset_dict[prs] = len(subset)
+
+        formula = f"{panss_column} ~ {prs} + age + C(sex) + pc1 + pc2 + pc3 + pc4 + pc5"
+        result = smf.ols(formula, data=subset).fit(cov_type="HC3")
+
+        coef = result.params.get(prs, np.nan)
+        se = result.bse.get(prs, np.nan)
+        pval = result.pvalues.get(prs, np.nan)
+        ci_low, ci_high = result.conf_int().loc[prs].tolist()
+
+        rows.append(
+            {
+                "prs": prs,
+                "coef": coef,
+                "se": se,
+                "ci_low": ci_low,
+                "ci_high": ci_high,
+                "pval": pval,
+            }
+        )
+
+    df = pd.DataFrame(rows).set_index("prs")
+    df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
+    df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
+    df = df.sort_values("FDR")
+    return n_subset_dict, df
+
+
+########################################################################################
 # Lipids
 ########################################################################################
 
