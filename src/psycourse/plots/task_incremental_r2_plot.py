@@ -24,4 +24,5 @@ def task_plot_incremental_r2(
 
     fig = plot_incremental_r2(results)
     fig.savefig(products["plot"])
+    fig.savefig(products["plot"].with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)

@@ -53,22 +53,45 @@ def task_plot_svm(
     # ── Individual plots ──────────────────────────────────────────────────────
     fig = plot_learning_curve(learning_curve_data)
     fig.savefig(task_products["learning_curve"], bbox_inches="tight")
+    fig.savefig(
+        task_products["learning_curve"].with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     fig = plot_roc_curves(roc_data)
     fig.savefig(task_products["roc_curves"], bbox_inches="tight")
+    fig.savefig(
+        task_products["roc_curves"].with_suffix(".tiff"), dpi=600, bbox_inches="tight"
+    )
     plt.close(fig)
 
     fig = plot_confusion_matrix(cm_data)
     fig.savefig(task_products["confusion_matrix"], bbox_inches="tight")
+    fig.savefig(
+        task_products["confusion_matrix"].with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     fig = plot_per_class_metrics(report_dict)
     fig.savefig(task_products["per_class_metrics"], bbox_inches="tight")
+    fig.savefig(
+        task_products["per_class_metrics"].with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     fig = plot_nested_cv_scores(nested_scores_data)
     fig.savefig(task_products["nested_cv_scores"], bbox_inches="tight")
+    fig.savefig(
+        task_products["nested_cv_scores"].with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
     # ── Combined 2 × 2 figure ─────────────────────────────────────────────────
@@ -79,4 +102,7 @@ def task_plot_svm(
         report_dict=report_dict,
     )
     fig.savefig(task_products["combined"], bbox_inches="tight")
+    fig.savefig(
+        task_products["combined"].with_suffix(".tiff"), dpi=600, bbox_inches="tight"
+    )
     plt.close(fig)
