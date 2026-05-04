@@ -48,6 +48,7 @@ def task_plot_univariate_lipid_regression_standard_cov(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -63,6 +64,7 @@ def task_plot_univariate_lipid_regression_cov_med(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -78,6 +80,7 @@ def task_plot_univariate_lipid_regression_cov_diagnosis(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -93,6 +96,7 @@ def task_plot_univariate_lipid_regression_cov_med_and_diag(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -108,6 +112,7 @@ def task_plot_univariate_lipid_regression_cov_panss(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -123,6 +128,7 @@ def task_plot_univariate_lipid_regression_cov_panss_neg(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -138,6 +144,7 @@ def task_plot_univariate_lipid_regression_cov_panss_gen(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -153,6 +160,7 @@ def task_plot_univariate_lipid_regression_cov_panss_total_score(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -168,6 +176,7 @@ def task_plot_univariate_lipid_regression_cov_panss_both(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -186,6 +195,7 @@ def task_plot_univariate_prs_regression_standard_cov(
     prs_results = pd.read_pickle(prs_results_path)
     fig, ax = plot_univariate_prs_regression(prs_results)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -229,6 +239,7 @@ def task_plot_univariate_prs_lipid_regression_combined_standard_cov(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -318,6 +329,7 @@ def task_plot_sensitivity_combined_standard_cov(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -402,6 +414,7 @@ def task_plot_sensitivity_combined_panss(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -422,6 +435,7 @@ def task_plot_univariate_lipid_regression_cov_antidepressants(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -437,6 +451,7 @@ def task_plot_univariate_lipid_regression_cov_antipsychotics(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -452,6 +467,7 @@ def task_plot_univariate_lipid_regression_cov_tranquilizers(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -467,6 +483,7 @@ def task_plot_univariate_lipid_regression_cov_mood_stabilizers(
     annotation_df = pd.read_pickle(annotation_df_path)
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -541,6 +558,7 @@ def task_plot_sensitivity_combined_medication_adjusted(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -563,6 +581,7 @@ def task_plot_corr_matrix_lipid_top20(
     annotation_df = pd.read_pickle(annotation_df_path)
     plot_corr_matrix_lipid_top20(multimodal_df, lipid_top20, annotation_df)
     plt.savefig(bld_plots_dir_output, bbox_inches="tight")
+    plt.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -575,6 +594,7 @@ def task_plot_corr_matrix_prs(
     multimodal_df = pd.read_pickle(multimodal_data_path)
     plot_corr_matrix_prs(multimodal_df)
     plt.savefig(bld_plots_dir_output, bbox_inches="tight")
+    plt.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -588,6 +608,7 @@ def task_plot_prs_cv_delta_mse(
     delta_df = pd.read_pickle(delta_df_path)
     fig, ax = plot_prs_cv_delta_mse(delta_df)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -618,6 +639,7 @@ def task_plot_lipid_regression_panss_outcome_pos(
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -634,6 +656,7 @@ def task_plot_lipid_regression_panss_outcome_neg(
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -650,6 +673,7 @@ def task_plot_lipid_regression_panss_outcome_gen(
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -666,6 +690,7 @@ def task_plot_lipid_regression_panss_outcome_tot(
     fig, ax = plot_univariate_lipid_regression(lipid_results, annotation_df)
     ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -688,6 +713,7 @@ def task_plot_lipid_enrichment_panss_outcome_pos(
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["pos"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -707,6 +733,7 @@ def task_plot_lipid_enrichment_panss_outcome_neg(
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["neg"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -726,6 +753,7 @@ def task_plot_lipid_enrichment_panss_outcome_gen(
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["gen"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -745,6 +773,7 @@ def task_plot_lipid_enrichment_panss_outcome_tot(
     fig, ax = plot_lipid_coef_distributions(results_df, annotation_df, enrich_df)
     ax.set_title(_PANSS_LABELS["tot"], fontsize=12)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -830,6 +859,7 @@ def task_plot_panss_outcome_lipid_regression_combined(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -931,4 +961,5 @@ def task_plot_panss_outcome_enrichment_combined(
         )
 
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
+    fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)

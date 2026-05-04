@@ -25,6 +25,11 @@ def task_plot_mediation_results(
 
     fig = plot_mediation_results(results_df)
     fig.savefig(products_results_plot["plots"])
+    fig.savefig(
+        products_results_plot["plots"].with_suffix(".tiff"),
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
 
 
@@ -46,4 +51,7 @@ def task_plot_mediation_heatmap(
 
     fig = plot_mediation_heatmap(results_df)
     fig.savefig(products_heatmap["plots"])
+    fig.savefig(
+        products_heatmap["plots"].with_suffix(".tiff"), dpi=600, bbox_inches="tight"
+    )
     plt.close(fig)

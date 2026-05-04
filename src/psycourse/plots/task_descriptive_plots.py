@@ -29,4 +29,5 @@ def task_plot_stacked_histograms(
     )
 
     fig.savefig(produces["plots"], bbox_inches="tight")
+    fig.savefig(produces["plots"].with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close(fig)

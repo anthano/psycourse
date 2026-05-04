@@ -67,6 +67,7 @@ for variant, files in LIPID_PLOT_VARIANTS.items():
         df = pd.read_pickle(enrichment_results_df_path)
         fig, _ = enrichment_strength_plot(df, variant=variant)
         fig.savefig(produces)
+        fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
 
     # COEFFICIENT DISTRIBUTION PLOT
     @pytask.task(
@@ -96,6 +97,7 @@ for variant, files in LIPID_PLOT_VARIANTS.items():
         enrich_df = pd.read_pickle(enrichment_df_path)
         fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df)
         fig.savefig(produces, bbox_inches="tight")
+        fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
 
 
 COMBINED_VARIANTS = [
@@ -166,6 +168,7 @@ def task_lipid_coef_distribution_combined(
     )
 
     fig.savefig(produces, bbox_inches="tight")
+    fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -220,6 +223,7 @@ for variant, files in LIPID_PLOT_VARIANTS_MED_ADJ.items():
         df = pd.read_pickle(enrichment_results_df_path)
         fig, _ = enrichment_strength_plot(df, variant=variant)
         fig.savefig(produces)
+        fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
 
     @pytask.task(
         id=f"{variant}_distribution_plot",
@@ -243,6 +247,7 @@ for variant, files in LIPID_PLOT_VARIANTS_MED_ADJ.items():
         enrich_df = pd.read_pickle(enrichment_df_path)
         fig, _ = plot_lipid_coef_distributions(results_df, annot_df, enrich_df)
         fig.savefig(produces, bbox_inches="tight")
+        fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
 
 
 COMBINED_VARIANTS_MED_ADJ = [
@@ -316,6 +321,7 @@ def task_lipid_coef_distribution_combined_med_adj(
     )
 
     fig.savefig(produces, bbox_inches="tight")
+    fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -412,4 +418,5 @@ def task_lipid_coef_distribution_combined_cov_panss(
     )
 
     fig.savefig(produces, bbox_inches="tight")
+    fig.savefig(produces.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
     plt.close()

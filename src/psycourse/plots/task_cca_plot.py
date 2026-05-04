@@ -26,4 +26,7 @@ def task_plot_cca_main(
 
     fig = plot_cca_main(results_dict)
     fig.savefig(products_main["plots"])
+    fig.savefig(
+        products_main["plots"].with_suffix(".tiff"), dpi=600, bbox_inches="tight"
+    )
     plt.close(fig)

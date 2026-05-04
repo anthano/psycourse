@@ -54,10 +54,10 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
     _C_LIP = "#4572E1"  # dark blue   – Lipid contribution
 
     # ── Figure / axes ─────────────────────────────────────────────────────────
-    fig, ax = plt.subplots(figsize=(3.2, 2.8))
+    fig, ax = plt.subplots(figsize=(3.5, 3.5))
     fig.patch.set_facecolor("white")
 
-    bar_w = 0.65  # wider bars → less gap between them
+    bar_w = 0.50
 
     # ── PRS-alone bar ─────────────────────────────────────────────────────────
     ax.bar(
@@ -65,7 +65,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_prs,
         width=bar_w,
         color=_C_PRS,
-        edgecolor="black",
+        edgecolor="white",
         linewidth=0.5,
         zorder=3,
     )
@@ -76,7 +76,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_lip,
         width=bar_w,
         color=_C_LIP,
-        edgecolor="black",
+        edgecolor="white",
         linewidth=0.5,
         zorder=3,
     )
@@ -87,7 +87,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         dr2_prs,
         width=bar_w,
         color=_C_PRS,
-        edgecolor="black",
+        edgecolor="white",
         linewidth=0.5,
         zorder=3,
     )
@@ -97,7 +97,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         width=bar_w,
         bottom=dr2_prs,
         color=_C_LIP,
-        edgecolor="black",
+        edgecolor="white",
         linewidth=0.5,
         zorder=3,
     )
@@ -124,7 +124,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         )
 
     # ── Axes formatting ───────────────────────────────────────────────────────
-    ax.set_ylim(0, y_top * 1.15)
+    ax.set_ylim(0, y_top * 1.22)
     ax.set_xlim(-0.55, 2.55)
     ax.set_xticks([0, 1, 2])
     ax.set_xticklabels(
@@ -145,29 +145,18 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
 
     # ── Legend ────────────────────────────────────────────────────────────────
     handles = [
-        mpatches.Patch(
-            facecolor=_C_PRS,
-            edgecolor="black",
-            linewidth=0.5,
-            label="PRS contribution",
-        ),
-        mpatches.Patch(
-            facecolor=_C_LIP,
-            edgecolor="black",
-            linewidth=0.5,
-            label="Lipid contribution",
-        ),
+        mpatches.Patch(facecolor=_C_PRS, edgecolor="none", label="PRS contribution"),
+        mpatches.Patch(facecolor=_C_LIP, edgecolor="none", label="Lipid contribution"),
     ]
     ax.legend(
         handles=handles,
         fontsize=7,
         frameon=False,
         loc="upper left",
-        bbox_to_anchor=(0, 0.78),  # moved down from top
         handlelength=1.4,
         handleheight=1.0,
         labelspacing=0.4,
     )
 
-    fig.tight_layout(pad=0.4)
+    fig.tight_layout()
     return fig
