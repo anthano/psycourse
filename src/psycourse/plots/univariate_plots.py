@@ -63,6 +63,14 @@ def _format_prs_labels(labels):
     return renamed
 
 
+def _lipid_label_mapping(cleaned_annotation_df):
+    """Map lipid peak IDs to species labels with hyphenated classes (PE_P -> PE-P)."""
+    return {
+        peak: species.replace("_", "-")
+        for peak, species in cleaned_annotation_df["lipid_species"].items()
+    }
+
+
 ############# Lipids ###################
 
 
@@ -73,7 +81,7 @@ def plot_univariate_lipid_regression(
     Plot lipid GLM coefficients with 95% CIs.
     Points and error bars colored by significance tier.
     """
-    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    mapping = _lipid_label_mapping(cleaned_annotation_df)
     lipid_results_top20 = lipid_results_top20.rename(index=mapping)
     lipid_sorted = lipid_results_top20.sort_values("FDR").copy()
     y = np.arange(len(lipid_sorted))
@@ -159,7 +167,7 @@ def plot_univariate_lipid_class_regression(lipid_class_results, cleaned_annotati
     """
 
     # Map lipid species to lipid class names for y-axis labels
-    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    mapping = _lipid_label_mapping(cleaned_annotation_df)
     lipid_class_results = lipid_class_results.rename(index=mapping)
 
     # Sort by FDR again to fix order
@@ -255,7 +263,7 @@ def plot_corr_matrix_lipid_top20(
         None: Displays a correlation matrix plot.
     """
     top20_df = multimodal_df[multimodal_df.columns.intersection(top20_results_df.index)]
-    mapping = cleaned_annotation_df["lipid_species"].to_dict()
+    mapping = _lipid_label_mapping(cleaned_annotation_df)
     top20_df = top20_df.rename(columns=mapping)
     top20_df_corr_matrix = top20_df.corr()
     plt.figure(figsize=(12, 10))
