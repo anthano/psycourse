@@ -5,33 +5,29 @@ import pandas as pd
 from pytask import Product
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
-from psycourse.data_analysis.incremental_r2 import individual_predictor_r2_table
+from psycourse.data_analysis.incremental_r2 import (
+    individual_predictor_r2_table,
+    significant_predictors,
+)
 
 RESULTS_DIR = BLD_RESULTS / "incremental_r2"
 
-########################################################################################
-# Predictors
-########################################################################################
-
-# The three PRS that were significant in the main incremental R² analysis
-SIGNIFICANT_PRS_COLS = [
-    "SCZ_PRS",
-    "BD_PRS",
-    "Education_PRS",  # EA-PRS
-]
-
-# The eight enriched lipid class scores — update this list with the actual
-# enriched classes identified in the enrichment analysis.
-ENRICHED_LIPID_COLS = [
-    "LPE",
-    "PC",
-    "PC_O",
-    "PC_P",
-    "PE",
-    "PE_P",
-    "TAG",
-    "dCer",
-]
+# Predictors are read from the primary results tables (FDR < 0.05) rather than
+# listed by hand, so they stay in sync when upstream results change.
+PRS_RESULTS_PATH = (
+    BLD_RESULTS
+    / "univariate"
+    / "continuous_analysis"
+    / "prs"
+    / "univariate_prs_results_standard_cov.pkl"
+)
+LIPID_ENRICHMENT_RESULTS_PATH = (
+    BLD_RESULTS
+    / "univariate"
+    / "continuous_analysis"
+    / "lipid"
+    / "lipid_enrichment_results.pkl"
+)
 
 
 ########################################################################################
@@ -41,14 +37,16 @@ ENRICHED_LIPID_COLS = [
 
 def task_individual_predictor_r2(
     data_path: Path = BLD_DATA / "multimodal_lipid_subset_df.pkl",
+    prs_results_path: Path = PRS_RESULTS_PATH,
+    lipid_enrichment_results_path: Path = LIPID_ENRICHMENT_RESULTS_PATH,
     results_path: Annotated[Path, Product] = RESULTS_DIR
     / "individual_predictor_r2.pkl",
     csv_path: Annotated[Path, Product] = RESULTS_DIR / "individual_predictor_r2.csv",
 ) -> None:
     """
     Compute individual ΔR² and permutation p-values (20 000 permutations) for each
-    of the three significant PRS predictors (SCZ-PRS, BD-PRS, EA-PRS) and each of
-    the eight enriched lipid class scores.
+    significant PRS (primary PRS regression, FDR < 0.05) and each enriched lipid
+    class score (primary lipid class enrichment, FDR < 0.05).
 
     Uses the same lipid-subset sample and block-specific residualization approach
     as the main incremental R² decomposition.
@@ -59,11 +57,13 @@ def task_individual_predictor_r2(
         individual_predictor_r2.csv — same table in CSV format
     """
     df = pd.read_pickle(data_path)
+    prs_results = pd.read_pickle(prs_results_path)
+    lipid_enrichment_results = pd.read_pickle(lipid_enrichment_results_path)
 
     results_table = individual_predictor_r2_table(
         df=df,
-        prs_predictors=SIGNIFICANT_PRS_COLS,
-        lipid_predictors=ENRICHED_LIPID_COLS,
+        prs_predictors=significant_predictors(prs_results),
+        lipid_predictors=significant_predictors(lipid_enrichment_results),
         outcome_col="prob_class_5",
         n_permutations=20_000,
         random_state=42,

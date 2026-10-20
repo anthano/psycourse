@@ -189,10 +189,18 @@ def task_plot_univariate_lipid_regression_cov_panss_both(
 def task_plot_univariate_prs_regression_standard_cov(
     prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
     / "univariate_prs_results_standard_cov.pkl",
+    lipid_pathway_prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "univariate_prs_results_lipid_pathway.pkl",
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_regression_plot_standard_cov.svg",
 ):
-    prs_results = pd.read_pickle(prs_results_path)
+    # 14-PRS battery and lipid-pathway PRS, each with its own FDR correction
+    prs_results = pd.concat(
+        [
+            pd.read_pickle(prs_results_path),
+            pd.read_pickle(lipid_pathway_prs_results_path),
+        ]
+    )
     fig, ax = plot_univariate_prs_regression(prs_results)
     fig.savefig(bld_plots_dir_output, bbox_inches="tight")
     fig.savefig(bld_plots_dir_output.with_suffix(".tiff"), dpi=600, bbox_inches="tight")
@@ -203,13 +211,21 @@ def task_plot_univariate_prs_regression_standard_cov(
 def task_plot_univariate_prs_lipid_regression_combined_standard_cov(
     prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
     / "univariate_prs_results_standard_cov.pkl",
+    lipid_pathway_prs_results_path=UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "univariate_prs_results_lipid_pathway.pkl",
     lipid_results_path=UNIVARIATE_LIPID_CONTINUOUS_RESULTS_DIR
     / "univariate_lipid_results_top20.pkl",
     annotation_df_path=ANNOTATION_DF_PATH,
     bld_plots_dir_output: Annotated[Path, Product] = BLD_PLOTS_DIR
     / "univariate_prs_lipid_regression_plot_combined_standard_cov.svg",
 ):
-    prs_results = pd.read_pickle(prs_results_path)
+    # 14-PRS battery and lipid-pathway PRS, each with its own FDR correction
+    prs_results = pd.concat(
+        [
+            pd.read_pickle(prs_results_path),
+            pd.read_pickle(lipid_pathway_prs_results_path),
+        ]
+    )
     lipid_results = pd.read_pickle(lipid_results_path)
     annotation_df = pd.read_pickle(annotation_df_path)
 

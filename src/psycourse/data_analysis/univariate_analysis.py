@@ -11,21 +11,37 @@ from statsmodels.stats.multitest import multipletests
 ########################################################################################
 
 # PRS standard covs = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
-# PRS sensitivity = ["bmi"], ["diagnosis"]
+# PRS sensitivity = ["diagnosis_sum"], ["school"], ["diagnosis_sum", "school"]
+
+# Lipid-pathway-enriched versions of the significant PRS; tested as a separate
+# family with their own FDR correction, not as part of the main PRS battery.
+LIPID_PATHWAY_PRS = ["Lipid_BD_PRS", "Lipid_SCZ_PRS", "Lipid_Edu_PRS"]
 
 
-def univariate_prs_regression(multimodal_df):
+def main_prs_columns(multimodal_df):
+    """The 14-PRS battery: all PRS columns except the lipid-pathway-enriched PRS."""
+    return [
+        col
+        for col in multimodal_df.columns
+        if col.endswith("PRS") and not col.startswith("Lipid_")
+    ]
+
+
+def univariate_prs_regression(multimodal_df, prs_columns=None):
     """
     Univariate GLMs of prob_class_5 on each PRS, adjusted for covariates.
     Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
     Uses HC3 robust covariance (with a safe fallback for older statsmodels).
     Args:
         multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
+        prs_columns (list[str] | None): PRS to test (one FDR family). Defaults to
+            the 14-PRS battery.
     Returns:
         df (pd.DataFrame): pd.DataFrame with results for every PRS.
         n_subset_dict (dict): contains the n numbers per PRS.
     """
-    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    if prs_columns is None:
+        prs_columns = main_prs_columns(multimodal_df)
     rows = []
     n_subset_dict = {}
 
@@ -76,6 +92,11 @@ def univariate_prs_regression(multimodal_df):
     df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
     df = df.sort_values(by="FDR")
     return df, n_subset_dict
+
+
+def univariate_lipid_pathway_prs_regression(multimodal_df):
+    """Primary PRS model for the lipid-pathway-enriched PRS (own FDR family)."""
+    return univariate_prs_regression(multimodal_df, prs_columns=LIPID_PATHWAY_PRS)
 
 
 def prs_cv_delta_mse(multimodal_df, n_splits=5, random_state=42):
@@ -212,6 +233,104 @@ def univariate_prs_ancova(multimodal_df):
         results_dfs[threshold] = results_df
 
     return results_dfs
+
+
+def add_school_education(multimodal_df, phenotypic_data):
+    """
+    Adds highest school qualification ("school") from the cleaned phenotypic data
+    as a categorical covariate. Kept out of the merged multimodal DataFrame so that
+    the KNN covariate imputation of the primary models is unaffected.
+
+    The cleaned coding is 1–4 (original v1_school 0–3); 0 corresponds to the
+    original -999 and is set to missing.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
+        phenotypic_data (pd.DataFrame): Cleaned phenotypic data, indexed by id.
+    Returns:
+        df (pd.DataFrame): Copy of multimodal_df with an added "school" column.
+    """
+    df = multimodal_df.copy()
+    school = phenotypic_data["school"].reindex(df.index)
+    school = school.mask(school == 0)
+    df["school"] = pd.Categorical(school.astype("float").astype("Int8"))
+    return df
+
+
+def _univariate_prs_regression_extra_covs(multimodal_df, extra_covs):
+    """
+    Helper: standard PRS regression covariates plus one extra covariate list.
+    Non-numeric extra covariates (e.g. diagnosis_sum, school) enter as C().
+
+    Standard covariates: age, sex, pc1–pc5. Tests the 14-PRS battery.
+
+    Args:
+        multimodal_df (pd.DataFrame): DataFrame containing PRS and covariates.
+        extra_covs (list[str]): Additional covariate column names to add.
+    Returns:
+        df (pd.DataFrame): pd.DataFrame with results for every PRS.
+        n_subset_dict (dict): contains the n numbers per PRS.
+    """
+    prs_columns = main_prs_columns(multimodal_df)
+    rows = []
+    n_subset_dict = {}
+    standard_cols = ["prob_class_5", "age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+
+    extra_terms = [
+        cov if pd.api.types.is_numeric_dtype(multimodal_df[cov]) else f"C({cov})"
+        for cov in extra_covs
+    ]
+    extra_formula = " + ".join(extra_terms)
+
+    for prs in prs_columns:
+        subset = multimodal_df[[prs] + standard_cols + extra_covs].dropna()
+        n_subset_dict[prs] = len(subset)
+
+        formula = (
+            f"prob_class_5 ~ {prs} + age + C(sex) + "
+            f"pc1 + pc2 + pc3 + pc4 + pc5 + {extra_formula}"
+        )
+
+        model = smf.glm(formula=formula, data=subset)
+        result = model.fit(cov_type="HC3")
+        coef = result.params.get(prs, np.nan)
+        se = result.bse.get(prs, np.nan)
+        pval = result.pvalues.get(prs, np.nan)
+        ci_lower, ci_upper = result.conf_int().loc[prs].tolist()
+
+        rows.append(
+            {
+                "prs": prs,
+                "coef": coef,
+                "se": se,
+                "ci_low": ci_lower,
+                "ci_high": ci_upper,
+                "pval": pval,
+            }
+        )
+
+    df = pd.DataFrame(rows).set_index("prs")
+    df["FDR"] = multipletests(df["pval"], method="fdr_bh")[1]
+    df["log10_FDR"] = -np.log10(np.clip(df["FDR"], np.finfo(float).tiny, None))
+    df = df.sort_values(by="FDR")
+    return df, n_subset_dict
+
+
+def univariate_prs_regression_cov_diagnosis(multimodal_df):
+    """Standard covariates + diagnosis_sum."""
+    return _univariate_prs_regression_extra_covs(multimodal_df, ["diagnosis_sum"])
+
+
+def univariate_prs_regression_cov_education(multimodal_df):
+    """Standard covariates + school (requires add_school_education first)."""
+    return _univariate_prs_regression_extra_covs(multimodal_df, ["school"])
+
+
+def univariate_prs_regression_cov_diagnosis_and_education(multimodal_df):
+    """Standard covariates + diagnosis_sum + school."""
+    return _univariate_prs_regression_extra_covs(
+        multimodal_df, ["diagnosis_sum", "school"]
+    )
 
 
 ########################################################################################

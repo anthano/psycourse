@@ -2,9 +2,11 @@ import pandas as pd
 
 from psycourse.config import BLD_DATA, BLD_RESULTS, SRC
 from psycourse.data_analysis.univariate_analysis import (
+    add_school_education,
     lipid_class_prs_regression,
     lipid_prs_regression,
     prs_cv_delta_mse,
+    univariate_lipid_pathway_prs_regression,
     univariate_lipid_regression,
     univariate_lipid_regression_cov_antidepressants,
     univariate_lipid_regression_cov_antipsychotics,
@@ -20,6 +22,9 @@ from psycourse.data_analysis.univariate_analysis import (
     univariate_lipid_regression_cov_tranquilizers,
     univariate_prs_ancova,
     univariate_prs_regression,
+    univariate_prs_regression_cov_diagnosis,
+    univariate_prs_regression_cov_diagnosis_and_education,
+    univariate_prs_regression_cov_education,
 )
 
 UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR = (
@@ -53,6 +58,29 @@ def task_univariate_prs_regression(
     univariate_prs_results, n_subset_dict = univariate_prs_regression(data)
     univariate_prs_results.to_pickle(univariate_prs_products["univariate_prs_results"])
     pd.to_pickle(n_subset_dict, univariate_prs_products["n_subset_dict"])
+
+
+univariate_lipid_pathway_prs_products = {
+    "univariate_prs_results": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "univariate_prs_results_lipid_pathway.pkl",
+    "n_subset_dict": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "n_subset_dict_lipid_pathway.pkl",
+}
+
+
+def task_univariate_lipid_pathway_prs_regression(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+    produces=univariate_lipid_pathway_prs_products,
+):
+    """Lipid-pathway-enriched PRS, FDR-corrected separately from the 14 PRS."""
+
+    data = pd.read_pickle(multimodal_df_path)
+    univariate_prs_results, n_subset_dict = univariate_lipid_pathway_prs_regression(
+        data
+    )
+    univariate_prs_results.to_pickle(produces["univariate_prs_results"])
+    pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
 
 
 # ======================================================================================
@@ -97,6 +125,67 @@ def task_prs_cv_delta_mse(
     data = pd.read_pickle(multimodal_df_path)
     prs_cv_delta_mse_results = prs_cv_delta_mse(data)
     prs_cv_delta_mse_results.to_pickle(produces)
+
+
+# ======================================================================================
+# PRS SENSITIVITY (diagnosis- and education-adjusted)
+# ======================================================================================
+
+_PRS_SENSITIVITY_VARIANTS = {
+    "diagnosis": univariate_prs_regression_cov_diagnosis,
+    "education": univariate_prs_regression_cov_education,
+    "diagnosis_and_education": univariate_prs_regression_cov_diagnosis_and_education,
+}
+
+for _cov_name, _cov_fn in _PRS_SENSITIVITY_VARIANTS.items():
+    _produces = {
+        "univariate_prs_results": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+        / f"univariate_prs_results_cov_{_cov_name}.pkl",
+        "n_subset_dict": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+        / f"n_subset_dict_cov_{_cov_name}.pkl",
+    }
+
+    def _make_prs_task(fn, prods):
+        def task_fn(
+            script_path=SRC / "data_analysis" / "univariate_analysis.py",
+            multimodal_df_path=BLD_DATA / "multimodal_complete_df.pkl",
+            phenotypic_data_path=BLD_DATA / "cleaned_phenotypic_data.pkl",
+            produces=prods,
+        ):
+            data = pd.read_pickle(multimodal_df_path)
+            phenotypic_data = pd.read_pickle(phenotypic_data_path)
+            data = add_school_education(data, phenotypic_data)
+            univariate_prs_results, n_subset_dict = fn(data)
+            univariate_prs_results.to_pickle(produces["univariate_prs_results"])
+            pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
+
+        return task_fn
+
+    globals()[f"task_univariate_prs_regression_cov_{_cov_name}"] = _make_prs_task(
+        _cov_fn, _produces
+    )
+
+# ======================================================================================
+
+univariate_prs_lipid_subset_products = {
+    "univariate_prs_results": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "univariate_prs_results_lipid_subset.pkl",
+    "n_subset_dict": UNIVARIATE_PRS_CONTINUOUS_RESULTS_DIR
+    / "n_subset_dict_lipid_subset.pkl",
+}
+
+
+def task_univariate_prs_regression_lipid_subset(
+    script_path=SRC / "data_analysis" / "univariate_analysis.py",
+    multimodal_df_path=BLD_DATA / "multimodal_lipid_subset_df.pkl",
+    produces=univariate_prs_lipid_subset_products,
+):
+    """Primary PRS model restricted to the lipid subset (EA-PRS β vs. ΔR², R2.6)."""
+
+    data = pd.read_pickle(multimodal_df_path)
+    univariate_prs_results, n_subset_dict = univariate_prs_regression(data)
+    univariate_prs_results.to_pickle(produces["univariate_prs_results"])
+    pd.to_pickle(n_subset_dict, produces["n_subset_dict"])
 
 
 # ======================================================================================

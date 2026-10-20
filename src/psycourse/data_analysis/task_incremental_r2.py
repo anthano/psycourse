@@ -7,6 +7,7 @@ from pytask import Product
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
 from psycourse.data_analysis.incremental_r2 import (
+    bootstrap_incremental_r2,
     incremental_r2_decomposition,
     make_r2_table,
 )
@@ -72,3 +73,27 @@ def task_incremental_r2_decomposition(
 
     table = make_r2_table(results)
     table.to_pickle(table_path)
+
+
+def task_bootstrap_incremental_r2(
+    data_path: Path = BLD_DATA / "multimodal_lipid_subset_df.pkl",
+    table_path: Annotated[Path, Product] = RESULTS_DIR
+    / "incremental_r2_bootstrap_table.pkl",
+    csv_path: Annotated[Path, Product] = RESULTS_DIR
+    / "incremental_r2_bootstrap_table.csv",
+) -> None:
+    """Bootstrap 95% CIs for each ΔR² and the shared PRS–lipid component."""
+    df = pd.read_pickle(data_path)
+
+    table = bootstrap_incremental_r2(
+        df=df,
+        prs_cols=prs_cols,
+        lipid_cols=lipid_cols,
+        outcome_col="prob_class_5",
+        n_bootstraps=5_000,
+        random_state=42,
+    )
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    table.to_pickle(table_path)
+    table.to_csv(csv_path)

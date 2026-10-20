@@ -82,50 +82,22 @@ def incremental_r2_decomposition(
         dict with R² values, incremental R² values, and permutation p-values
         for both the residualized and traditional approaches.
     """
-    if prs_covariate_cols is None:
-        prs_covariate_cols = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
-    if lipid_covariate_cols is None:
-        lipid_covariate_cols = ["sex", "bmi", "duration_illness", "smoker"]
-
-    prs_covariate_cols = [c for c in prs_covariate_cols if c in df.columns]
-    lipid_covariate_cols = [c for c in lipid_covariate_cols if c in df.columns]
-    prs_cols = [c for c in prs_cols if c in df.columns]
-    lipid_cols = [c for c in lipid_cols if c in df.columns]
-
-    # Outcome is residualized against the union of both covariate sets
-    outcome_covariate_cols = list(
-        dict.fromkeys(prs_covariate_cols + lipid_covariate_cols)
+    inputs = _prepare_r2_inputs(
+        df=df,
+        prs_cols=prs_cols,
+        lipid_cols=lipid_cols,
+        outcome_col=outcome_col,
+        prs_covariate_cols=prs_covariate_cols,
+        lipid_covariate_cols=lipid_covariate_cols,
     )
-
-    all_cols = [outcome_col] + outcome_covariate_cols + prs_cols + lipid_cols
-    df_model = df[all_cols].copy().dropna(subset=[outcome_col] + outcome_covariate_cols)
-
-    # median-impute PRS and lipid missings, consistent with primary models
-    for col in prs_cols + lipid_cols:
-        if col in df_model.columns:
-            df_model[col] = df_model[col].fillna(df_model[col].median())
-
-    # one-hot encode categorical covariates (sex, smoker), drop_first to avoid
-    # collinearity; add intercept column
-    X_prs_cov = add_constant(
-        pd.get_dummies(df_model[prs_covariate_cols], drop_first=True)
-        .astype(float)
-        .to_numpy()
-    )
-    X_lip_cov = add_constant(
-        pd.get_dummies(df_model[lipid_covariate_cols], drop_first=True)
-        .astype(float)
-        .to_numpy()
-    )
-    X_outcome_cov = add_constant(
-        pd.get_dummies(df_model[outcome_covariate_cols], drop_first=True)
-        .astype(float)
-        .to_numpy()
-    )
-
-    y_raw = df_model[outcome_col].to_numpy(float)
-    X_prs_raw = df_model[prs_cols].to_numpy(float)
-    X_lip_raw = df_model[lipid_cols].to_numpy(float)
+    y_raw = inputs["y_raw"]
+    X_prs_raw = inputs["X_prs_raw"]
+    X_lip_raw = inputs["X_lip_raw"]
+    X_prs_cov = inputs["X_prs_cov"]
+    X_lip_cov = inputs["X_lip_cov"]
+    X_outcome_cov = inputs["X_outcome_cov"]
+    prs_cols = inputs["prs_cols"]
+    lipid_cols = inputs["lipid_cols"]
 
     # ── Residualized approach ─────────────────────────────────────────────────────
 
@@ -329,6 +301,128 @@ def make_r2_table(results: dict) -> pd.DataFrame:
 
 
 ########################################################################################
+# Bootstrap Confidence Intervals for Incremental R²
+########################################################################################
+
+R2_COMPONENTS = {
+    "dR2_prs": "PRS alone",
+    "dR2_lip": "Lipids alone",
+    "dR2_prs_over_lip": "PRS | Lipids",
+    "dR2_lip_over_prs": "Lipids | PRS",
+    "dR2_joint": "PRS + Lipids jointly",
+    "shared": "Shared (PRS ∩ Lipids)",
+}
+
+R2_APPROACHES = {
+    "resid": "Residualized",
+    "trad": "Traditional (raw)",
+    "trad_adj": "Traditional (adjusted R²)",
+}
+
+
+def bootstrap_incremental_r2(
+    df: pd.DataFrame,
+    prs_cols: list[str],
+    lipid_cols: list[str],
+    outcome_col: str = "prob_class_5",
+    prs_covariate_cols: list[str] | None = None,
+    lipid_covariate_cols: list[str] | None = None,
+    n_bootstraps: int = 5_000,
+    ci_level: float = 0.95,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """
+    Nonparametric bootstrap confidence intervals for the incremental R²
+    decomposition, including the shared PRS–lipid variance component.
+
+    Uses the same sample, imputation, and covariate coding as
+    ``incremental_r2_decomposition``. In each replicate, participants are resampled
+    with replacement and the full procedure (block-specific residualization and
+    nested OLS fits) is repeated, so the intervals reflect sampling variability of
+    the residualization step as well.
+
+    The shared component is the commonality of both blocks:
+      shared = dR2_prs + dR2_lip − dR2_joint
+    Values near zero indicate additivity; negative values indicate suppression.
+
+    Three approaches are reported:
+      - Residualized: as in the main analysis.
+      - Traditional (raw): raw features with union covariates entered explicitly.
+      - Traditional (adjusted R²): as above, but with adjusted R² penalizing the
+        number of predictors in each model (addresses in-sample inflation from
+        fitting 14 PRS and 16 lipid class scores).
+
+    Args:
+        df: DataFrame containing all variables.
+        prs_cols: PRS feature column names.
+        lipid_cols: Lipid class feature column names.
+        outcome_col: Continuous severity outcome column.
+        prs_covariate_cols: Covariates for PRS residualization.
+            Defaults to age, sex, pc1–pc5.
+        lipid_covariate_cols: Covariates for lipid residualization.
+            Defaults to sex, bmi, duration_illness, smoker.
+        n_bootstraps: Number of bootstrap replicates.
+        ci_level: Confidence level for percentile intervals.
+        random_state: Random seed for reproducibility.
+
+    Returns:
+        pd.DataFrame indexed by comparison label, with two-level MultiIndex
+        columns (approach, statistic): ΔR², CI lower, CI upper, bootstrap SE.
+    """
+    inputs = _prepare_r2_inputs(
+        df=df,
+        prs_cols=prs_cols,
+        lipid_cols=lipid_cols,
+        outcome_col=outcome_col,
+        prs_covariate_cols=prs_covariate_cols,
+        lipid_covariate_cols=lipid_covariate_cols,
+    )
+    arrays = [
+        inputs["y_raw"],
+        inputs["X_prs_raw"],
+        inputs["X_lip_raw"],
+        inputs["X_prs_cov"],
+        inputs["X_lip_cov"],
+        inputs["X_outcome_cov"],
+    ]
+    n = len(inputs["y_raw"])
+
+    observed = _dr2_components(*arrays)
+
+    rng = np.random.default_rng(random_state)
+    boot = {key: np.zeros(n_bootstraps) for key in observed}
+
+    for i in range(n_bootstraps):
+        idx = rng.integers(0, n, size=n)
+        replicate = _dr2_components(*[a[idx] for a in arrays])
+        for key, value in replicate.items():
+            boot[key][i] = value
+
+    alpha = (1 - ci_level) / 2
+    ci_low_label = f"{ci_level:.0%} CI lower"
+    ci_high_label = f"{ci_level:.0%} CI upper"
+
+    data = {}
+    for approach_key, approach_label in R2_APPROACHES.items():
+        estimates, ci_lows, ci_highs, ses = [], [], [], []
+        for component_key in R2_COMPONENTS:
+            key = f"{component_key}_{approach_key}"
+            estimates.append(round(observed[key], 6))
+            ci_lows.append(round(float(np.quantile(boot[key], alpha)), 6))
+            ci_highs.append(round(float(np.quantile(boot[key], 1 - alpha)), 6))
+            ses.append(round(float(np.std(boot[key], ddof=1)), 6))
+        data[(approach_label, "ΔR²")] = estimates
+        data[(approach_label, ci_low_label)] = ci_lows
+        data[(approach_label, ci_high_label)] = ci_highs
+        data[(approach_label, "bootstrap SE")] = ses
+
+    table = pd.DataFrame(data, index=list(R2_COMPONENTS.values()))
+    table.columns = pd.MultiIndex.from_tuples(table.columns)
+    table.attrs = {"n": n, "n_bootstraps": n_bootstraps, "ci_level": ci_level}
+    return table
+
+
+########################################################################################
 # Individual Predictor ΔR² Table
 ########################################################################################
 
@@ -411,6 +505,18 @@ def individual_predictor_r2_table(
     return pd.DataFrame(rows, columns=["predictor", "type", "dR2", "p_permutation"])
 
 
+def significant_predictors(
+    results_df: pd.DataFrame, fdr_col: str = "FDR", alpha: float = 0.05
+) -> list[str]:
+    """
+    Index labels of a results table with FDR below alpha, in table order.
+
+    Works for the univariate PRS results (index: PRS column names) and the lipid
+    class enrichment results (index: lipid class score column names).
+    """
+    return results_df.index[results_df[fdr_col] < alpha].tolist()
+
+
 ########################################################################################
 # HELPER FUNCTIONS
 ########################################################################################
@@ -471,6 +577,132 @@ def _single_predictor_r2(
     p_perm = _perm_pvalue(dr2, null_dr2)
 
     return (predictor_col, predictor_type, round(dr2, 6), round(p_perm, 4))
+
+
+def _prepare_r2_inputs(
+    df: pd.DataFrame,
+    prs_cols: list[str],
+    lipid_cols: list[str],
+    outcome_col: str,
+    prs_covariate_cols: list[str] | None,
+    lipid_covariate_cols: list[str] | None,
+) -> dict:
+    """
+    Builds the analysis sample and design matrices shared by the incremental R²
+    decomposition and its bootstrap.
+
+    Returns a dict with the raw outcome and feature arrays, the three covariate
+    design matrices (each with intercept), and the PRS/lipid columns used.
+    """
+    if prs_covariate_cols is None:
+        prs_covariate_cols = ["age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5"]
+    if lipid_covariate_cols is None:
+        lipid_covariate_cols = ["sex", "bmi", "duration_illness", "smoker"]
+
+    prs_covariate_cols = [c for c in prs_covariate_cols if c in df.columns]
+    lipid_covariate_cols = [c for c in lipid_covariate_cols if c in df.columns]
+    prs_cols = [c for c in prs_cols if c in df.columns]
+    lipid_cols = [c for c in lipid_cols if c in df.columns]
+
+    # Outcome is residualized against the union of both covariate sets
+    outcome_covariate_cols = list(
+        dict.fromkeys(prs_covariate_cols + lipid_covariate_cols)
+    )
+
+    all_cols = [outcome_col] + outcome_covariate_cols + prs_cols + lipid_cols
+    df_model = df[all_cols].copy().dropna(subset=[outcome_col] + outcome_covariate_cols)
+
+    # median-impute PRS and lipid missings, consistent with primary models
+    for col in prs_cols + lipid_cols:
+        if col in df_model.columns:
+            df_model[col] = df_model[col].fillna(df_model[col].median())
+
+    # one-hot encode categorical covariates (sex, smoker), drop_first to avoid
+    # collinearity; add intercept column
+    X_prs_cov = add_constant(
+        pd.get_dummies(df_model[prs_covariate_cols], drop_first=True)
+        .astype(float)
+        .to_numpy()
+    )
+    X_lip_cov = add_constant(
+        pd.get_dummies(df_model[lipid_covariate_cols], drop_first=True)
+        .astype(float)
+        .to_numpy()
+    )
+    X_outcome_cov = add_constant(
+        pd.get_dummies(df_model[outcome_covariate_cols], drop_first=True)
+        .astype(float)
+        .to_numpy()
+    )
+
+    return {
+        "y_raw": df_model[outcome_col].to_numpy(float),
+        "X_prs_raw": df_model[prs_cols].to_numpy(float),
+        "X_lip_raw": df_model[lipid_cols].to_numpy(float),
+        "X_prs_cov": X_prs_cov,
+        "X_lip_cov": X_lip_cov,
+        "X_outcome_cov": X_outcome_cov,
+        "prs_cols": prs_cols,
+        "lipid_cols": lipid_cols,
+    }
+
+
+def _dr2_components(
+    y_raw: np.ndarray,
+    X_prs_raw: np.ndarray,
+    X_lip_raw: np.ndarray,
+    X_prs_cov: np.ndarray,
+    X_lip_cov: np.ndarray,
+    X_outcome_cov: np.ndarray,
+) -> dict:
+    """
+    ΔR² values and the shared component for the residualized, traditional, and
+    traditional adjusted-R² approaches on one (possibly resampled) dataset.
+    Keys are f"{component}_{approach}" (see R2_COMPONENTS and R2_APPROACHES).
+    """
+    # Residualized approach
+    y = _residualize(y_raw, X_outcome_cov)
+    X_prs = _residualize(X_prs_raw, X_prs_cov)
+    X_lip = _residualize(X_lip_raw, X_lip_cov)
+
+    r2_m0 = _ols_r2(y, np.ones((len(y), 1)))
+    r2_prs = _ols_r2(y, add_constant(X_prs, has_constant="add"))
+    r2_lip = _ols_r2(y, add_constant(X_lip, has_constant="add"))
+    r2_both = _ols_r2(
+        y, add_constant(np.column_stack([X_prs, X_lip]), has_constant="add")
+    )
+
+    # Traditional approach (raw features, union covariates entered explicitly)
+    X_trad = {
+        "m0": X_outcome_cov,
+        "m1": np.column_stack([X_outcome_cov, X_prs_raw]),
+        "m2": np.column_stack([X_outcome_cov, X_lip_raw]),
+        "m3": np.column_stack([X_outcome_cov, X_prs_raw, X_lip_raw]),
+    }
+    r2_trad = {m: _ols_r2(y_raw, X) for m, X in X_trad.items()}
+    r2_trad_adj = {
+        m: _adjusted_r2(r2_trad[m], len(y_raw), X.shape[1] - 1)
+        for m, X in X_trad.items()
+    }
+
+    components = {}
+    for approach, (m0, m1, m2, m3) in {
+        "resid": (r2_m0, r2_prs, r2_lip, r2_both),
+        "trad": tuple(r2_trad.values()),
+        "trad_adj": tuple(r2_trad_adj.values()),
+    }.items():
+        components[f"dR2_prs_{approach}"] = m1 - m0
+        components[f"dR2_lip_{approach}"] = m2 - m0
+        components[f"dR2_prs_over_lip_{approach}"] = m3 - m2
+        components[f"dR2_lip_over_prs_{approach}"] = m3 - m1
+        components[f"dR2_joint_{approach}"] = m3 - m0
+        components[f"shared_{approach}"] = (m1 - m0) + (m2 - m0) - (m3 - m0)
+
+    return components
+
+
+def _adjusted_r2(r2: float, n: int, n_predictors: int) -> float:
+    return 1 - (1 - r2) * (n - 1) / (n - n_predictors - 1)
 
 
 def _residualize(X_target: np.ndarray, X_cov: np.ndarray) -> np.ndarray:

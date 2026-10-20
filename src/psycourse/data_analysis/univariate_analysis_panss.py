@@ -3,6 +3,8 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 
+from psycourse.data_analysis.univariate_analysis import main_prs_columns
+
 ########################################################################################
 # PRS
 ########################################################################################
@@ -14,7 +16,7 @@ def univariate_prs_regression_panss(multimodal_df, panss_column):
     adjusted for standard covariates (age, sex, ancestry PCs 1-5).
     Returns coef, SE, 95% CI, p, FDR, and -log10(FDR).
     """
-    prs_columns = [col for col in multimodal_df.columns if col.endswith("PRS")]
+    prs_columns = main_prs_columns(multimodal_df)
     rows = []
     n_subset_dict = {}
 

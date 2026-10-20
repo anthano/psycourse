@@ -49,7 +49,8 @@ _TOC_ROWS = [
     (
         "05_prs_std",
         "PRS associations with severe psychosis subtype probability "
-        "(standard covariates: age, sex, ancestry PCs)",
+        "(standard covariates: age, sex, ancestry PCs; 14-PRS battery and "
+        "lipid-pathway-enriched PRS FDR-corrected separately)",
         "PRS ~ Subtype Probability",
     ),
     # ── Lipid Species ~ Subtype Probability (PANSS as covariate, sensitivity) ──
@@ -367,6 +368,7 @@ def _write_toc_docx(path: Path) -> None:
             "n_prs": _DESC / "n_per_analysis_prs.pkl",
             # ── PRS ~ Subtype Probability ───────────────────────────────────────
             "prs_std": _PRS / "univariate_prs_results_standard_cov.pkl",
+            "prs_lipid_pathway": _PRS / "univariate_prs_results_lipid_pathway.pkl",
             # ── Lipid ~ Subtype Probability (PANSS sensitivity) ────────────────
             "lip_std": _LIP / "univariate_lipid_results.pkl",
             "lip_cov_diag": _LIP / "univariate_lipid_results_cov_diagnosis.pkl",
@@ -490,7 +492,15 @@ def task_export_all_supplementary_tables(depends_on, produces):
         load("n_prs").to_excel(writer, sheet_name="04_n_prs")
 
         # ── PRS ~ Subtype Probability ───────────────────────────────────────────
-        load("prs_std").to_excel(writer, sheet_name="05_prs_std")
+        # 14-PRS battery and lipid-pathway PRS, FDR-corrected as separate families
+        pd.concat(
+            [
+                load("prs_std").assign(fdr_family="PRS battery (14 PRS)"),
+                load("prs_lipid_pathway").assign(
+                    fdr_family="Lipid-pathway-enriched PRS (3 PRS)"
+                ),
+            ]
+        ).to_excel(writer, sheet_name="05_prs_std")
 
         # ── Lipid ~ Subtype Probability (PANSS sensitivity) ────────────────────
         load("lip_std").to_excel(writer, sheet_name="06_lip_std")
