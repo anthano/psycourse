@@ -31,6 +31,11 @@ def cca_regression_analysis(
     prs_covar_cols = [col for col in prs_covar_cols if col in df.columns]
     lipid_covar_cols = [col for col in lipid_covar_cols if col in df.columns]
 
+    # restrict to genotyped participants (complete PRS and ancestry PCs) so that
+    # no PRS values are imputed; remaining covariate gaps are median-imputed
+    genotype_cols = prs_cols + [col for col in prs_covar_cols if col.startswith("pc")]
+    df = df.dropna(subset=[y_col] + genotype_cols)
+
     needed = list(
         dict.fromkeys(
             [y_col] + prs_cols + lipid_class_cols + prs_covar_cols + lipid_covar_cols
@@ -121,6 +126,7 @@ def cca_regression_analysis(
 
     results_dict = {
         "cca": cca,
+        "n": len(imputed_df),
         "canonical_corr_comp1": can_corr,
         "p_coupling_perm_comp1": p_coupling,
         "scores": scores_df,
