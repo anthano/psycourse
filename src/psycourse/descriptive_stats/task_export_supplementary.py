@@ -244,7 +244,7 @@ _TOC_ROWS = [
     (
         "35_cca_loadings",
         "Full CCA canonical loadings for the first canonical variate: "
-        "PRS block (13 polygenic scores) and lipid class block (16 lipid classes). "
+        "PRS block (14 polygenic scores) and lipid class block (16 lipid classes). "
         "The 'block' column identifies the input block; 'variable' is the "
         "feature name; "
         "'loading' is the correlation between the feature and its "

@@ -7,24 +7,9 @@ from pytask import Product
 
 from psycourse.config import BLD_DATA, BLD_RESULTS
 from psycourse.data_analysis.cca_regression import cca_regression_analysis
+from psycourse.data_analysis.univariate_analysis import main_prs_columns
 
 RESULTS_DIR = BLD_RESULTS / "cca_regression"
-
-prs_cols = [
-    "BD_PRS",
-    "SCZ_PRS",
-    "MDD_PRS",
-    "ADHD_PRS",
-    "Alzheimer_PRS",
-    "Education_PRS",
-    "Agreeableness_PRS",
-    "Conscientiousness_PRS",
-    "Extraversion_PRS",
-    "Neuroticism_PRS",
-    "Openness_PRS",
-    "SleepDurationLong_PRS",
-    "SleepDurationShort_PRS",
-]
 
 lipid_cols = [
     "LPE",
@@ -53,7 +38,7 @@ def task_cca_regression(
     df = pd.read_pickle(data_path)
 
     results_dict = cca_regression_analysis(
-        df=df, prs_cols=prs_cols, lipid_class_cols=lipid_cols
+        df=df, prs_cols=main_prs_columns(df), lipid_class_cols=lipid_cols
     )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)  # ensure directory exists
