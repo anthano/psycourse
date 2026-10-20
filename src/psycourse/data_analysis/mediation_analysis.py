@@ -2,8 +2,12 @@ import pandas as pd
 import pingouin as pg
 import statsmodels.api as sm
 
+from psycourse.data_analysis.incremental_r2 import significant_predictors
 
-def mediation_analysis(multimodal_lipid_subset_df, lipid_enrichment_result_df):
+
+def mediation_analysis(
+    multimodal_lipid_subset_df, lipid_enrichment_result_df, prs_result_df
+):
     """Mediation analysis to assess whether lipids mediate the effect of PRS
     on severe psychosis cluster.
 
@@ -16,13 +20,15 @@ def mediation_analysis(multimodal_lipid_subset_df, lipid_enrichment_result_df):
     Args:
         multimodal_lipid_subset_df (pd.DataFrame): DataFrame with all needed columns.
         lipid_enrichment_result_df (pd.DataFrame): lipid enrichment results.
+        prs_result_df (pd.DataFrame): primary PRS regression results; PRS with
+            FDR < 0.05 are tested as exposures.
 
     Returns:
         pd.DataFrame: Tidy mediation results.
     """
     lipid_enrichment_result_df = lipid_enrichment_result_df.copy()
     lipid_cols = _get_lipid_class_cols(lipid_enrichment_result_df)
-    prs_cols = ["BD_PRS", "SCZ_PRS", "Education_PRS"]
+    prs_cols = significant_predictors(prs_result_df)
 
     # Zx: confounders of X (PRS) — genetic PCs + basic demographics.
     # These are residualized out of X before mediation because they are

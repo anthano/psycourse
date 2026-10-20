@@ -16,11 +16,19 @@ def task_mediation_analysis(
     / "continuous_analysis"
     / "lipid"
     / "lipid_enrichment_results.pkl",
+    prs_result_df_path: Path = BLD_RESULTS
+    / "univariate"
+    / "continuous_analysis"
+    / "prs"
+    / "univariate_prs_results_standard_cov.pkl",
     produces: Annotated[Path, Product] = BLD_RESULTS
     / "mediation_analysis"
     / "mediation_analysis_results.pkl",
 ):
     df = pd.read_pickle(multimodal_lipid_subset_df_path)
     lipid_enrichment_result_df = pd.read_pickle(lipid_enrichment_result_df_path)
-    mediation_results = mediation_analysis(df, lipid_enrichment_result_df)
+    prs_result_df = pd.read_pickle(prs_result_df_path)
+    mediation_results = mediation_analysis(
+        df, lipid_enrichment_result_df, prs_result_df
+    )
     mediation_results.to_pickle(produces)

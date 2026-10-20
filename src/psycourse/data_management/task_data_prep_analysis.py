@@ -40,7 +40,8 @@ def task_merge_multimodal_complete_df(
     lipid_data_path=BLD_DATA / "cleaned_lipidomic_data.pkl",
     lipid_class_path=BLD_DATA / "cleaned_lipid_class_data.pkl",
     phenotypic_data_path=BLD_DATA / "cleaned_phenotypic_data.pkl",
-    cluster_probabilities_full_path=BLD_DATA / "svm_predicted_probabilities_full.pkl",
+    # out-of-fold SVM probabilities (no participant scored by a model trained on them)
+    cluster_probabilities_full_path=BLD_DATA / "svm_oof_probabilities_full.pkl",
     prs_data_path=BLD_DATA / "cleaned_prs_data.pkl",
     pc_data_path=BLD_DATA / "cleaned_pc_data.pkl",
     produces=BLD_DATA / "multimodal_complete_df.pkl",
