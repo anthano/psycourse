@@ -45,7 +45,7 @@ def plot_mediation_results(mediation_df):
             y_positions,
             s=60,
             alpha=0.7,
-            label=prs.replace("_PRS", ""),
+            label=prs.replace("_PRS", "").replace("Education", "EA"),
             color=prs_colors[prs],
             zorder=3,
         )
@@ -66,7 +66,7 @@ def plot_mediation_results(mediation_df):
 
     # Set y-axis to show lipid names
     ax.set_yticks([i + offset_width for i in range(len(lipids))])
-    ax.set_yticklabels(lipids)
+    ax.set_yticklabels([lipid.replace("_", "-") for lipid in lipids])
 
     ax.set_xlabel("Indirect Effect Coefficient (95% CI)", fontsize=12)
     ax.set_ylabel("Lipid Mediator", fontsize=12)
@@ -108,6 +108,9 @@ def plot_mediation_heatmap(mediation_df):
     heatmap_data = heatmap_data[
         [col for col in column_order if col in heatmap_data.columns]
     ]
+    heatmap_data = heatmap_data.rename(
+        index=lambda lipid: lipid.replace("_", "-"), columns={"Education": "EA"}
+    )
 
     fig, ax = plt.subplots(figsize=(6, 10))
 

@@ -6,6 +6,7 @@ import pandas as pd
 from matplotlib.gridspec import GridSpec
 
 from psycourse.config import PLOT_COMBINED_LIP, PLOT_COMBINED_PRS, PLOT_COMBINED_SHARED
+from psycourse.plots.univariate_plots import _format_prs_labels
 
 
 def plot_cca_main(
@@ -130,7 +131,7 @@ def plot_cca_main(
     else:
         colors = [PLOT_COMBINED_PRS] * len(prs_top)
         ax_prs.barh(
-            prs_top.index[::-1],
+            _format_prs_labels(prs_top.index[::-1]),
             prs_top.to_numpy()[::-1],
             color=colors[::-1],
             alpha=0.8,
@@ -152,7 +153,7 @@ def plot_cca_main(
     else:
         colors = [PLOT_COMBINED_LIP] * len(lip_top)
         ax_lip.barh(
-            lip_top.index[::-1],
+            [lbl.replace("_", "-") for lbl in lip_top.index[::-1]],
             lip_top.to_numpy()[::-1],
             color=colors[::-1],
             alpha=0.8,
