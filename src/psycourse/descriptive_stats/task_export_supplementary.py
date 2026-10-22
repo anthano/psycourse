@@ -13,7 +13,6 @@ from docx.shared import Inches, Pt, RGBColor
 from pytask import task
 
 from psycourse.config import BLD_RESULTS
-from psycourse.data_analysis.outcome_sensitivity import compare_r2, compare_results
 
 # ── Directory shortcuts ────────────────────────────────────────────────────────
 _UNI = BLD_RESULTS / "univariate" / "continuous_analysis"
@@ -26,7 +25,6 @@ _DESC = BLD_RESULTS / "descriptive_stats"
 _MED = BLD_RESULTS / "mediation_analysis"
 _R2 = BLD_RESULTS / "incremental_r2"
 _TAB = BLD_RESULTS / "tables"
-_SENS = BLD_RESULTS / "outcome_sensitivity_in_sample"
 
 # ── Table-of-contents definition ──────────────────────────────────────────────
 # (sheet_name, full description, analysis group)
@@ -276,28 +274,6 @@ _TOC_ROWS = [
         "lipidomics subsample with genotype data (standard covariates)",
         "PRS ~ Subtype Probability",
     ),
-    # ── Outcome definition sensitivity ─────────────────────────────────────────
-    (
-        "39_sens_prs_in_sample",
-        "Sensitivity analysis: PRS associations (primary and diagnosis-adjusted "
-        "models) with the out-of-fold (primary) and in-sample severe psychosis "
-        "probability side by side ('model' column)",
-        "Outcome Sensitivity",
-    ),
-    (
-        "40_sens_enrich_in_sample",
-        "Sensitivity analysis: lipid class enrichment (primary, diagnosis-, "
-        "medication-, and diagnosis- and medication-adjusted models) with the "
-        "out-of-fold (primary) and in-sample severe psychosis probability side by "
-        "side ('model' column)",
-        "Outcome Sensitivity",
-    ),
-    (
-        "41_sens_r2_in_sample",
-        "Sensitivity analysis: incremental R² decomposition with the out-of-fold "
-        "(primary) and in-sample severe psychosis probability side by side",
-        "Outcome Sensitivity",
-    ),
 ]
 
 
@@ -516,16 +492,6 @@ def _write_toc_docx(path: Path) -> None:
             "r2_bootstrap": _R2 / "incremental_r2_bootstrap_table.pkl",
             "prs_lipid_subset": _PRS / "univariate_prs_results_lipid_subset.pkl",
             "n_prs_lipid_subset": _PRS / "n_subset_dict_lipid_subset.pkl",
-            # ── Outcome definition sensitivity (in-sample probabilities) ───────
-            "sens_prs_std": _SENS / "univariate_prs_results_standard_cov.pkl",
-            "sens_prs_cov_diag": _SENS / "univariate_prs_results_cov_diagnosis.pkl",
-            "sens_enrich_std": _SENS / "lipid_enrichment_results_standard.pkl",
-            "sens_enrich_cov_diag": _SENS
-            / "lipid_enrichment_results_cov_diagnosis.pkl",
-            "sens_enrich_cov_med": _SENS / "lipid_enrichment_results_cov_med.pkl",
-            "sens_enrich_cov_med_diag": _SENS
-            / "lipid_enrichment_results_cov_med_and_diag.pkl",
-            "sens_r2": _SENS / "incremental_r2_results.pkl",
         },
         "produces": {
             "excel": BLD_RESULTS / "supplementary_tables" / "supplementary_tables.xlsx",
@@ -697,39 +663,6 @@ def task_export_all_supplementary_tables(depends_on, produces):
         load("r2_bootstrap").to_excel(writer, sheet_name="37_r2_bootstrap")
         with_n("prs_lipid_subset", "n_prs_lipid_subset").to_excel(
             writer, sheet_name="38_prs_lipid_subset"
-        )
-
-        # ── Outcome definition sensitivity ─────────────────────────────────────
-        def stack_models(pairs, columns=("coef", "FDR")) -> pd.DataFrame:
-            """compare_results per model, stacked with a leading 'model' column."""
-            frames = []
-            for label, primary_key, sens_key in pairs:
-                df = compare_results(load(primary_key), load(sens_key), columns)
-                df.insert(0, "model", label)
-                frames.append(df)
-            return pd.concat(frames)
-
-        stack_models(
-            [
-                ("standard covariates", "prs_std", "sens_prs_std"),
-                ("+ diagnosis", "prs_cov_diag", "sens_prs_cov_diag"),
-            ]
-        ).to_excel(writer, sheet_name="39_sens_prs_in_sample")
-        stack_models(
-            [
-                ("standard covariates", "enrich_std", "sens_enrich_std"),
-                ("+ diagnosis", "enrich_cov_diag", "sens_enrich_cov_diag"),
-                ("+ medication", "enrich_cov_med", "sens_enrich_cov_med"),
-                (
-                    "+ diagnosis + medication",
-                    "enrich_cov_med_diag",
-                    "sens_enrich_cov_med_diag",
-                ),
-            ],
-            columns=("NES", "FDR"),
-        ).to_excel(writer, sheet_name="40_sens_enrich_in_sample")
-        compare_r2(load("r2_incremental_results"), load("sens_r2")).to_excel(
-            writer, sheet_name="41_sens_r2_in_sample"
         )
 
     # ── Write TOC docx ─────────────────────────────────────────────────────────
