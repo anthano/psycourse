@@ -136,6 +136,7 @@ def plot_incremental_r2(results: dict) -> plt.Figure:
         fontsize=8.5,
     )
     ax.yaxis.grid(True, linestyle=":", alpha=0.5, color=_GRID, zorder=0)
+    ax.xaxis.grid(False)
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

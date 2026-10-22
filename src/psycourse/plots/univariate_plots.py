@@ -64,10 +64,19 @@ def _format_prs_labels(labels):
 
 
 def _lipid_label_mapping(cleaned_annotation_df):
-    """Map lipid peak IDs to species labels with hyphenated classes (PE_P -> PE-P)."""
+    """
+    Map lipid peak IDs to species labels with hyphenated classes (PE_P -> PE-P).
+    Isomers sharing a species label are suffixed (a), (b), ... in peak ID order.
+    """
+    species = cleaned_annotation_df["lipid_species"].str.replace("_", "-")
+    species = species.sort_index()
+    duplicated = species.duplicated(keep=False)
+    isomer_rank = species.groupby(species).cumcount()
     return {
-        peak: species.replace("_", "-")
-        for peak, species in cleaned_annotation_df["lipid_species"].items()
+        peak: f"{label} ({chr(ord('a') + isomer_rank[peak])})"
+        if duplicated[peak]
+        else label
+        for peak, label in species.items()
     }
 
 
@@ -145,9 +154,7 @@ def plot_univariate_lipid_regression(
     ax.set_xlabel("Regression Coefficient")
     ax.set_ylabel("Lipids", labelpad=10)
 
-    ax.legend(
-        handles=_legend_elements(palette="lipid"), loc="lower right", frameon=True
-    )
+    ax.legend(handles=_legend_elements(palette="lipid"), loc="lower left", frameon=True)
     if standalone:
         plt.tight_layout()
 
