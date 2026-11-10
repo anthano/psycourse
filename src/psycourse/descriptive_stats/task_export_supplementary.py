@@ -253,15 +253,7 @@ _TOC_ROWS = [
     ),
     # ── Revision analyses ──────────────────────────────────────────────────────
     (
-        "36_prs_sensitivity",
-        "PRS associations with severe psychosis subtype probability: sensitivity "
-        "models additionally adjusted for diagnosis, highest school qualification, "
-        "or both (14-PRS battery; stacked — see 'covariate_model' column; "
-        "'n' is the complete-case sample size per PRS)",
-        "PRS ~ Subtype Probability",
-    ),
-    (
-        "37_r2_bootstrap",
+        "36_r2_bootstrap",
         "Incremental R² decomposition: bootstrap 95% confidence intervals "
         "(5,000 resamples, percentile method) for each ΔR² and the shared "
         "PRS–lipid component, for the residualized, traditional, and "
@@ -269,7 +261,7 @@ _TOC_ROWS = [
         "Incremental R²",
     ),
     (
-        "38_prs_lipid_subset",
+        "37_prs_lipid_subset",
         "PRS associations with severe psychosis subtype probability in the "
         "lipidomics subsample with genotype data (standard covariates)",
         "PRS ~ Subtype Probability",
@@ -481,14 +473,6 @@ def _write_toc_docx(path: Path) -> None:
             # ── CCA ────────────────────────────────────────────────────────────
             "cca_results": BLD_RESULTS / "cca_regression" / "results.pkl",
             # ── Revision analyses ──────────────────────────────────────────────
-            "prs_cov_diag": _PRS / "univariate_prs_results_cov_diagnosis.pkl",
-            "prs_cov_edu": _PRS / "univariate_prs_results_cov_education.pkl",
-            "prs_cov_diag_edu": _PRS
-            / "univariate_prs_results_cov_diagnosis_and_education.pkl",
-            "n_prs_cov_diag": _PRS / "n_subset_dict_cov_diagnosis.pkl",
-            "n_prs_cov_edu": _PRS / "n_subset_dict_cov_education.pkl",
-            "n_prs_cov_diag_edu": _PRS
-            / "n_subset_dict_cov_diagnosis_and_education.pkl",
             "r2_bootstrap": _R2 / "incremental_r2_bootstrap_table.pkl",
             "prs_lipid_subset": _PRS / "univariate_prs_results_lipid_subset.pkl",
             "n_prs_lipid_subset": _PRS / "n_subset_dict_lipid_subset.pkl",
@@ -650,19 +634,9 @@ def task_export_all_supplementary_tables(depends_on, produces):
         cca_df.to_excel(writer, sheet_name="35_cca_loadings", index=False)
 
         # ── Revision analyses ──────────────────────────────────────────────────
-        sensitivity_frames = []
-        for label, key in [
-            ("+ diagnosis", "prs_cov_diag"),
-            ("+ school qualification", "prs_cov_edu"),
-            ("+ diagnosis + school qualification", "prs_cov_diag_edu"),
-        ]:
-            df = with_n(key, f"n_{key}")
-            df.insert(0, "covariate_model", label)
-            sensitivity_frames.append(df)
-        pd.concat(sensitivity_frames).to_excel(writer, sheet_name="36_prs_sensitivity")
-        load("r2_bootstrap").to_excel(writer, sheet_name="37_r2_bootstrap")
+        load("r2_bootstrap").to_excel(writer, sheet_name="36_r2_bootstrap")
         with_n("prs_lipid_subset", "n_prs_lipid_subset").to_excel(
-            writer, sheet_name="38_prs_lipid_subset"
+            writer, sheet_name="37_prs_lipid_subset"
         )
 
     # ── Write TOC docx ─────────────────────────────────────────────────────────
